@@ -42,6 +42,8 @@ def test_ui_modes_and_overlay(tmp_path) -> None:
         with urllib.request.urlopen(f"http://{host}:{port}/") as res:
             html = res.read().decode()
         assert "not a forensic proof" in html.lower() or "not forensic" in html.lower()
+        assert "add file" in html.lower()
+        assert "export" in html.lower()
         assert "127.0.0.1:8861" in html
     finally:
         httpd.shutdown()

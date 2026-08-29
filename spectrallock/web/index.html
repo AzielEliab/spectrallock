@@ -22,12 +22,14 @@
   </div>
 
   <section class="drop" id="drop">
-    <label class="file">
       <span class="kicker">Photograph</span>
-      Drop a PNG or JPEG of a manuscript page, or choose a file.
-      <input id="file" type="file" accept="image/png,image/jpeg,image/jpg">
-    </label>
+    <p class="drop-hint">Drop a PNG or JPEG of a manuscript page, or use Add file.</p>
+      <input id="file" class="file-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" aria-label="Photograph file">
     <p id="fname" class="muted">No file yet.</p>
+    <div class="actions">
+      <button type="button" id="add-file" class="action">Add file</button>
+      <button type="button" id="export" class="action" disabled title="advisory overlay PNG, not forensic proof">Export</button>
+    </div>
   </section>
 
   <section class="modes" id="modes">

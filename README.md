@@ -23,7 +23,7 @@ python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
 spectrallock ui
 ```
 
-Open http://127.0.0.1:8861 (loopback only). No CDN, no telemetry. Dark gold.
+Open http://127.0.0.1:8861 (loopback only). **Add file** picks a photograph; **Export** downloads the current overlay PNG (advisory, not forensic). No CDN, no telemetry. Dark gold.
 
 Counted download: [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/)
 

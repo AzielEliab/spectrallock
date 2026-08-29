@@ -18,3 +18,5 @@ Serves gzip via `ASSETS.fetch`, `Cache-Control: private, no-store`.
 Banner: not a lab spectrometer, not real UV hardware, not forensic proof.
 
 CORS `*` on API routes.
+
+KV id in wrangler.toml: `0b998ba1bbec4eedadcf19e23f9995ce`. Binding name MUST stay `DOWNLOADS` (not `SPECTRALLOCK_DOWNLOADS` — that is the Cloudflare namespace title).

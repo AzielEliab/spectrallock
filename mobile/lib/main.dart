@@ -1,7 +1,10 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'theme.dart';
 
@@ -90,13 +93,43 @@ class OverlayPage extends StatefulWidget {
 
 class _OverlayPageState extends State<OverlayPage> {
   final _picker = ImagePicker();
+  final _overlayKey = GlobalKey();
   XFile? _photo;
   String _mode = 'rosetta';
+  bool _exporting = false;
 
   Future<void> _pick() async {
     final shot = await _picker.pickImage(source: ImageSource.gallery);
     if (shot == null) return;
     setState(() => _photo = shot);
+  }
+
+  Future<void> _export() async {
+    if (_photo == null || _exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final ctx = _overlayKey.currentContext;
+      if (ctx == null) return;
+      final boundary = ctx.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 2);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (bytes == null) return;
+      final dir = await getApplicationDocumentsDirectory();
+      final file = File('${dir.path}/spectrallock-$_mode.png');
+      await file.writeAsBytes(bytes.buffer.asUint8List());
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Wrote ${file.path}. Color-matrix approximation — not the Python '
+            'pipeline, not forensic proof.',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
   }
 
   @override
@@ -109,7 +142,22 @@ class _OverlayPageState extends State<OverlayPage> {
         children: [
           const Text(limitation, style: TextStyle(color: kGold, height: 1.4)),
           const SizedBox(height: 12),
-          FilledButton(onPressed: _pick, child: const Text('Pick photograph')),
+          Row(
+            children: [
+              FilledButton(onPressed: _pick, child: const Text('Add file')),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: (_photo == null || _exporting) ? null : _export,
+                child: const Text('Export'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Export writes a PNG of the on-screen color-matrix approximation. '
+            'Full overlay export is the Python UI.',
+            style: TextStyle(color: kGoldDim, fontSize: 12, height: 1.35),
+          ),
           const SizedBox(height: 12),
           Wrap(
             spacing: 6,
@@ -132,9 +180,12 @@ class _OverlayPageState extends State<OverlayPage> {
             Text('After · $_mode (color-matrix approximation)',
                 style: const TextStyle(color: kGoldDim)),
             const SizedBox(height: 6),
-            ColorFiltered(
-              colorFilter: ColorFilter.matrix(matrix),
-              child: Image.file(File(_photo!.path), fit: BoxFit.contain),
+            RepaintBoundary(
+              key: _overlayKey,
+              child: ColorFiltered(
+                colorFilter: ColorFilter.matrix(matrix),
+                child: Image.file(File(_photo!.path), fit: BoxFit.contain),
+              ),
             ),
           ],
         ],
