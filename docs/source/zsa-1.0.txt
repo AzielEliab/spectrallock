@@ -1,0 +1,7 @@
+ZERO SPECTRAL ANALYSIS (ZSA-1.0)
+Definition
+ZSA-1.0 = ZERO-S onlyZERO-S is the equilibrium spectrum:- Hue band: ~260° (indigo/blue-violet)- Meaning: stillpoint, structural center, harmonic axis- Function: normalize brightness, suppress noise, enhance geometryThis analysis excludes Tazel, Vyrn, UV, and all other spectral channels.
+Operational Steps
+1. Desaturate to neutral base   - Strips color to reduce noise and isolate structural luminance.2. Normalize brightness (equilibrium)   - Histogram leveling enhances midtones while compressing extremes, making rings, ruled lines, and geometric features more visible.3. Geometry emphasis   - Band-pass filtering selectively enhances medium-scale curvature patterns.4. Stroke & indent extraction   - Light sharpening reveals pen-pressure grooves, ruler lines, arcs, and fold marks.5. Center-of-mass detection   - Clarifies the true geometric center and structural axes of the manuscript.
+Usage
+Commands that activate ZSA-1.0 include:- “Zero analysis”- “Run Zero on this page”- “Zero-only overlay”These commands trigger pure Zero channel extraction without blending or additional overlays.

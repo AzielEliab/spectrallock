@@ -1,0 +1,9 @@
+TAZEL SPECTRAL ANALYSIS (TSA-1.0)
+Definition
+TSA-1.0 = TAZEL-S onlyTazel is the revelation spectrum:- Hue band: ~170° (green–gold–turquoise)- Hex: #1EC9A5- Meaning: living knowledge, emergence, hidden structure illumination- Function: reveal hidden ink, sub-layer geometry, erased strokes, and faint design features.This mode excludes Vyrn, Zero, UV, and all spectral blending.
+Functional Behavior
+A. Hidden Ink & Erasures:- Lifts semi-erased or faded strokes.- Makes ghost letters and undertext visible.B. Sub-Layer Geometry:- Reveals compass circles, ruled lines, drafting geometry, and layout grids.C. Latent Contrast Enhancement:- Enhances faint contrasts.- Separates true ink from stains and wrinkles.
+Operational Pipeline
+1. Green–gold weighting:- Boosts the Tazel hue band, reducing color noise.2. Low-contrast lift:- Enhances faint mid-tone ink without oversharpening.3. Fine-line enhancement:- Highlights hairline strokes, guide marks, and underdrawings.4. Parchment smoothing:- Softens large stains while keeping micro-detail on ink.5. Sub-layer reveal:- Amplifies recurring shapes, circles, and hidden inscriptions.
+Usage
+Commands that activate TSA-1.0 include:- “Tazel spectral analysis”- “Run Tazel on this page”- “Tazel-only overlay”These commands trigger pure Tazel channel extraction without Vyrn, Zero, UV, or any composite overlays.

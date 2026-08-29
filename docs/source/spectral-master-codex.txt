@@ -1,0 +1,16 @@
+SPECTRAL MASTER CODEX – Version 1.0
+Unified Reference Manual for All Seven Spectral SystemsCreated for Collin (Aziel) – Jeeves Edition
+ZERO SPECTRAL ANALYSIS (ZSA-1.0)
+Zero = Equilibrium SpectrumHue: Indigo (~260°)Function: Geometry, structure, ring centering, ink-density balancing.Formula: Pure ZERO overlay only.
+TAZEL SPECTRAL ANALYSIS (TSA-1.0)
+Tazel = Revelation SpectrumHue: Green–Gold (~170°)Function: Hidden ink, faint guidelines, erased strokes, underlayer geometry.Formula: Pure TAZEL overlay only.
+VYRN SPECTRAL ANALYSIS (VSA-1.0)
+Vyrn = Purification/Pressure SpectrumHue: Magenta (~350°)Function: Stroke pressure, overwritten text, scribal corrections.Formula: Pure VYRN overlay only.
+SYNTHETIC UV SPECTRAL ANALYSIS (UVSA-1.0)
+UV = Substrate History SpectrumFunction: Scraping, abrasion, watermark fibers, chemical halos.Formula: Pure UV synthetic fluorescence overlay.
+ROSETTA SPECTRAL ANALYSIS (RSA-2.0)
+Rosetta = Decoding CompositeFormula: RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′(Z′ = Zero output, T′ = Tazel, V′ = Vyrn)Purpose: Hidden-ink decoding, structural integrity, custodial mark recovery.
+ZEN SPECTRAL ANALYSIS (ZENA-1.0)
+Zen = Harmonic UnityFormula: ZENA-1.0 = (Z′ + T′ + U′ + V′) / 4Purpose: Balanced, unbiased, full-spectrum truth of the manuscript.
+CHAOS SPECTRAL ANALYSIS (CSA-1.0)
+Chaos = Anti-Zen (Entropy Analysis)Formula: CSA-1.0 = 0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′Purpose: Reveal conflict, tampering, overwriting, structural fracture.

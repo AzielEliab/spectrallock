@@ -1,0 +1,80 @@
+"""CLI: version, modes, overlay --json, JPEG in, loopback UI."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from PIL import Image
+
+from spectrallock import LIMITATION, __version__
+from spectrallock.cli import main
+from spectrallock.engine import LIVE_MODES, synthetic_page
+from spectrallock.ui import LOOPBACK, make_server
+
+
+def test_cli_version(capsys) -> None:
+    assert main(["version"]) == 0
+    assert capsys.readouterr().out.strip() == f"spectrallock {__version__}"
+
+
+def test_cli_modes_lists_all_live(capsys) -> None:
+    assert main(["modes"]) == 0
+    out = capsys.readouterr().out
+    for mode in LIVE_MODES:
+        assert mode in out
+    assert "ZSA-1.0" in out
+    assert "TSA-1.0" in out
+    assert "VSA-1.0" in out
+    assert "UVSA-1.0" in out
+    assert "RSA-2.0" in out
+    assert "ZENA-1.0" in out
+    assert "CSA-1.0" in out
+    assert "BSA" in out
+    assert "live" in out
+    assert "reserved" not in out.lower() or "not" in LIMITATION.lower()
+
+
+def test_cli_modes_json(capsys) -> None:
+    assert main(["modes", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    ids = [m["id"] for m in payload["modes"]]
+    assert ids == list(LIVE_MODES)
+    assert all(m["status"] == "live" for m in payload["modes"])
+    assert "forensic" in payload["advisory"].lower()
+
+
+def test_cli_overlay_png_and_json(tmp_path: Path, capsys) -> None:
+    import numpy as np
+    from spectrallock.engine import save_rgb
+
+    src = tmp_path / "page.png"
+    dst = tmp_path / "out.png"
+    save_rgb(synthetic_page(32, 32), str(src))
+    assert main(["overlay", "--mode", "tazel", str(src), str(dst), "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "tazel"
+    assert payload["width"] == 32 and payload["height"] == 32
+    assert "com" in payload and "x" in payload["com"]
+    assert dst.is_file()
+    img = Image.open(dst)
+    assert img.size == (32, 32)
+
+
+def test_cli_overlay_jpeg_in(tmp_path: Path) -> None:
+    from spectrallock.engine import save_rgb
+
+    src = tmp_path / "page.jpg"
+    dst = tmp_path / "out.png"
+    arr = synthetic_page(40, 24)
+    Image.fromarray((arr * 255).astype("uint8"), "RGB").save(src, quality=90)
+    assert main(["overlay", "--mode", "zero", str(src), str(dst)]) == 0
+    assert dst.is_file()
+
+
+def test_ui_rejects_non_loopback() -> None:
+    import pytest
+
+    with pytest.raises(ValueError, match="loopback"):
+        make_server("0.0.0.0", 9)
+    assert "127.0.0.1" in LOOPBACK

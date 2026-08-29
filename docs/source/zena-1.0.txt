@@ -1,0 +1,11 @@
+ZEN SPECTRAL ANALYSIS (ZENA-1.0)
+Definition
+ZENA-1.0 = Equal-weight composite of the four core spectral channels:- Zero (Z′) — equilibrium geometry- Tazel (T′) — hidden-layer revelation- UV (U′) — substrate history & abrasion mapping- Vyrn (V′) — scribal intent & pressure contrastZen is the unified harmonic spectral overlay designed to produce a balanced, unbiased view of a manuscript. No channel dominates; all contribute equally.
+Zen Formula
+Let:  Z′ = Zero-only output (ZSA-1.0)  T′ = Tazel-only output (TSA-1.0)  U′ = UV-only output (UVSA-1.0)  V′ = Vyrn-only output (VSA-1.0)Then the Zen composite is:  ZENA-1.0 = (Z′ + T′ + U′ + V′) / 4Each component is normalized before merging, ensuring perfectly even contribution.
+Functional Behavior
+A. Unified Equilibrium:- Zero stabilizes geometry and layout.- Tazel reveals faint structures without overwhelming the image.- UV highlights substrate history and abrasion patterns.- Vyrn emphasizes intentional strokes and pressure.B. Balanced Revelation:- No single channel overpowers the others.- Produces the 'true face' of the page.- Shows structure, history, intent, and hidden layers simultaneously.
+Operational Pipeline
+1. Generate the four standalone channels: Z′, T′, U′, V′.2. Normalize each to an equal intensity scale.3. Combine all four with equal weighting: (Z′ + T′ + U′ + V′) / 4.4. Output the Zen composite image, harmonized across all layers.
+Usage
+Commands that activate Zen analysis:- "Zen analysis"- "Zen overlay"- "Run ZEN on this page"These commands produce the unified 4-channel ZENA-1.0 composite.

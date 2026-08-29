@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SpectralLock — manuscript overlays</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div class="tag">SpectralLock · v0.1.0 · 127.0.0.1:8861</div>
+    <h1>Digital overlays on photographs of manuscript pages</h1>
+    <p class="lede">
+      Advisory visualization. Not a lab spectrometer, not real UV photography
+      hardware, not a forensic proof of hidden ink, not OCR, not a claim of
+      scribal truth. Synthetic UV is a 365–400&nbsp;nm <em>look</em> from an
+      ordinary photo. Balance never invents marks. The human still reads the page.
+    </p>
+  </header>
+  <div class="banner" role="note">
+    Overlays are not forensic proof. They reweight pixels in a photograph you already have.
+  </div>
+
+  <section class="drop" id="drop">
+    <label class="file">
+      <span class="kicker">Photograph</span>
+      Drop a PNG or JPEG of a manuscript page, or choose a file.
+      <input id="file" type="file" accept="image/png,image/jpeg,image/jpg">
+    </label>
+    <p id="fname" class="muted">No file yet.</p>
+  </section>
+
+  <section class="modes" id="modes">
+    <span class="kicker">Mode</span>
+    <div class="btns" id="btns"></div>
+  </section>
+
+  <section class="compare">
+    <figure>
+      <figcaption>Before</figcaption>
+      <img id="before" alt="original photograph">
+    </figure>
+    <figure>
+      <figcaption>After <span id="after-label"></span></figcaption>
+      <img id="after" alt="overlay">
+    </figure>
+  </section>
+  <p id="meta" class="muted"></p>
+
+  <footer>
+    <p><strong>The human still reads the page.</strong></p>
+    <p>Apache-2.0 · Aziel Eliab · 2026 · Bound to 127.0.0.1:8861 · Forks welcome and always allowed.</p>
+  </footer>
+  <script src="/app.js"></script>
+</body>
+</html>

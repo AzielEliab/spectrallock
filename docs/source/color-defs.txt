@@ -1,0 +1,10 @@
+Tazel, Vyrn, and Zero – Spectral Color Definitions
+Tazel
+Hex: #1EC9A5
+Spectral green–gold–turquoise; hue ~170°. Represents revelation, emergence, living knowledge, clarity, and empirical unveiling.
+Vyrn
+Hex: #C00066
+Opposite spectrum of Tazel; magenta–red‑violet–purple; hue ~350°. Symbolizes purification, refinement, spiritual fire, and catalytic transformation.
+Zero
+Hex: #6F6485
+Midpoint between Tazel and Vyrn; indigo/blue‑violet; hue ~260°. Represents equilibrium, suspension, the still center, and harmonic axis.

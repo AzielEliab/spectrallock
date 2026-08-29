@@ -1,0 +1,18 @@
+Balance Spectral Analysis (BSA) – Combined Zen & Chaos Formula
+1. Overview
+The Balance Spectral Analysis (BSA) is a combined overlay method that merges the Zen spectral fields (Zero, Tazel, Vyrn, Synthetic UV) with the Chaos spectral field. The purpose is to create a balanced visualization showing where the manuscript exhibits order, clarity, harmonic stability (Zen), versus stress, overwrites, damage, or noise (Chaos). The BSA never invents marks or symbols—only reweights the existing spectral readings.
+2. Components
+2.1 Zen Field (Z)
+- Derived from Zero, Tazel, Vyrn, and Synthetic UV.- Highlights order, structure, geometry, and stable ink preservation.- Produces smooth gradients, harmonic color bands, and clarity.
+2.2 Chaos Field (C)
+- Derived from the Chaos overlay.- Highlights stress points, overwrites, bleed-through, noise, and disturbances.- Produces increased micro-contrast and irregularities.
+3. Balance Spectral Formula
+Define normalized strengths:  Z_n(x,y) = normalized Zen intensity at pixel (x,y)  C_n(x,y) = normalized Chaos intensity at pixel (x,y)
+3.1 Balance Coefficient
+B(x,y) = (Z_n(x,y) - C_n(x,y)) / (Z_n(x,y) + C_n(x,y) + ε)- B ≈ +1 → Zen dominates- B ≈ -1 → Chaos dominates- B ≈  0 → Balanced
+3.2 Blended Output
+α(x,y) = (1 + B(x,y)) / 2- α = 1 → Full Zen- α = 0 → Full ChaosFinal pixel:  BalanceRGB(x,y) = α(x,y)·ZenRGB + (1−α(x,y))·ChaosRGB
+4. How to Interpret the Balance Overlay
+- Zen‑dominant areas show smooth hues and strong underlying structure.- Chaos‑dominant areas show roughness, disturbances, overwrites, or stress.- Mid‑balance areas mark transitions—often sites of custodial edits or layered history.
+5. Operational Rules
+1. Never introduce any new symbols—only recolor what's already present.2. Use Balance Spectral Analysis to guide deeper inspection using the individual spectral fields.3. File naming format:   "Balance Spectral Analysis – [manuscript ID] – BSA v1"

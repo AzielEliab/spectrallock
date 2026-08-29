@@ -1,0 +1,11 @@
+CHAOS SPECTRAL ANALYSIS (CSA-1.0)
+Definition
+CSA-1.0 is the anti-equilibrium spectral composite designed as the opposite of Zen Spectral Analysis.While Zen stabilizes and balances the manuscript’s layers, CHAOS amplifies entropy, instability,fracture lines, overwritten edits, and damaged substrate signals.It uses all four core channels—Zero, Tazel, UV, and Vyrn—but in an inverse weighting designed tomaximize conflict, exposure, and structural breakdown.
+Chaos Formula
+Let:  Z′ = Zero-only output (ZSA-1.0)  T′ = Tazel-only output (TSA-1.0)  U′ = UV-only output (UVSA-1.0)  V′ = Vyrn-only output (VSA-1.0)Then the Chaos composite is:  CSA-1.0 = 0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′This weighting amplifies the most unstable spectra (UV and Vyrn), while reducing stabilizing forces(Zero). Tazel contributes sub-layer instability and fractured geometry.
+Functional Behavior
+A. Entropy Enhancement:- UV dominance exposes damage, scraping, water infiltration, fiber disruption, and abrasion trails.- Vyrn emphasizes scribal conflict: overwriting, pressure spikes, hesitation strokes.B. Structural Distortion:- Tazel partially reveals undergeometry but breaks alignment by mixing faint strokes with high-noise.- Zero is suppressed, preventing any stabilizing geometric correction.C. Corruption & Tampering Detection:- Highlights erased instructions, overwritten doctrine, multi-hand edits, force-scraped palimpsests.- Chaos is ideal for identifying contested pages, alterations, or adversarial redactions.
+Operational Pipeline
+1. Compute Z′, T′, U′, V′ individually using the four standalone spectral systems.2. Normalize each channel to the same scale.3. Suppress Zero (only 5% influence) to eliminate equilibrium.4. Amplify UV and Vyrn (40% and 35%) to heighten entropy and scribal conflict.5. Add Tazel (20%) to introduce hidden-layer instability.6. Produce the final Chaos composite image: CSA-1.0.
+Usage
+Commands that activate Chaos analysis:- "Chaos analysis"- "Chaos spectrum"- "Run CSA on this page"- "Chaos overlay"When triggered, the system generates the high-entropy composite using CSA-1.0 only.

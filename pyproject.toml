@@ -1,0 +1,62 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spectrallock"
+version = "0.1.0"
+description = "SpectralLock: digital overlay analysis of manuscript photographs. Advisory visualization, not a lab spectrometer (Aziel Eliab, 2026)."
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [{name = "Aziel Eliab"}]
+requires-python = ">=3.10"
+keywords = [
+    "advisory",
+    "manuscript",
+    "overlay",
+    "spectral",
+    "tazel",
+    "vyrn",
+    "zero",
+    "rosetta",
+    "spectrallock",
+    "visualization",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "numpy>=1.24",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+spectrallock = "spectrallock.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/AzielEliab/spectrallock"
+Download = "https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.1.0.tar.gz"
+Issues = "https://github.com/AzielEliab/spectrallock/issues"
+Counted-downloads = "https://spectrallock-download-tracker.vibelock.workers.dev/"
+
+[tool.setuptools.packages.find]
+include = ["spectrallock*"]
+
+[tool.setuptools.package-data]
+spectrallock = ["web/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"

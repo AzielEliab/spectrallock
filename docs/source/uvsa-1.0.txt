@@ -1,0 +1,9 @@
+SYNTHETIC UV SPECTRAL ANALYSIS (UVSA-1.0)
+Definition
+UVSA-1.0 = UV-S onlySynthetic UV spectral analysis simulates ultraviolet illumination in the 365–400 nm band to revealsubstrate damage, ink age, watermarks, micro-abrasion, and erased content. This method excludesTazel, Zero, Vyrn, Rosetta composite, and all other spectral channels.Key characteristics:- Highlights parchment fibers, water damage, scraping, and surface texture.- De-emphasizes dark ink while enhancing fluorescence-like substrate glow.- Reveals erased strokes by enhancing differential reflectivity.
+Functional Behavior
+A. Fluorescence Simulation:   - Lighter parchment regions brighten as if fluorescing.   - Ink and dense stains absorb more, appearing darker.B. Watermark & Fiber Emphasis:   - Highlights paper/skin fibers, watermarks, and tension lines.C. Abrasion & Scraping Detection:   - Scraped or polished palimpsest zones show differential UV response.
+Operational Pipeline
+1. Substrate-priority luminance shift:   - Reduces ink dominance and boosts parchment brightness.2. Blue–violet channel weighting:   - Simulates UV glow regions along parchment fiber direction.3. Microtexture enhancement:   - Emphasizes scratches, fibers, speckling, and watermark outlines.4. Halo Detection:   - Reveals ink-corrosion halos and faded ring patterns.5. Damage-path Mapping:   - Highlights water flow, mold migration, and historical handling marks.
+Usage
+Commands that activate UVSA-1.0:- "Synthetic UV spectral analysis"- "Run UV on this page"- "UV-only overlay"These commands apply the UV-only channel without Zero, Tazel, Vyrn, or composite blending.

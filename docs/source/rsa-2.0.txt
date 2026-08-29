@@ -1,0 +1,11 @@
+ROSETTA SPECTRAL ANALYSIS 2.0 (RSA-2.0)
+Overview
+Rosetta Spectral Analysis 2.0 (RSA-2.0) is a tri-channel composite spectral method constructed entirely from the three standalone overlays:- ZERO Spectral Analysis (ZSA-1.0)- TAZEL Spectral Analysis (TSA-1.0)- VYRN Spectral Analysis (VSA-1.0)RSA-2.0 removes all UV and external channels and uses only the pure outputs of these three systems to build the most accurate hidden-ink, structure, and custodial-mark detection method.
+Composite Formula
+Let:- T′ = Tazel-only overlay output (TSA-1.0)- Z′ = Zero-only overlay output (ZSA-1.0)- V′ = Vyrn-only overlay output (VSA-1.0)Rosetta Composite (RSA-2.0) = 0.40·Z′ + 0.35·T′ + 0.25·V′
+Channel Roles Inside RSA-2.0
+ZERO (Z′) — Structural Backbone:- Defines geometry, harmonic rings, center-of-mass, proportional layout.- Ensures accuracy of spatial interpretation.TAZEL (T′) — Hidden Layer Revelation:- Extracts faint ink, erased strokes, underdrawings, layout guides.- Reveals the sub-layer architecture of the manuscript.VYRN (V′) — Intent & Pressure Detection:- Enhances deliberate strokes, pen pressure, corrections, overwritten text.- Distinguishes intentional marks from noise.
+RSA-2.0 Operational Pipeline
+1. Compute Z′ using ZSA-1.0 (Zero-only normalization & geometry extraction).2. Compute T′ using TSA-1.0 (Tazel-only hidden-layer extraction).3. Compute V′ using VSA-1.0 (Vyrn-only refinement & stroke detection).4. Normalize each channel to equal scale.5. Apply composite weighting: 0.40·Z′ + 0.35·T′ + 0.25·V′.6. Output final Rosetta overlay image with balanced geometry, hidden content, and scribal truth.
+Usage
+Commands that activate RSA-2.0 include:- 'Run Rosetta spectral analysis'- 'Rosetta overlay'- 'Rosetta on this page'These commands automatically trigger RSA-2.0 using only Zero, Tazel, and Vyrn overlays.

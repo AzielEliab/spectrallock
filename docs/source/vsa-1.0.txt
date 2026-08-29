@@ -1,0 +1,9 @@
+VYRN SPECTRAL ANALYSIS (VSA-1.0)
+Definition
+VSA-1.0 = VYRN-S onlyVYRN-S is the purification and refinement spectrum:- Hue band: ~350° (magenta/red-violet/purple)- Hex: #C00066- Meaning: fire, refinement, catalytic pressure, scribal truth- Function: isolate intentional ink strokes, reveal erased writing, enhance pressure grooves, and burn away parchment noise.This analysis excludes Tazel, Zero, UV, and all blend modes. It is pure Vyrn only.
+Functional Behavior
+A. Noise-Burn:- Suppresses mold, parchment stains, oil marks, water damage, fading, and bleed-through.- Preserves all intentional ink signal.B. Stroke-Pressure Enhancement:- Highlights pen-pressure grooves.- Reveals scribal habits, corrections, overwritten letters, and faint strokes.C. Intentional Mark Isolation:- Separates ink vs accidental smears.- Distinguishes geometric lines from parchment wrinkles.- Reveals sigils, marginal glints, erased characters.
+Operational Pipeline
+1. Color-weight shift:- Boost magenta-violet values; reduce green/cyan/yellow channels.2. Thermal signature extraction:- High-carbon ink glows brighter; damage remains dark.3. Edge-pressure enhancement:- Increases boundary contrast of all stroke edges.4. Weak-signal amplification:- Reveals strokes at 2–5% opacity.- Shows guide lines, faint symbols, marginal indicators.5. Purification fade:- Background is washed out; intentional writing stands forward.
+Usage
+Commands activating VSA-1.0 include:- "Run Vyrn spectral analysis"- "Vyrn-only overlay"- "Apply Vyrn to this image"These trigger pure Vyrn channel extraction without Tazel, Zero, UV, or composite blending.
