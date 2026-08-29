@@ -337,6 +337,12 @@ export default {
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
 
+    if (request.method === "HEAD") {
+      const getReq = new Request(request.url, { method: "GET", headers: request.headers });
+      const res = await this.fetch(getReq, env);
+      return new Response(null, { status: res.status, headers: res.headers });
+    }
+
     const runtime = await handleRuntime(request, url);
     if (runtime) return runtime;
 
