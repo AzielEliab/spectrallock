@@ -5,13 +5,11 @@ description: Use when calling SpectralLock hosted /v1 or installing the local pa
 
 # SpectralLock
 
-Advisory digital overlays on photographs of manuscript pages. Not a lab spectrometer. Not real UV photography hardware. Not forensic ink proof. The human still reads the page. Author: Aziel Eliab.
+Digital overlay analysis of manuscript photographs. Advisory visualization. Author: **Aziel Eliab**.
 
-**THIS IS:** advisory digital overlays on photographs of manuscript pages.
+**THIS IS:** digital overlay analysis of manuscript photographs.
 
-**THIS IS NOT:** a lab spectrometer, real UV photography hardware, forensic ink proof, or OCR truth. The human still reads the page.
-
-Author: **Aziel Eliab**. Forks are welcome and always allowed. Apache-2.0.
+**THIS IS NOT:** a certified forensic instrument, a court exhibit, or a claim of authenticity. Hosted `/v1` does not increment downloads or views.
 
 Always send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.
 
@@ -24,12 +22,9 @@ Always send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent
 
 Ops (do **not** increment downloads or views):
 
-| Method | Path | What |
-|--------|------|------|
-| GET | `/v1/health` | Liveness. Does not increment downloads. |
-| GET | `/v1/skill` | This markdown. Does not increment downloads. |
-| GET | `/v1/modes` | List overlay modes. |
-| POST | `/v1/overlay` | Advisory overlay on a posted PNG (base64). Not a spectrometer. |
+- `GET /v1/health` — liveness
+- `GET /v1/skill` — this file
+- Product POSTs listed in OpenAPI
 
 Grok: import OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.
 
@@ -38,7 +33,6 @@ Grok: import OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.
 ```bash
 curl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health
 curl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill
-curl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/modes
 ```
 
 ## Local (after one-click install)
@@ -46,6 +40,7 @@ curl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.
 ```bash
 curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash
 spectrallock ui
+spectrallock doctor
 ```
 
 Then open http://127.0.0.1:8861 (loopback only).
