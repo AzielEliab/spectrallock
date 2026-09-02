@@ -1,6 +1,10 @@
 import { LIMITATION, MODES, VERSION, overlayFromB64 } from "./overlay.js";
+const EXAMPLE_PAYLOAD = {
+  "mode": "rosetta",
+  "note": "Hosted overlay is a 256px preview, not a spectrometer."
+};
 
-const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Author Aziel Eliab.\n---\n\n# SpectralLock\n\nAdvisory digital overlays on photographs of manuscript pages. Not a lab spectrometer. Not real UV photography hardware. Not forensic ink proof. The human still reads the page. Author: Aziel Eliab.\n\n**THIS IS:** advisory digital overlays on photographs of manuscript pages.\n\n**THIS IS NOT:** a lab spectrometer, real UV photography hardware, forensic ink proof, or OCR truth. The human still reads the page.\n\nAuthor: **Aziel Eliab**. Forks are welcome and always allowed. Apache-2.0.\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List overlay modes. |\n| POST | `/v1/overlay` | Advisory overlay on a posted PNG (base64). Not a spectrometer. |\n\nGrok: import OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/modes\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n";
+const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Author Aziel Eliab.\n---\n\n# SpectralLock\n\nAdvisory digital overlays on photographs of manuscript pages. Not a lab spectrometer. Not real UV photography hardware. Not forensic ink proof. The human still reads the page. Author: Aziel Eliab.\n\n**THIS IS:** advisory digital overlays on photographs of manuscript pages.\n\n**THIS IS NOT:** a lab spectrometer, real UV photography hardware, forensic ink proof, or OCR truth. The human still reads the page.\n\nAuthor: **Aziel Eliab**. Forks are welcome and always allowed. Apache-2.0.\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List overlay modes. |\n| POST | `/v1/overlay` | Advisory overlay on a posted PNG (base64). Not a spectrometer. |\n\nGrok: import OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/modes\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n\n## Catalog + local UI\n\nAuthor: **Aziel Eliab**. Honest scope: Overlay preview modes. 256px hosted preview, not a spectrometer, not forensic.\n\n- Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- This Worker skill: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`\n\nLocal UI: **Import JSON file** (`type=file`) and **Export JSON**. Then `spectrallock doctor`.\n\nGrok: import catalog or Worker OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.\n";
 /**
  * SpectralLock download tracker (Cloudflare Worker).
  *
@@ -424,6 +428,7 @@ function openapiSpec(request) {
     },
     servers: [{ url: origin }],
     paths: {
+            "/v1/example": { get: { operationId: "spectrallockExample", summary: "Sample JSON payload. Does not increment downloads.", responses: { "200": { description: "OK" } } } },
       "/v1/health": { get: { operationId: "spectrallock_health", summary: "Liveness. Does not increment download KV.", responses: { "200": { description: "ok" } } } },
       "/v1/modes": { get: { operationId: "spectrallock_modes", summary: "List live overlay modes (zero, tazel, vyrn, uv, rosetta, zen, chaos, balance).", responses: { "200": { description: "modes" } } } },
       "/v1/overlay": {
@@ -470,7 +475,7 @@ async function handleRuntime(request, url) {
   const path = url.pathname.replace(/\/+$/, "") || "/";
   if (path === "/v1/health" && request.method === "GET") {
     return json({
-      ok: true,
+      ok: true, author: "Aziel Eliab",
       product: "spectrallock",
       version: VERSION,
       runtime: true,
@@ -481,6 +486,16 @@ async function handleRuntime(request, url) {
       limitation: LIMITATION,
     });
   }
+  if ((path === "/v1/example" || path === "/v1/example/") && (request.method === "GET" || request.method === "HEAD")) {
+    return json({
+      ok: true,
+      product: "spectrallock",
+      author: "Aziel Eliab",
+      example: EXAMPLE_PAYLOAD,
+      note: "Sample payload only. Does not increment downloads.",
+    });
+  }
+
 
   if (path === "/v1/skill" && request.method === "GET") {
     return new Response(SKILL_MARKDOWN, {

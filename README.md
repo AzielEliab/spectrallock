@@ -159,6 +159,15 @@ Isolated counter: Worker `spectrallock-download-tracker`, project `spectrallock`
 KV `SPECTRALLOCK_DOWNLOADS`. `totalKey` `spectrallock|__total__`. `/download`
 serves gzip from Worker assets (`private, no-store`). No 302 to GitHub.
 
+## Use with Grok / ChatGPT / Venice
+
+Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json
+Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`
+This Worker skill: https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill
+This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json
+
+Grok: import the catalog or Worker OpenAPI as a custom tool. ChatGPT: GPT Actions (no auth). Venice: HTTP tools. Always send `User-Agent: Mozilla/5.0`.
+
 ## Cite this
 
 Aziel Eliab. SpectralLock. https://github.com/AzielEliab/spectrallock. https://spectrallock-download-tracker.vibelock.workers.dev.
