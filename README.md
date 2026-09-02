@@ -16,6 +16,40 @@ invents marks — it only reweights existing readings.
 
 **Forks are welcome and always allowed.**
 
+
+## One-click install
+
+```bash
+curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash
+```
+
+The script curls the **counted** tarball from this project's Worker
+(`/download`, User-Agent `Mozilla/5.0`), extracts, makes a venv, and
+`pip install -e .`. Then run `spectrallock ui`.
+
+Or tap **Download** / **One-click install** on the Worker homepage
+(a 6th-grader can tap it):
+https://spectrallock-download-tracker.vibelock.workers.dev/
+
+## Counted download (Cloudflare Worker)
+
+**This is the counted download.** GitHub releases exist as a mirror.
+The Worker serves the gzip itself (HTTP 200, no 302 to GitHub).
+
+# → [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/) ←
+
+Direct tarball (also counted):
+[spectrallock-0.2.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz)
+
+- Live count JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/stats](https://spectrallock-download-tracker.vibelock.workers.dev/stats)
+- OpenAPI: [https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json](https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json)
+- Skill: [https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill](https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill)
+- One-click install: [https://spectrallock-download-tracker.vibelock.workers.dev/install.sh](https://spectrallock-download-tracker.vibelock.workers.dev/install.sh)
+- GitHub: [https://github.com/AzielEliab/spectrallock](https://github.com/AzielEliab/spectrallock)
+
+Isolated counter: Worker `spectrallock-download-tracker`, KV `SPECTRALLOCK_DOWNLOADS`. Not mixed with any other product. `/v1` does not increment downloads.
+
+
 ## Quick start
 
 1. Install (Python 3.10+):
