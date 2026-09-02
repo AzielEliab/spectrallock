@@ -5,7 +5,7 @@ Digital **overlays on photographs** of manuscript pages.
 **Author:** Aziel Eliab
 **Date:** 2026
 **License:** [Apache-2.0](LICENSE)
-**Version:** 0.1.0
+**Version:** 0.2.0
 
 > Advisory visualization. The human still reads the page.
 
@@ -18,16 +18,26 @@ invents marks — it only reweights existing readings.
 
 ## Quick start
 
-```bash
-python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
-spectrallock ui
-```
+1. Install (Python 3.10+):
 
-Open http://127.0.0.1:8861 (loopback only). **Add file** picks a photograph; **Export** downloads the current overlay PNG (advisory, not forensic). No CDN, no telemetry. Dark gold.
+   ```bash
+   python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
+   ```
+
+2. Open the local app:
+
+   ```bash
+   spectrallock ui
+   ```
+
+3. In the browser at http://127.0.0.1:8861 (loopback only): tap **Add file**
+   (or **Sample page**), pick a mode, then **Export**. Optional: **Verify**
+   shows a receipt (mode, paper, SHA-256 in/out, size). Advisory overlay,
+   not forensic. No CDN, no telemetry. Dark gold.
 
 Counted download: [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/)
 
-Direct tarball: [spectrallock-0.1.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.1.0.tar.gz)
+Direct tarball: [spectrallock-0.2.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz)
 
 Papers: [docs/source/](docs/source/) · spec: [docs/whitepaper.md](docs/whitepaper.md)
 
@@ -45,7 +55,7 @@ stand in for a conservator.
 The hosted Worker `/v1/overlay` is a **simplified preview** (longest side
 capped at 256 px, PNG in/out). The full pipeline is this Python package.
 
-## Modes (all live in 0.1.0)
+## Modes (all live in 0.2.0)
 
 | id | paper | formula / action |
 |----|-------|------------------|
@@ -57,6 +67,9 @@ capped at 256 px, PNG in/out). The full pipeline is this Python package.
 | `zen` | ZENA-1.0 | `(Z′ + T′ + U′ + V′) / 4` after normalize. |
 | `chaos` | CSA-1.0 | `0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′` after normalize. |
 | `balance` | BSA | `B=(Zn−Cn)/(Zn+Cn+ε)`, `α=(1+B)/2`, `RGB = α·Zen + (1−α)·Chaos`. Never invents marks. |
+
+Simple UI labels (kid-plain): clearer lines, lift green-gold, lift magenta,
+fake UV look, mix of three, even mix of four, strong mix, blend two mixes.
 
 ## Install
 
@@ -73,20 +86,24 @@ python -m pytest -q
 
 ```bash
 spectrallock version
+spectrallock doctor
 spectrallock modes
 spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance IN.png OUT.png
 spectrallock overlay --mode tazel page.jpg out.png --json
+spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
 spectrallock ui          # 127.0.0.1:8861
 spectrallock serve       # alias for ui
 ```
 
-PNG or JPEG in. `--json` prints mode, center-of-mass, sizes.
+PNG or JPEG in. `--verify` prints mode, paper, sha256 in/out, size.
+`--sidecar` writes a JSON next to the overlay PNG (mode, hashes, limitation).
+`SPECTRALLOCK_DEBUG=1` traces to stderr (never image bytes).
 
 ## iPhone & Android
 
 Flutter sources: [`mobile/`](mobile/). Application id `com.azieeliab.spectrallock`.
 Offline color-matrix approximation of the hues. Not forensic. Not the
-full Python pipeline.
+full Python pipeline. **Add file** + **Export**.
 
 ```bash
 cd mobile

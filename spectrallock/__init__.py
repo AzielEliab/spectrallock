@@ -15,14 +15,19 @@ from spectrallock.engine import (
     LIMITATION,
     LIVE_MODES,
     MODES,
+    PLAIN_NOT_IMAGE,
     ROSETTA_WEIGHTS,
     ZEN_WEIGHTS,
     OverlayResult,
     apply_mode,
     list_modes,
+    make_receipt,
+    png_bytes,
+    sha256_hex,
+    write_sidecar,
 )
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "Aziel Eliab"
 __all__ = [
     "LIMITATION",
@@ -34,5 +39,10 @@ __all__ = [
     "OverlayResult",
     "apply_mode",
     "list_modes",
+    "make_receipt",
+    "png_bytes",
+    "sha256_hex",
+    "write_sidecar",
+    "PLAIN_NOT_IMAGE",
     "__version__",
 ]

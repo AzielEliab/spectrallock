@@ -2,7 +2,7 @@ import { LIMITATION, MODES, VERSION, overlayFromB64 } from "./overlay.js";
 /**
  * SpectralLock download tracker (Cloudflare Worker).
  *
- * GET  /download?asset=spectrallock-0.1.0.tar.gz
+ * GET  /download?asset=spectrallock-0.2.0.tar.gz
  *      increments KV, serves the tarball via env.ASSETS.fetch
  *      (does not 302 to GitHub)
  * GET  /stats   JSON totals + per-repo + per-branch breakdown
@@ -18,7 +18,7 @@ import { LIMITATION, MODES, VERSION, overlayFromB64 } from "./overlay.js";
  */
 
 const PROJECT = "spectrallock";
-const DEFAULT_ASSET = "spectrallock-0.1.0.tar.gz";
+const DEFAULT_ASSET = "spectrallock-0.2.0.tar.gz";
 const DEFAULT_OWNER = "AzielEliab";
 const DEFAULT_REPO = "spectrallock";
 const DEFAULT_BRANCH = "main";
@@ -206,7 +206,7 @@ async function indexHtml(env) {
   <p class="motto">Digital overlays on photographs of manuscript pages. Advisory, not a spectrometer.</p>
   <div class="card">
     <p class="count">${n}<span> downloads of this project</span></p>
-    <a class="dl" href="/download?asset=spectrallock-0.1.0.tar.gz">Download spectrallock-0.1.0.tar.gz — ${n} counted</a>
+    <a class="dl" href="/download?asset=spectrallock-0.2.0.tar.gz">Download spectrallock-0.2.0.tar.gz — ${n} counted</a>
     <p class="meta">The count ticks on this click. Nobody reports anything. Forks using this same link are counted automatically.</p>
     <p class="iso">Isolated counter: Worker <code>spectrallock-download-tracker</code>, project <code>spectrallock</code>, KV <code>SPECTRALLOCK_DOWNLOADS</code>. Not mixed with any other product. /v1 does not increment downloads.</p>
     <p class="limit">${LIMITATION}</p>

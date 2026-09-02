@@ -160,3 +160,15 @@ def test_center_of_mass_on_bright_corner() -> None:
     result = apply_mode(img, "zero")
     assert result.com[0] < 8
     assert result.com[1] < 8
+
+
+
+def test_apply_mode_no_nan_on_bad_pixels() -> None:
+    img = synthetic_page(24, 24)
+    img[0, 0, 0] = np.nan
+    img[1, 1, 1] = np.inf
+    for mode in LIVE_MODES:
+        result = apply_mode(img, mode)
+        assert np.isfinite(result.rgb).all()
+        assert 0.0 <= float(result.rgb.min())
+        assert float(result.rgb.max()) <= 1.0 + 1e-5

@@ -8,11 +8,16 @@ invents marks — it only reweights existing readings.
 
 from __future__ import annotations
 
+import hashlib
+import io
+import json
 from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
 from PIL import Image, ImageFilter
+
+from spectrallock.debug import debug
 
 __all__ = [
     "LIMITATION",
@@ -32,6 +37,14 @@ __all__ = [
     "list_modes",
     "load_rgb",
     "save_rgb",
+    "png_bytes",
+    "sha256_hex",
+    "make_receipt",
+    "write_sidecar",
+    "load_rgb_bytes",
+    "finite01",
+    "PLAIN_NOT_IMAGE",
+    "MAX_IMAGE_PIXELS",
     "luminance",
     "normalize01",
     "center_of_mass",
@@ -66,6 +79,9 @@ TAZEL_RGB = (0x1E / 255.0, 0xC9 / 255.0, 0xA5 / 255.0)
 VYRN_RGB = (0xC0 / 255.0, 0x00 / 255.0, 0x66 / 255.0)
 ZERO_RGB = (0x6F / 255.0, 0x64 / 255.0, 0x85 / 255.0)
 EPS = 1e-6
+PLAIN_NOT_IMAGE = "That file is not a picture. Use a PNG or JPEG photo."
+MAX_IMAGE_PIXELS = 40_000_000
+ALLOWED_FORMATS = frozenset({"PNG", "JPEG"})
 
 ROSETTA_WEIGHTS = {"zero": 0.40, "tazel": 0.35, "vyrn": 0.25}
 ZEN_WEIGHTS = {"zero": 0.25, "tazel": 0.25, "uv": 0.25, "vyrn": 0.25}
@@ -90,21 +106,117 @@ class OverlayResult:
             "height": self.height,
             "paper": self.paper,
             "product": "spectrallock",
-            "version": "0.1.0",
+            "version": _package_version(),
             "advisory": LIMITATION,
         }
 
 
-def load_rgb(path: str) -> np.ndarray:
-    img = Image.open(path)
+def _package_version() -> str:
+    from spectrallock import __version__
+
+    return __version__
+
+
+def finite01(arr: np.ndarray) -> np.ndarray:
+    """Replace NaN/Inf, clip to 0–1. Never crash on a bad numeric pixel."""
+    a = np.nan_to_num(np.asarray(arr, dtype=np.float32), nan=0.0, posinf=1.0, neginf=0.0)
+    return np.clip(a, 0.0, 1.0).astype(np.float32)
+
+
+def sha256_hex(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def png_bytes(rgb: np.ndarray) -> bytes:
+    arr = np.clip(np.round(finite01(rgb) * 255.0), 0, 255).astype(np.uint8)
+    buf = io.BytesIO()
+    Image.fromarray(arr, "RGB").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def make_receipt(
+    *,
+    mode: str,
+    paper: str,
+    sha256_in: str,
+    sha256_out: str,
+    size_in: int,
+    size_out: int,
+    width: int,
+    height: int,
+) -> dict:
+    return {
+        "product": "spectrallock",
+        "version": _package_version(),
+        "mode": mode,
+        "paper": paper,
+        "sha256_in": sha256_in,
+        "sha256_out": sha256_out,
+        "size_in": int(size_in),
+        "size_out": int(size_out),
+        "width": int(width),
+        "height": int(height),
+        "limitation": LIMITATION,
+        "advisory": LIMITATION,
+        "not_a_spectrometer": True,
+        "not_forensic_proof": True,
+    }
+
+
+def write_sidecar(png_path: str, payload: dict) -> str:
+    lower = png_path.lower()
+    if lower.endswith(".png") or lower.endswith(".jpg") or lower.endswith(".jpeg"):
+        dest = png_path[: png_path.rfind(".")] + ".json"
+    else:
+        dest = png_path + ".json"
+    with open(dest, "w", encoding="utf-8") as fh:
+        json.dump(payload, fh, indent=2, ensure_ascii=False)
+        fh.write("\n")
+    debug(f"sidecar path={dest} keys={sorted(payload)}")
+    return dest
+
+
+def _open_rgb_image(img: Image.Image) -> np.ndarray:
+    fmt = (img.format or "").upper()
+    if fmt not in ALLOWED_FORMATS:
+        raise ValueError(PLAIN_NOT_IMAGE)
+    width, height = img.size
+    if width <= 0 or height <= 0 or (width * height) > MAX_IMAGE_PIXELS:
+        raise ValueError("That picture is too big to open safely.")
     if img.mode != "RGB":
         img = img.convert("RGB")
-    return np.asarray(img, dtype=np.float32) / 255.0
+    return finite01(np.asarray(img, dtype=np.float32) / 255.0)
+
+
+def load_rgb(path: str) -> np.ndarray:
+    try:
+        img = Image.open(path)
+        img.load()
+    except Exception as exc:  # noqa: BLE001
+        debug(f"load_rgb failed type={type(exc).__name__}")
+        raise ValueError(PLAIN_NOT_IMAGE) from exc
+    rgb = _open_rgb_image(img)
+    debug(f"load_rgb format={(img.format or '').upper()} size={rgb.shape[1]}x{rgb.shape[0]}")
+    return rgb
+
+
+def load_rgb_bytes(raw: bytes) -> np.ndarray:
+    if not raw:
+        raise ValueError("No picture in the upload.")
+    try:
+        img = Image.open(io.BytesIO(raw))
+        img.load()
+    except Exception as exc:  # noqa: BLE001
+        debug(f"load_rgb_bytes failed type={type(exc).__name__} nbytes={len(raw)}")
+        raise ValueError(PLAIN_NOT_IMAGE) from exc
+    rgb = _open_rgb_image(img)
+    debug(f"load_rgb_bytes format={(img.format or '').upper()} size={rgb.shape[1]}x{rgb.shape[0]} nbytes={len(raw)}")
+    return rgb
 
 
 def save_rgb(rgb: np.ndarray, path: str) -> None:
-    arr = np.clip(np.round(rgb * 255.0), 0, 255).astype(np.uint8)
-    Image.fromarray(arr, "RGB").save(path)
+    with open(path, "wb") as fh:
+        fh.write(png_bytes(rgb))
 
 
 def luminance(rgb: np.ndarray) -> np.ndarray:
@@ -389,10 +501,11 @@ def synthetic_page(width: int = 96, height: int = 96) -> np.ndarray:
 
 
 def _pack(mode: str, rgb_out: np.ndarray, paper: str, channels=None, *, source: np.ndarray | None = None) -> OverlayResult:
-    lum = luminance(source if source is not None else rgb_out)
-    h, w = rgb_out.shape[:2]
+    clean = finite01(rgb_out)
+    h, w = clean.shape[:2]
+    lum = luminance(finite01(source) if source is not None else clean)
     return OverlayResult(
-        rgb=np.clip(rgb_out, 0.0, 1.0).astype(np.float32),
+        rgb=clean,
         mode=mode,
         com=center_of_mass(lum),
         width=w,
@@ -407,6 +520,8 @@ def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResul
     if key not in MODES:
         known = ", ".join(MODES)
         raise ValueError(f"unknown mode {mode!r}. Known: {known}")
+    rgb = finite01(rgb)
+    debug(f"apply_mode mode={key} size={rgb.shape[1]}x{rgb.shape[0]}")
     info = MODES[key]
     if key == "zero":
         return _pack(key, zero_overlay(rgb), info["paper"], source=rgb)
@@ -434,6 +549,8 @@ def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResul
 MODES: dict[str, dict] = {
     "zero": {
         "id": "zero",
+        "kid_label": "Clearer lines",
+        "kid_hint": "Grayscale that shows grooves already in the photo. Not hidden-ink magic.",
         "paper": "ZSA-1.0",
         "status": "live",
         "hue": ZERO_HUE,
@@ -442,6 +559,8 @@ MODES: dict[str, dict] = {
     },
     "tazel": {
         "id": "tazel",
+        "kid_label": "Lift green-gold",
+        "kid_hint": "Boosts turquoise marks that are already there.",
         "paper": "TSA-1.0",
         "status": "live",
         "hue": TAZEL_HUE,
@@ -450,6 +569,8 @@ MODES: dict[str, dict] = {
     },
     "vyrn": {
         "id": "vyrn",
+        "kid_label": "Lift magenta",
+        "kid_hint": "Boosts red-violet marks that are already there.",
         "paper": "VSA-1.0",
         "status": "live",
         "hue": VYRN_HUE,
@@ -458,6 +579,8 @@ MODES: dict[str, dict] = {
     },
     "uv": {
         "id": "uv",
+        "kid_label": "Fake UV look",
+        "kid_hint": "A 365–400 nm look from an ordinary photo. Not a real UV lamp.",
         "paper": "UVSA-1.0",
         "status": "live",
         "hue": None,
@@ -466,6 +589,8 @@ MODES: dict[str, dict] = {
     },
     "rosetta": {
         "id": "rosetta",
+        "kid_label": "Mix of three",
+        "kid_hint": "Blends zero, tazel, and vyrn. Advisory only.",
         "paper": "RSA-2.0",
         "status": "live",
         "hue": None,
@@ -474,6 +599,8 @@ MODES: dict[str, dict] = {
     },
     "zen": {
         "id": "zen",
+        "kid_label": "Even mix of four",
+        "kid_hint": "Averages four overlays. Advisory only.",
         "paper": "ZENA-1.0",
         "status": "live",
         "hue": None,
@@ -482,6 +609,8 @@ MODES: dict[str, dict] = {
     },
     "chaos": {
         "id": "chaos",
+        "kid_label": "Strong mix",
+        "kid_hint": "Heavier UV and magenta mix. Advisory only.",
         "paper": "CSA-1.0",
         "status": "live",
         "hue": None,
@@ -490,6 +619,8 @@ MODES: dict[str, dict] = {
     },
     "balance": {
         "id": "balance",
+        "kid_label": "Blend two mixes",
+        "kid_hint": "Mixes zen and chaos. Never invents marks.",
         "paper": "BSA",
         "status": "live",
         "hue": None,

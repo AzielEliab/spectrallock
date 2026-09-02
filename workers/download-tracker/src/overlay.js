@@ -11,7 +11,7 @@ export const LIMITATION =
   "Balance never invents marks. Hosted overlay is a simplified preview " +
   "(max 256 px); the full pipeline is the Python package. The human still reads the page.";
 
-export const VERSION = "0.1.0";
+export const VERSION = "0.2.0";
 export const MAX_SIDE = 256;
 export const LIVE = ["zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"];
 

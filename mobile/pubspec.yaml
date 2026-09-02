@@ -1,7 +1,7 @@
 name: spectrallock
 description: Advisory overlays on manuscript photographs. Not a spectrometer.
 publish_to: "none"
-version: 0.1.0+1
+version: 0.2.0+1
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

@@ -1,4 +1,4 @@
-# SpectralLock 0.1.0 — product spec
+# SpectralLock 0.2.0 — product spec
 
 **Author:** Aziel Eliab  
 **Date:** 2026  
@@ -32,7 +32,7 @@ The human still reads the page.
 | Vyrn | `#C00066` | ~350° | purification / pressure (magenta–red-violet) |
 | Zero | `#6F6485` | ~260° | equilibrium (indigo / blue-violet) |
 
-## Live engines (v1.0 / package 0.1.0)
+## Live engines (v1.0 / package 0.2.0)
 
 ### ZSA-1.0 `zero`
 
@@ -99,5 +99,8 @@ Python package.
 
 ## UI
 
-`spectrallock ui` binds **127.0.0.1:8861** only. Dark gold. Drop a photo,
-pick a mode, see before/after. Banner: overlays are not forensic proof.
+`spectrallock ui` binds **127.0.0.1:8861** only. Dark gold. Add file or
+Sample page, Simple/Advanced labels, overlay-only or side-by-side, Export
+PNG + JSON sidecar, Verify receipt (mode, paper, SHA-256 in/out, size).
+Banner: overlays are not forensic proof. `spectrallock doctor` checks all
+eight modes, no NaN, loopback, no telemetry.
