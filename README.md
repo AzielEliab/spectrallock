@@ -159,6 +159,16 @@ Isolated counter: Worker `spectrallock-download-tracker`, project `spectrallock`
 KV `SPECTRALLOCK_DOWNLOADS`. `totalKey` `spectrallock|__total__`. `/download`
 serves gzip from Worker assets (`private, no-store`). No 302 to GitHub.
 
+## Cite this
+
+Aziel Eliab. SpectralLock. https://github.com/AzielEliab/spectrallock. https://spectrallock-download-tracker.vibelock.workers.dev.
+
+- Catalog: https://aziel-runtime.vibelock.workers.dev/
+- Worker homepage: https://spectrallock-download-tracker.vibelock.workers.dev/
+- Counted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download
+- GitHub: https://github.com/AzielEliab/spectrallock
+- Citation JSON: https://spectrallock-download-tracker.vibelock.workers.dev/cite.json
+
 ## License
 
 Apache License 2.0. Copyright 2026 Aziel Eliab.
