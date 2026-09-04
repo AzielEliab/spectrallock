@@ -9,10 +9,10 @@ import 'package:path_provider/path_provider.dart';
 import 'theme.dart';
 
 const limitation =
-    'Advisory overlays on a photograph you pick. Not a lab spectrometer, '
-    'not real UV hardware, not forensic proof of hidden ink, not OCR, not '
-    'scribal truth. Synthetic UV is a look, not a lamp. Balance never invents '
-    'marks. The human still reads the page.';
+    'Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus '
+    'Library OCR (overlays, ink/page). Synthetic UV is a look, not a lamp. '
+    'Balance never invents marks. The human still reads the page. '
+    'Author Aziel Eliab.';
 
 /// Color-matrix approximations of the published hues. Not the Python pipeline.
 const matrices = <String, List<double>>{

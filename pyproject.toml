@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spectrallock"
-version = "0.2.0"
-description = "SpectralLock: digital overlay analysis of manuscript photographs. Advisory visualization, not a lab spectrometer (Aziel Eliab, 2026)."
+version = "0.3.0"
+description = "SpectralLock: Rosetta spectral analysis. Same lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab, 2026."
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [{name = "Aziel Eliab"}]
@@ -14,11 +14,12 @@ keywords = [
     "advisory",
     "manuscript",
     "overlay",
+    "ocr",
+    "rosetta",
     "spectral",
     "tazel",
     "vyrn",
     "zero",
-    "rosetta",
     "spectrallock",
     "visualization",
 ]
@@ -46,7 +47,7 @@ spectrallock = "spectrallock.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/AzielEliab/spectrallock"
-Download = "https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz"
+Download = "https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz"
 Issues = "https://github.com/AzielEliab/spectrallock/issues"
 Counted-downloads = "https://spectrallock-download-tracker.vibelock.workers.dev/"
 

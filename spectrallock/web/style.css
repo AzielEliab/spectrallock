@@ -1,4 +1,4 @@
-/* SpectralLock local UI. Dark gold. No CDN. Advisory overlay, not proof. */
+/* SpectralLock local UI. Rosetta spectral analysis. Dark gold. No CDN. */
 :root {
   --bg: #0b0b0b;
   --surface: #141414;
@@ -38,6 +38,8 @@ header .tag {
   letter-spacing: 0.12em;
 }
 header p.lede { margin: 0.8rem 0 0; max-width: 42rem; color: var(--ivory); }
+header p.lede a { color: var(--gold); }
+header p.lede code { font-size: 0.88em; }
 .banner {
   margin: 1.2rem 0;
   border: 1px solid #5c4a1a;
@@ -72,6 +74,14 @@ button.action:disabled { opacity: 0.4; cursor: not-allowed; }
 .muted { color: var(--muted); font-size: 0.88rem; }
 .modes { margin: 1.2rem 0; }
 .btns { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.lens-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin: 8px 0 12px;
+  width: 100%;
+}
+.lens-grid button.mode { width: 100%; text-align: center; }
 button.mode {
   appearance: none;
   border: 1px solid var(--gold-dim);
@@ -117,6 +127,7 @@ img {
 }
 footer { margin-top: 2.2rem; font-size: 0.82rem; color: var(--muted); }
 footer strong { color: var(--gold); font-weight: 600; }
+footer a { color: var(--gold); }
 @media (max-width: 640px) {
   .compare { grid-template-columns: 1fr; }
 }

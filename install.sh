@@ -4,7 +4,7 @@
 set -euo pipefail
 
 HOST="${SPECTRALLOCK_HOME_HOST:-https://spectrallock-download-tracker.vibelock.workers.dev}"
-ASSET="${SPECTRALLOCK_HOME_ASSET:-spectrallock-0.2.0.tar.gz}"
+ASSET="${SPECTRALLOCK_HOME_ASSET:-spectrallock-0.3.0.tar.gz}"
 WORKDIR="${SPECTRALLOCK_HOME:-$HOME/spectrallock}"
 
 mkdir -p "$WORKDIR"

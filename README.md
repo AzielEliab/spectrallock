@@ -1,18 +1,22 @@
 # SpectralLock
 
-Digital **overlays on photographs** of manuscript pages.
+**Rosetta spectral analysis** software (RSA-2.0 family).
+
+Same **SpectralLock lenses** as [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr):
+overlays plus ink/page targets.
 
 **Author:** Aziel Eliab
 **Date:** 2026
 **License:** [Apache-2.0](LICENSE)
-**Version:** 0.2.0
+**Version:** 0.3.0
 
-> Advisory visualization. The human still reads the page.
+> The human still reads the page.
 
-Not a lab spectrometer. Not real UV photography hardware. Not a forensic
-proof of hidden ink. Not OCR. Not a claim of scribal truth. Synthetic UV
-simulates a 365–400 nm *look* from an ordinary photo. Balance never
-invents marks — it only reweights existing readings.
+RSA-2.0 is the decoding composite `0.40·Z′ + 0.35·T′ + 0.25·V′`. Ink isolates
+writing; page isolates parchment. Balance never invents marks — it only
+reweights existing readings. Synthetic UV is a 365–400 nm look from an
+ordinary photograph. Hosted `/v1/overlay` is a 256 px preview; the full
+pipeline is this Python package.
 
 **Forks are welcome and always allowed.**
 
@@ -39,7 +43,7 @@ The Worker serves the gzip itself (HTTP 200, no 302 to GitHub).
 # → [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/) ←
 
 Direct tarball (also counted):
-[spectrallock-0.2.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz)
+[spectrallock-0.3.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz)
 
 - Live count JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/stats](https://spectrallock-download-tracker.vibelock.workers.dev/stats)
 - OpenAPI: [https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json](https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json)
@@ -65,13 +69,13 @@ Isolated counter: Worker `spectrallock-download-tracker`, KV `SPECTRALLOCK_DOWNL
    ```
 
 3. In the browser at http://127.0.0.1:8861 (loopback only): tap **Add file**
-   (or **Sample page**), pick a mode, then **Export**. Optional: **Verify**
-   shows a receipt (mode, paper, SHA-256 in/out, size). Advisory overlay,
-   not forensic. No CDN, no telemetry. Dark gold.
+   (or **Sample page**), pick SpectralLock lenses, choose **Ink** or **Page**,
+   then **Export**. Optional: **Verify** shows a receipt (lenses, target,
+   paper, SHA-256 in/out, size). No CDN, no telemetry. Dark gold.
 
 Counted download: [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/)
 
-Direct tarball: [spectrallock-0.2.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz)
+Direct tarball: [spectrallock-0.3.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz)
 
 Papers: [docs/source/](docs/source/) · spec: [docs/whitepaper.md](docs/whitepaper.md)
 
@@ -89,21 +93,33 @@ stand in for a conservator.
 The hosted Worker `/v1/overlay` is a **simplified preview** (longest side
 capped at 256 px, PNG in/out). The full pipeline is this Python package.
 
-## Modes (all live in 0.2.0)
+## Lenses (all live in 0.3.0)
+
+Same names as the Corpus OCR SpectralLock lens checkboxes.
 
 | id | paper | formula / action |
 |----|-------|------------------|
 | `zero` | ZSA-1.0 | Grayscale, hist-eq, band-pass, unsharp. Hue ~260°, `#6F6485`. |
 | `tazel` | TSA-1.0 | Boost green–gold–turquoise (~170°, `#1EC9A5`). Lift faint midtones. |
 | `vyrn` | VSA-1.0 | Boost magenta–red-violet (~350°, `#C00066`). Suppress green/cyan. |
-| `uv` | UVSA-1.0 | Synthetic 365–400 nm simulation. Parchment glow, ink darker. **Not a UV lamp.** |
+| `uv` | UVSA-1.0 | Synthetic 365–400 nm simulation. Parchment glow, ink darker. |
 | `rosetta` | RSA-2.0 | `0.40·Z′ + 0.35·T′ + 0.25·V′` after per-channel normalize. |
 | `zen` | ZENA-1.0 | `(Z′ + T′ + U′ + V′) / 4` after normalize. |
 | `chaos` | CSA-1.0 | `0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′` after normalize. |
 | `balance` | BSA | `B=(Zn−Cn)/(Zn+Cn+ε)`, `α=(1+B)/2`, `RGB = α·Zen + (1−α)·Chaos`. Never invents marks. |
 
-Simple UI labels (kid-plain): clearer lines, lift green-gold, lift magenta,
-fake UV look, mix of three, even mix of four, strong mix, blend two mixes.
+## Ink / page targets
+
+Same polarity as Corpus OCR ink/page modes. Applied after the lens overlay.
+Reweights existing pixels only.
+
+| id | action |
+|----|--------|
+| `ink` | Isolate writing: crush parchment, keep strokes. Default. |
+| `page` | Isolate substrate: lift parchment, wash ink. |
+
+Several lenses may be selected (Corpus OCR checkbox family). They are mixed
+equally, then the target is applied.
 
 ## Install
 
@@ -122,22 +138,23 @@ python -m pytest -q
 spectrallock version
 spectrallock doctor
 spectrallock modes
-spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance IN.png OUT.png
-spectrallock overlay --mode tazel page.jpg out.png --json
+spectrallock lenses
+spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance --target ink|page IN.png OUT.png
+spectrallock overlay --lens tazel --target page page.jpg out.png --json
 spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
 spectrallock ui          # 127.0.0.1:8861
 spectrallock serve       # alias for ui
 ```
 
-PNG or JPEG in. `--verify` prints mode, paper, sha256 in/out, size.
-`--sidecar` writes a JSON next to the overlay PNG (mode, hashes, limitation).
+PNG or JPEG in. `--verify` prints lenses, target, paper, sha256 in/out, size.
+`--sidecar` writes a JSON next to the overlay PNG.
 `SPECTRALLOCK_DEBUG=1` traces to stderr (never image bytes).
 
 ## iPhone & Android
 
 Flutter sources: [`mobile/`](mobile/). Application id `com.azieeliab.spectrallock`.
-Offline color-matrix approximation of the hues. Not forensic. Not the
-full Python pipeline. **Add file** + **Export**.
+Offline color-matrix approximation of the hues. Not the full Python pipeline.
+**Add file** + **Export**.
 
 ```bash
 cd mobile
@@ -150,10 +167,12 @@ flutter run
 
 - OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json
 - Health: `GET /v1/health`
-- Modes: `GET /v1/modes`
-- Overlay: `POST /v1/overlay` `{b64, mode}` — PNG, max 256 px longest side. Does **not** increment the download counter.
+- Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
+- Targets: `GET /v1/targets`
+- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target}` — PNG, max 256 px longest side. Does **not** increment the download counter.
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`)
+- Corpus OCR: https://www.azielcorpuslibrary.net/ocr
 
 Isolated counter: Worker `spectrallock-download-tracker`, project `spectrallock`,
 KV `SPECTRALLOCK_DOWNLOADS`. `totalKey` `spectrallock|__total__`. `/download`

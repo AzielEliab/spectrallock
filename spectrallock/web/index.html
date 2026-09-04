@@ -3,24 +3,25 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SpectralLock — manuscript overlays</title>
+  <title>SpectralLock — Rosetta spectral analysis</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
   <header>
-    <div class="tag">SpectralLock · v0.2.0 · 127.0.0.1:8861</div>
-    <h1>Digital overlays on photographs of manuscript pages</h1>
+    <div class="tag">SpectralLock · v0.3.0 · RSA-2.0 · 127.0.0.1:8861</div>
+    <h1>Rosetta spectral analysis</h1>
     <p class="lede">
-      This app recolors a photo you already have so faint marks are easier to
-      look at. Advisory visualization. Not a lab spectrometer, not real UV
-      photography hardware, not a forensic proof of hidden ink, not OCR, not a
-      claim of scribal truth. Synthetic UV is a 365–400&nbsp;nm <em>look</em>
-      from an ordinary photo. Balance never invents marks. The human still
-      reads the page.
+      SpectralLock is Rosetta spectral analysis software — the same
+      <strong>SpectralLock lenses</strong> used by
+      <a href="https://www.azielcorpuslibrary.net/ocr">Aziel Corpus Library OCR</a>
+      (overlays, ink/page modes). RSA-2.0 decoding composite:
+      <code>0.40·Z′ + 0.35·T′ + 0.25·V′</code>. Balance never invents marks.
+      Synthetic UV is a 365–400&nbsp;nm look from an ordinary photograph.
+      The human still reads the page. Author Aziel Eliab.
     </p>
   </header>
   <div class="banner" role="note">
-    Overlays are not forensic proof. They reweight pixels in a photograph you already have.
+    Same lens family as Corpus OCR. Overlay a photograph, then choose Ink (writing) or Page (parchment).
   </div>
 
   <div class="toggles">
@@ -28,6 +29,11 @@
       <span class="kicker">Labels</span>
       <button type="button" id="level-simple" class="toggle-btn active">Simple</button>
       <button type="button" id="level-advanced" class="toggle-btn">Advanced</button>
+    </div>
+    <div class="toggle" role="group" aria-label="Ink or page target">
+      <span class="kicker">Target</span>
+      <button type="button" id="target-ink" class="toggle-btn active">Ink</button>
+      <button type="button" id="target-page" class="toggle-btn">Page</button>
     </div>
     <div class="toggle" role="group" aria-label="View">
       <span class="kicker">View</span>
@@ -44,14 +50,15 @@
     <div class="actions">
       <button type="button" id="add-file" class="action giant">Add file</button>
       <button type="button" id="sample" class="action">Sample page</button>
-      <button type="button" id="export" class="action giant" disabled title="advisory overlay PNG plus JSON sidecar, not forensic proof">Export</button>
-      <button type="button" id="verify" class="action" disabled title="receipt: mode, paper, sha256 in/out, size">Verify</button>
+      <button type="button" id="export" class="action giant" disabled title="overlay PNG plus JSON sidecar">Export</button>
+      <button type="button" id="verify" class="action" disabled title="receipt: lenses, target, paper, sha256 in/out, size">Verify</button>
     </div>
   </section>
 
   <section class="modes" id="modes">
-    <span class="kicker">Mode</span>
-    <div class="btns" id="btns"></div>
+    <span class="kicker">SpectralLock lenses</span>
+    <p class="drop-hint">Same checkbox family as Corpus OCR. One lens or several — several are mixed equally, then the ink/page target is applied.</p>
+    <div class="lens-grid btns" id="btns"></div>
   </section>
 
   <section class="compare" id="compare">
@@ -61,7 +68,7 @@
     </figure>
     <figure id="fig-after">
       <figcaption>After <span id="after-label"></span></figcaption>
-      <img id="after" alt="overlay">
+      <img id="after" alt="Rosetta spectral overlay">
     </figure>
   </section>
   <p id="meta" class="muted"></p>
@@ -85,6 +92,7 @@
 <footer>
     <p><strong>The human still reads the page.</strong></p>
     <p>Apache-2.0 · Aziel Eliab · 2026 · Bound to 127.0.0.1:8861 · Forks welcome and always allowed. No telemetry.</p>
+    <p class="muted">Aligned with <a href="https://www.azielcorpuslibrary.net/ocr">azielcorpuslibrary.net/ocr</a> SpectralLock lenses.</p>
   </footer>
   <script src="/app.js"></script>
 

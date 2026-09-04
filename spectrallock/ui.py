@@ -1,7 +1,7 @@
 """Local SpectralLock UI. Bind 127.0.0.1 only.
 
-Drop/upload a photograph, pick a mode, see before/after. Advisory overlay.
-Not forensic proof. Dark gold. No CDN. No telemetry.
+Rosetta spectral analysis: SpectralLock lenses, overlays, ink/page targets.
+Same family as Aziel Corpus Library OCR. Dark gold. No CDN. No telemetry.
 """
 
 from __future__ import annotations
@@ -15,10 +15,14 @@ from spectrallock import LIMITATION, __version__
 from spectrallock.debug import debug
 from spectrallock.engine import (
     PLAIN_NOT_IMAGE,
-    apply_mode,
+    analyze,
+    list_lenses,
     list_modes,
+    list_targets,
     load_rgb_bytes,
     make_receipt,
+    normalize_lenses,
+    normalize_target,
     png_bytes,
     sha256_hex,
     synthetic_page,
@@ -72,12 +76,24 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/app.js":
             self._send(200, _web_bytes("app.js"), MIME[".js"])
             return
-        if path == "/api/modes":
+        if path in {"/api/modes", "/api/lenses"}:
             self._json(200, {
                 "modes": list_modes(),
+                "lenses": list_lenses(),
+                "targets": list_targets(),
                 "advisory": LIMITATION,
                 "version": __version__,
+                "author": "Aziel Eliab",
+                "rosetta_spectral_analysis": True,
+                "corpus_ocr_aligned": True,
                 "simple_default": True,
+            })
+            return
+        if path == "/api/targets":
+            self._json(200, {
+                "targets": list_targets(),
+                "advisory": LIMITATION,
+                "version": __version__,
             })
             return
         if path in {"/api/sample", "/api/synthetic_page"}:
@@ -96,6 +112,10 @@ class Handler(BaseHTTPRequestHandler):
                 "loopback": True,
                 "telemetry": False,
                 "modes": list(m["id"] for m in list_modes()),
+                "lenses": list(m["id"] for m in list_lenses()),
+                "targets": list(t["id"] for t in list_targets()),
+                "rosetta_spectral_analysis": True,
+                "corpus_ocr_aligned": True,
                 "advisory": LIMITATION,
             })
             return
@@ -121,6 +141,8 @@ class Handler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length)
         ctype = (self.headers.get("Content-Type") or "").lower()
         mode = "rosetta"
+        target = "ink"
+        lens_values: list[str] = []
         img_bytes = raw
         as_json = False
         if "application/json" in ctype:
@@ -132,7 +154,14 @@ class Handler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 self._json(400, {"error": "JSON object required"})
                 return
-            mode = str(payload.get("mode") or "rosetta")
+            mode = str(payload.get("mode") or payload.get("lens") or "rosetta")
+            target = str(payload.get("target") or payload.get("polarity") or "ink")
+            extra_lenses = payload.get("lenses") or payload.get("lens")
+            if extra_lenses:
+                if isinstance(extra_lenses, (list, tuple)):
+                    lens_values.extend(str(x) for x in extra_lenses)
+                else:
+                    lens_values.append(str(extra_lenses))
             import base64
 
             b64 = payload.get("b64") or payload.get("image") or ""
@@ -146,7 +175,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             as_json = True
         elif "multipart/form-data" in ctype:
-            mode, img_bytes = _parse_multipart(raw, self.headers.get("Content-Type") or "")
+            mode, img_bytes, target, lens_values = _parse_multipart(raw, self.headers.get("Content-Type") or "")
             if not img_bytes:
                 self._json(400, {"error": NO_PICTURE, "advisory": LIMITATION})
                 return
@@ -154,10 +183,14 @@ class Handler(BaseHTTPRequestHandler):
             qs = parse_qs(urlparse(self.path).query)
             if "mode" in qs:
                 mode = qs["mode"][0]
+            if "lens" in qs:
+                lens_values.extend(qs["lens"])
+            if "target" in qs:
+                target = qs["target"][0]
         try:
             rgb = load_rgb_bytes(img_bytes)
         except ValueError as exc:
-            debug(f"overlay decode ValueError")
+            debug("overlay decode ValueError")
             self._json(400, {"error": str(exc), "advisory": LIMITATION})
             return
         except Exception:  # noqa: BLE001
@@ -165,7 +198,12 @@ class Handler(BaseHTTPRequestHandler):
             self._json(400, {"error": PLAIN_NOT_IMAGE, "advisory": LIMITATION})
             return
         try:
-            result = apply_mode(rgb, mode)
+            selected = normalize_lenses(
+                mode=None if lens_values else mode,
+                lenses=lens_values or None,
+            )
+            dest = normalize_target(target)
+            result = analyze(rgb, lenses=selected, target=dest)
         except ValueError as exc:
             self._json(400, {"error": str(exc), "advisory": LIMITATION})
             return
@@ -179,14 +217,18 @@ class Handler(BaseHTTPRequestHandler):
             size_out=len(png),
             width=result.width,
             height=result.height,
+            target=result.target,
+            lenses=result.lenses,
         )
         debug(
-            f"ui overlay mode={rec['mode']} paper={rec['paper']} "
+            f"ui overlay mode={rec['mode']} target={rec['target']} paper={rec['paper']} "
             f"size_in={rec['size_in']} size_out={rec['size_out']} "
             f"sha256_in={rec['sha256_in']} sha256_out={rec['sha256_out']}"
         )
         extra = {
             "X-SpectralLock-Mode": rec["mode"],
+            "X-SpectralLock-Lenses": ",".join(rec.get("lenses") or [rec["mode"]]),
+            "X-SpectralLock-Target": rec["target"],
             "X-SpectralLock-Paper": rec["paper"],
             "X-SpectralLock-Sha256-In": rec["sha256_in"],
             "X-SpectralLock-Sha256-Out": rec["sha256_out"],
@@ -204,9 +246,11 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, png, "image/png", extra)
 
 
-def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes]:
-    """Minimal multipart parser: mode field + file field."""
+def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes, str, list[str]]:
+    """Minimal multipart parser: mode/lens/target fields + file field."""
     mode = "rosetta"
+    target = "ink"
+    lenses: list[str] = []
     img = b""
     bound = b""
     for part in content_type.split(";"):
@@ -214,7 +258,7 @@ def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes]:
         if part.lower().startswith("boundary="):
             bound = part.split("=", 1)[1].strip().strip('"').encode("utf-8")
     if not bound:
-        return mode, raw
+        return mode, raw, target, lenses
     marker = b"--" + bound
     for chunk in raw.split(marker):
         chunk = chunk.strip(b"\r\n")
@@ -226,11 +270,17 @@ def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes]:
         if body.endswith(b"\r\n"):
             body = body[:-2]
         header = head.decode("utf-8", "replace").lower()
+        value = body.decode("utf-8", "replace").strip()
         if "name=\"mode\"" in header:
-            mode = body.decode("utf-8", "replace").strip()
+            mode = value
+        elif "name=\"lens\"" in header or "name=\"lenses\"" in header:
+            if value:
+                lenses.append(value)
+        elif "name=\"target\"" in header or "name=\"polarity\"" in header:
+            target = value
         elif "name=\"file\"" in header or "name=\"image\"" in header or "filename=" in header:
             img = body
-    return mode, img
+    return mode, img, target, lenses
 
 
 def make_server(host: str = "127.0.0.1", port: int = 8861) -> ThreadingHTTPServer:

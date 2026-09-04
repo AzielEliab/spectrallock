@@ -18,6 +18,14 @@ def test_cli_version(capsys) -> None:
     assert capsys.readouterr().out.strip() == f"spectrallock {__version__}"
 
 
+def test_cli_lenses_alias(capsys) -> None:
+    assert main(["lenses"]) == 0
+    out = capsys.readouterr().out
+    for mode in LIVE_MODES:
+        assert mode in out
+    assert "targets: ink" in out
+
+
 def test_cli_modes_lists_all_live(capsys) -> None:
     assert main(["modes"]) == 0
     out = capsys.readouterr().out
@@ -41,7 +49,9 @@ def test_cli_modes_json(capsys) -> None:
     ids = [m["id"] for m in payload["modes"]]
     assert ids == list(LIVE_MODES)
     assert all(m["status"] == "live" for m in payload["modes"])
-    assert "forensic" in payload["advisory"].lower()
+    assert "rosetta" in payload["advisory"].lower()
+    assert payload["targets"]
+    assert payload["lenses"]
 
 
 def test_cli_overlay_png_and_json(tmp_path: Path, capsys) -> None:
@@ -85,11 +95,25 @@ def test_cli_doctor_runs_eight_modes(capsys) -> None:
     assert main(["doctor"]) == 0
     out = capsys.readouterr().out
     for mode in LIVE_MODES:
-        assert f"mode {mode}: ok" in out
+        assert f"lens {mode} ink: ok" in out
+        assert f"lens {mode} page: ok" in out
     assert "loopback: 127.0.0.1 only" in out
     assert "telemetry: none" in out
     assert out.strip().endswith("ok")
     assert "spectrallock " + __version__ in out
+
+
+def test_cli_overlay_target_page(tmp_path: Path, capsys) -> None:
+    from spectrallock.engine import save_rgb
+
+    src = tmp_path / "page.png"
+    dst = tmp_path / "out.png"
+    save_rgb(synthetic_page(24, 24), str(src))
+    assert main(["overlay", "--lens", "rosetta", "--target", "page", str(src), str(dst), "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["target"] == "page"
+    assert payload["lenses"] == ["rosetta"]
+    assert dst.is_file()
 
 
 def test_cli_overlay_verify_prints_hashes(tmp_path: Path, capsys) -> None:
@@ -105,7 +129,7 @@ def test_cli_overlay_verify_prints_hashes(tmp_path: Path, capsys) -> None:
     assert "sha256_in: " + sha256_hex(src.read_bytes()) in out
     assert "sha256_out: " + sha256_hex(dst.read_bytes()) in out
     assert "size_in: " in out
-    assert "forensic" in out.lower() or "advisory" in out.lower()
+    assert "rosetta" in out.lower() or "ink" in out.lower()
 
 
 def test_cli_rejects_non_image_plainly(tmp_path: Path, capsys) -> None:

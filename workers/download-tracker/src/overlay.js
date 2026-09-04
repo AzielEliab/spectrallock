@@ -1,29 +1,37 @@
 /**
  * Simplified SpectralLock overlay for the hosted Worker.
- * Full histogram / band-pass / unsharp lives in the Python package.
- * PNG 8-bit RGB/RGBA, longest side capped at 256. Advisory only.
+ * Rosetta spectral analysis — same lenses as Aziel Corpus Library OCR
+ * (overlays, ink/page). Full histogram / band-pass / unsharp lives in Python.
+ * PNG 8-bit RGB/RGBA, longest side capped at 256.
  */
 export const LIMITATION =
-  "Advisory digital overlays on photographs of manuscript pages. " +
-  "Not a lab spectrometer, not real UV photography hardware, not a " +
-  "forensic proof of hidden ink, not OCR, and not a claim of scribal truth. " +
-  "Synthetic UV simulates a 365–400 nm look from an ordinary photo. " +
+  "Rosetta spectral analysis (RSA-2.0 family). SpectralLock lenses match " +
+  "Aziel Corpus Library OCR — overlays plus ink/page targets " +
+  "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance). " +
+  "Synthetic UV is a 365–400 nm look from an ordinary photograph. " +
   "Balance never invents marks. Hosted overlay is a simplified preview " +
-  "(max 256 px); the full pipeline is the Python package. The human still reads the page.";
+  "(max 256 px); the full pipeline is the Python package. The human still reads the page. " +
+  "Author Aziel Eliab.";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.3.0";
 export const MAX_SIDE = 256;
 export const LIVE = ["zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"];
+export const TARGET_IDS = ["ink", "page"];
 
 export const MODES = [
   { id: "zero", paper: "ZSA-1.0", status: "live", summary: "Equilibrium / geometry (simplified grayscale stretch)." },
   { id: "tazel", paper: "TSA-1.0", status: "live", summary: "Boost green–gold–turquoise (~170°, #1EC9A5)." },
   { id: "vyrn", paper: "VSA-1.0", status: "live", summary: "Boost magenta–red-violet (~350°, #C00066)." },
   { id: "uv", paper: "UVSA-1.0", status: "live", summary: "Synthetic 365–400 nm simulation. Not a real UV lamp." },
-  { id: "rosetta", paper: "RSA-2.0", status: "live", summary: "0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize." },
+  { id: "rosetta", paper: "RSA-2.0", status: "live", summary: "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize." },
   { id: "zen", paper: "ZENA-1.0", status: "live", summary: "(Z′ + T′ + U′ + V′) / 4 after normalize." },
   { id: "chaos", paper: "CSA-1.0", status: "live", summary: "0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize." },
   { id: "balance", paper: "BSA", status: "live", summary: "α·Zen + (1-α)·Chaos. Never invents marks." },
+];
+
+export const TARGETS = [
+  { id: "ink", status: "live", summary: "Isolate writing. Same ink target as Aziel Corpus Library OCR." },
+  { id: "page", status: "live", summary: "Isolate parchment / substrate. Same page target as Aziel Corpus Library OCR." },
 ];
 
 const ROSETTA_W = { zero: 0.4, tazel: 0.35, vyrn: 0.25 };
@@ -192,6 +200,78 @@ function baseChannels(buf, w, h) {
   const v = norm01(toLuma(modeVyrn(buf), w, h));
   const u = norm01(toLuma(modeUv(buf), w, h));
   return { zero: z, tazel: t, vyrn: v, uv: u };
+}
+
+function normalizeTarget(target) {
+  const key = String(target || "ink").trim().toLowerCase();
+  if (key === "page" || key === "parchment" || key === "substrate" || key === "folio") return "page";
+  return "ink";
+}
+
+function normalizeLenses(mode, lens, lenses) {
+  const raw = [];
+  for (const item of [lenses, lens, mode]) {
+    if (item == null || item === "") continue;
+    if (Array.isArray(item)) raw.push(...item);
+    else String(item).replaceAll("+", ",").split(",").forEach((x) => raw.push(x));
+  }
+  const out = [];
+  for (const item of raw) {
+    const key = String(item || "").trim().toLowerCase();
+    if (!key) continue;
+    if (!LIVE.includes(key)) return { error: "unknown lens", unknown: key, known: LIVE };
+    if (!out.includes(key)) out.push(key);
+  }
+  return { lenses: out.length ? out : ["rosetta"] };
+}
+
+function parchmentEstimate(buf, w, h) {
+  const L = toLuma(buf, w, h);
+  const sorted = Array.from(L).sort((a, b) => a - b);
+  const q = sorted[Math.max(0, Math.floor(sorted.length * 0.80))] || 0;
+  let sr = 0, sg = 0, sb = 0, n = 0;
+  for (let i = 0, p = 0; i < L.length; i++, p += 3) {
+    if (L[i] >= q) { sr += buf[p]; sg += buf[p + 1]; sb += buf[p + 2]; n += 1; }
+  }
+  if (!n) return [0.93, 0.88, 0.76];
+  return [sr / n, sg / n, sb / n];
+}
+
+function applyTarget(buf, w, h, target) {
+  const dest = normalizeTarget(target);
+  const L = toLuma(buf, w, h);
+  const t = norm01(L);
+  const parch = parchmentEstimate(buf, w, h);
+  const out = new Float32Array(buf.length);
+  if (dest === "page") {
+    for (let i = 0, p = 0; i < t.length; i++, p += 3) {
+      const ink = t[i] < 0.50 ? (0.50 - t[i]) / 0.50 : 0;
+      out[p] = clamp01(buf[p] * (1 - 0.72 * ink) + parch[0] * 0.72 * ink);
+      out[p + 1] = clamp01(buf[p + 1] * (1 - 0.72 * ink) + parch[1] * 0.72 * ink);
+      out[p + 2] = clamp01(buf[p + 2] * (1 - 0.72 * ink) + parch[2] * 0.72 * ink);
+    }
+    return out;
+  }
+  for (let i = 0, p = 0; i < t.length; i++, p += 3) {
+    const page = t[i] > 0.38 ? Math.min(1, (t[i] - 0.38) / 0.40) : 0;
+    const ink = t[i] < 0.48 ? 1 : 0;
+    out[p] = clamp01((buf[p] * (1 - 0.50 * page) + parch[0] * 0.50 * page) * (1 - 0.28 * ink));
+    out[p + 1] = clamp01((buf[p + 1] * (1 - 0.50 * page) + parch[1] * 0.50 * page) * (1 - 0.28 * ink));
+    out[p + 2] = clamp01((buf[p + 2] * (1 - 0.50 * page) + parch[2] * 0.50 * page) * (1 - 0.28 * ink));
+  }
+  return out;
+}
+
+function composeLenses(buf, w, h, lenses) {
+  if (lenses.length === 1) return applyMode(buf, w, h, lenses[0]);
+  const channels = {};
+  for (const name of lenses) {
+    channels[name] = norm01(toLuma(applyMode(buf, w, h, name), w, h));
+  }
+  const weights = {};
+  const wgt = 1 / lenses.length;
+  for (const name of lenses) weights[name] = wgt;
+  return grayToRgb(mixLuma(channels, weights));
 }
 
 function applyMode(buf, w, h, mode) {
@@ -409,11 +489,13 @@ function bytesToB64(u8) {
   return btoa(s);
 }
 
-export async function overlayFromB64(b64, mode) {
-  const key = String(mode || "").trim().toLowerCase();
-  if (!LIVE.includes(key)) {
-    return { error: "unknown mode", known: LIVE, advisory: LIMITATION };
+export async function overlayFromB64(b64, mode, extras = {}) {
+  const parsed = normalizeLenses(extras.lenses ? null : mode, extras.lens, extras.lenses);
+  if (parsed.error) {
+    return { error: parsed.error, unknown: parsed.unknown, known: LIVE, advisory: LIMITATION };
   }
+  const lenses = parsed.lenses;
+  const dest = normalizeTarget(extras.target || extras.polarity);
   let decoded;
   try {
     decoded = await decodePng(b64ToBytes(b64));
@@ -421,12 +503,18 @@ export async function overlayFromB64(b64, mode) {
     return { error: "PNG decode failed (hosted preview is PNG only): " + String(err.message || err), advisory: LIMITATION };
   }
   const capped = capSide(decoded.buf, decoded.w, decoded.h);
-  const out = applyMode(capped.buf, capped.w, capped.h, key);
+  const mixed = composeLenses(capped.buf, capped.w, capped.h, lenses);
+  const out = applyTarget(mixed, capped.w, capped.h, dest);
   const png = await encodePng(out, capped.w, capped.h);
   const com = centerOfMass(out, capped.w, capped.h);
+  const key = lenses.length === 1 ? lenses[0] : lenses.join("+");
+  const paper = lenses.length === 1 ? ((MODES.find((m) => m.id === lenses[0]) || {}).paper) : "MULTI";
   return {
     mode: key,
-    paper: (MODES.find((m) => m.id === key) || {}).paper,
+    lens: key,
+    lenses,
+    target: dest,
+    paper,
     width: capped.w,
     height: capped.h,
     com,
@@ -435,6 +523,9 @@ export async function overlayFromB64(b64, mode) {
     max_side: MAX_SIDE,
     product: "spectrallock",
     version: VERSION,
+    rosetta_spectral_analysis: true,
+    corpus_ocr_aligned: true,
+    author: "Aziel Eliab",
     advisory: LIMITATION,
   };
 }

@@ -37,15 +37,19 @@ def test_ui_modes_and_overlay(tmp_path) -> None:
         with urllib.request.urlopen(req) as res:
             out = json.loads(res.read().decode())
         assert out["mode"] == "rosetta"
+        assert out["target"] == "ink"
+        assert out["lenses"] == ["rosetta"]
         assert out["width"] == 24
         png = __import__("base64").b64decode(out["png_b64"])
         assert png[:8] == b"\x89PNG\r\n\x1a\n"
         with urllib.request.urlopen(f"http://{host}:{port}/") as res:
             html = res.read().decode()
-        assert "not a forensic proof" in html.lower() or "not forensic" in html.lower()
+        assert "rosetta spectral analysis" in html.lower()
+        assert "spectralLock lenses".lower() in html.lower()
         assert "add file" in html.lower()
         assert "export" in html.lower()
         assert "127.0.0.1:8861" in html
+        assert "ink" in html.lower() and "page" in html.lower()
     finally:
         httpd.shutdown()
         httpd.server_close()
@@ -70,6 +74,8 @@ def test_ui_sample_verify_html_and_reject(tmp_path) -> None:
         assert "simple" in low
         assert "overlay only" in low or "overlay-only" in low
         assert "side by side" in low
+        assert "spectrallock lenses" in low
+        assert "ink" in low and "page" in low
         assert "127.0.0.1:8861" in html
 
         with urllib.request.urlopen(f"http://{host}:{port}/api/sample") as res:

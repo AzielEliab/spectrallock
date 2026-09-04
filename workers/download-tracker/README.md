@@ -11,11 +11,12 @@ Serves gzip via `ASSETS.fetch`, `Cache-Control: private, no-store`.
 
 - OpenAPI: `https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json`
 - Health: `GET /v1/health`
-- Modes: `GET /v1/modes`
-- Overlay: `POST /v1/overlay` `{b64, mode}` — PNG, max 256 px. Simplified preview.
+- Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
+- Targets: `GET /v1/targets`
+- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target}` — PNG, max 256 px. Rosetta preview.
 - Setup HTML: `GET /ai`
 
-Banner: not a lab spectrometer, not real UV hardware, not forensic proof.
+Banner: Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.
 
 CORS `*` on API routes.
 

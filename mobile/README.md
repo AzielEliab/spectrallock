@@ -9,8 +9,8 @@ Offline. No analytics. Dark matte / gold.
 Application id: `com.azieeliab.spectrallock`
 
 This is **not** the full Python pipeline (no histogram equalization,
-no band-pass, no 256-px hosted preview). Advisory visualization only.
-Not a lab spectrometer, not real UV hardware, not forensic proof.
+no band-pass, no 256-px hosted preview). Color-matrix approximation of
+Rosetta spectral analysis. Same lens names as Corpus OCR.
 
 ## Open in Android Studio / Xcode
 
@@ -29,9 +29,8 @@ Xcode.
 
 ## Honest scope
 
-Not forensic proof of hidden ink. Not OCR. Not scribal truth. Synthetic
-UV is a look, not a lamp. Balance never invents marks. The human still
-reads the page.
+Rosetta spectral analysis approximation. Synthetic UV is a look, not a
+lamp. Balance never invents marks. The human still reads the page.
 
 ## Desktop package (counted download)
 
