@@ -7,17 +7,23 @@ import numpy as np
 from spectrallock.engine import (
     CHAOS_WEIGHTS,
     EPS,
+    LENSES,
     LIMITATION,
     LIVE_MODES,
     MODES,
     ROSETTA_WEIGHTS,
+    TARGETS,
     ZEN_WEIGHTS,
+    analyze,
     apply_mode,
+    apply_target,
     balance_blend,
     blend_channels,
     chaos_overlay,
     luminance,
     normalize01,
+    normalize_lenses,
+    normalize_target,
     rosetta_overlay,
     synthetic_page,
     tazel_overlay,
@@ -36,11 +42,13 @@ def test_all_eight_modes_live() -> None:
         assert row["paper"]
 
 
-def test_limitation_is_honest() -> None:
+def test_limitation_is_rosetta() -> None:
     low = LIMITATION.lower()
-    for word in ("spectrometer", "forensic", "uv photography", "scribal truth", "ocr"):
+    for word in ("rosetta spectral analysis", "ocr", "ink", "page", "aziel eliab"):
         assert word in low
-    assert "not" in low
+    assert "spectrometer" not in low
+    assert LENSES == LIVE_MODES
+    assert tuple(TARGETS) == ("ink", "page")
 
 
 def test_synthetic_page_regions() -> None:
@@ -161,6 +169,53 @@ def test_center_of_mass_on_bright_corner() -> None:
     assert result.com[0] < 8
     assert result.com[1] < 8
 
+
+
+def test_normalize_lenses_and_targets() -> None:
+    assert normalize_lenses() == ["rosetta"]
+    assert normalize_lenses(lens="tazel") == ["tazel"]
+    assert normalize_lenses(lenses=["zero", "tazel", "zero"]) == ["zero", "tazel"]
+    assert normalize_lenses(mode="rosetta+vyrn") == ["rosetta", "vyrn"]
+    assert normalize_target("PAGE") == "page"
+    assert normalize_target("parchment") == "page"
+    assert normalize_target(None) == "ink"
+
+
+def test_analyze_ink_vs_page_on_synthetic() -> None:
+    img = synthetic_page(64, 64)
+    ink = analyze(img, "rosetta", target="ink")
+    page = analyze(img, "rosetta", target="page")
+    assert ink.target == "ink" and page.target == "page"
+    assert ink.lenses == ("rosetta",)
+    assert page.lenses == ("rosetta",)
+    stroke = (slice(42, 50), slice(8, 56))
+    parchment = (slice(2, 10), slice(2, 10))
+    # ink target keeps strokes darker than page target on the same stroke
+    assert float(luminance(ink.rgb)[stroke].mean()) < float(luminance(page.rgb)[stroke].mean())
+    # page target lifts the stroke toward parchment vs ink target
+    assert float(luminance(page.rgb)[stroke].mean()) > float(luminance(ink.rgb)[stroke].mean())
+    assert float(luminance(page.rgb)[parchment].mean()) > 0.2
+    assert ink.to_meta()["rosetta_spectral_analysis"] is True
+    assert ink.to_meta()["corpus_ocr_aligned"] is True
+
+
+def test_analyze_multi_lens_compose() -> None:
+    img = synthetic_page(32, 32)
+    result = analyze(img, lenses=["zero", "tazel"], target="ink")
+    assert result.mode == "zero+tazel"
+    assert result.paper == "MULTI"
+    assert list(result.lenses) == ["zero", "tazel"]
+    assert result.rgb.shape == (32, 32, 3)
+    assert np.isfinite(result.rgb).all()
+
+
+def test_apply_target_never_invents_outside_source_range() -> None:
+    img = synthetic_page(32, 32)
+    base = apply_mode(img, "zero").rgb
+    for dest in ("ink", "page"):
+        out = apply_target(base, dest)
+        assert np.isfinite(out).all()
+        assert 0.0 <= float(out.min()) and float(out.max()) <= 1.0 + 1e-5
 
 
 def test_apply_mode_no_nan_on_bad_pixels() -> None:

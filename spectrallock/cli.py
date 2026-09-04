@@ -2,8 +2,10 @@
 
     spectrallock version
     spectrallock modes
+    spectrallock lenses
     spectrallock doctor
-    spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance IN.png OUT.png
+    spectrallock overlay --mode|--lens zero|tazel|vyrn|uv|rosetta|zen|chaos|balance
+                         --target ink|page IN.png OUT.png
     spectrallock overlay --verify --sidecar
     spectrallock ui
 """
@@ -16,12 +18,12 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from spectrallock import LIMITATION, __version__, list_modes
+from spectrallock import LIMITATION, __version__, list_lenses, list_modes, list_targets
 from spectrallock.debug import debug
 from spectrallock.engine import (
     LIVE_MODES,
     PLAIN_NOT_IMAGE,
-    apply_mode,
+    analyze,
     load_rgb,
     make_receipt,
     png_bytes,
@@ -34,9 +36,9 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="spectrallock",
         description=(
-            "SpectralLock — digital overlays on photographs of manuscript pages "
-            "(Aziel Eliab, 2026). Advisory visualization. Not a lab spectrometer, "
-            "not real UV hardware, not forensic proof, not OCR, not scribal truth. "
+            "SpectralLock — Rosetta spectral analysis (Aziel Eliab, 2026). "
+            "Same SpectralLock lenses as Aziel Corpus Library OCR: overlays "
+            "plus ink/page targets. "
             f"Local UI: `spectrallock ui` at http://127.0.0.1:8861. {LIMITATION}"
         ),
     )
@@ -45,18 +47,28 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("version", help="Print package version.")
     sub.add_parser(
         "doctor",
-        help="Check Python, Pillow, numpy, all eight modes, no NaN, loopback, no telemetry.",
+        help="Check Python, Pillow, numpy, eight lenses × ink/page, no NaN, loopback, no telemetry.",
     )
 
-    p_modes = sub.add_parser("modes", help="List overlay modes (live papers + ids).")
+    p_modes = sub.add_parser("modes", help="List SpectralLock lenses (live papers + ids).")
     p_modes.add_argument("--json", action="store_true", dest="as_json", help="JSON list.")
+    p_lenses = sub.add_parser("lenses", help="Alias for modes — Corpus OCR lens names.")
+    p_lenses.add_argument("--json", action="store_true", dest="as_json", help="JSON list.")
 
-    p_ov = sub.add_parser("overlay", help="Apply one mode. PNG/JPEG in, PNG out.")
+    p_ov = sub.add_parser("overlay", help="Apply Rosetta spectral analysis. PNG/JPEG in, PNG out.")
     p_ov.add_argument(
         "--mode",
+        "--lens",
+        dest="mode",
         required=True,
         choices=list(LIVE_MODES),
-        help="Overlay mode id.",
+        help="SpectralLock lens id (same names as Corpus OCR).",
+    )
+    p_ov.add_argument(
+        "--target",
+        default="ink",
+        choices=["ink", "page"],
+        help="Ink isolates writing; page isolates parchment. Default ink.",
     )
     p_ov.add_argument("src", metavar="IN", help="Input photograph (PNG or JPEG).")
     p_ov.add_argument("dst", metavar="OUT", help="Output overlay PNG.")
@@ -116,19 +128,20 @@ def _run_doctor() -> int:
 
     page = synthetic_page(32, 32)
     for mode in LIVE_MODES:
-        try:
-            result = apply_mode(page, mode)
-            finite = bool(np.isfinite(result.rgb).all())
-            if not finite or result.rgb.shape != (32, 32, 3):
+        for target in ("ink", "page"):
+            try:
+                result = analyze(page, mode, target=target)
+                finite = bool(np.isfinite(result.rgb).all())
+                if not finite or result.rgb.shape != (32, 32, 3) or result.target != target:
+                    ok = False
+                    lines.append(f"lens {mode} {target}: fail")
+                    debug(f"doctor lens={mode} target={target} finite={finite} shape={result.rgb.shape}")
+                else:
+                    lines.append(f"lens {mode} {target}: ok ({result.paper})")
+            except Exception as exc:  # noqa: BLE001
                 ok = False
-                lines.append(f"mode {mode}: fail")
-                debug(f"doctor mode={mode} finite={finite} shape={result.rgb.shape}")
-            else:
-                lines.append(f"mode {mode}: ok ({result.paper})")
-        except Exception as exc:  # noqa: BLE001
-            ok = False
-            lines.append(f"mode {mode}: fail")
-            debug(f"doctor mode={mode} error={type(exc).__name__}")
+                lines.append(f"lens {mode} {target}: fail")
+                debug(f"doctor lens={mode} target={target} error={type(exc).__name__}")
 
     if "127.0.0.1" not in LOOPBACK:
         ok = False
@@ -144,6 +157,8 @@ def _run_doctor() -> int:
 
 def _print_receipt(rec: dict) -> None:
     print(f"mode: {rec['mode']}")
+    print(f"lenses: {','.join(rec.get('lenses') or [rec['mode']])}")
+    print(f"target: {rec.get('target', 'ink')}")
     print(f"paper: {rec['paper']}")
     print(f"sha256_in: {rec['sha256_in']}")
     print(f"sha256_out: {rec['sha256_out']}")
@@ -163,16 +178,26 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.cmd == "doctor":
         return _run_doctor()
 
-    if args.cmd == "modes":
-        rows = list_modes()
+    if args.cmd in {"modes", "lenses"}:
+        rows = list_lenses() if args.cmd == "lenses" else list_modes()
         if args.as_json:
-            print(json.dumps({"product": "spectrallock", "version": __version__,
-                              "advisory": LIMITATION, "modes": rows}, indent=2))
+            print(json.dumps({
+                "product": "spectrallock",
+                "version": __version__,
+                "author": "Aziel Eliab",
+                "rosetta_spectral_analysis": True,
+                "corpus_ocr_aligned": True,
+                "advisory": LIMITATION,
+                "modes": rows,
+                "lenses": list_lenses(),
+                "targets": list_targets(),
+            }, indent=2))
         else:
             print(LIMITATION)
             print(f"{'id':10} {'paper':10} {'status':8} summary")
             for row in rows:
                 print(f"{row['id']:10} {row['paper']:10} {row['status']:8} {row['summary']}")
+            print("targets: ink (writing) · page (parchment)")
         return 0
 
     if args.cmd == "overlay":
@@ -196,7 +221,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(PLAIN_NOT_IMAGE, file=sys.stderr)
             return 2
         try:
-            result = apply_mode(rgb, args.mode, tint=not args.no_tint)
+            result = analyze(rgb, args.mode, target=args.target, tint=not args.no_tint)
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
             return 2
@@ -211,9 +236,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             size_out=len(out_bytes),
             width=result.width,
             height=result.height,
+            target=result.target,
+            lenses=result.lenses,
         )
         debug(
-            f"overlay mode={result.mode} paper={result.paper} "
+            f"overlay mode={result.mode} target={result.target} paper={result.paper} "
             f"size_in={rec['size_in']} size_out={rec['size_out']} "
             f"sha256_in={rec['sha256_in']} sha256_out={rec['sha256_out']}"
         )
@@ -231,7 +258,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             _print_receipt(rec)
         else:
             print(
-                f"{result.mode} {result.paper} {result.width}x{result.height} "
+                f"{result.mode} {result.target} {result.paper} {result.width}x{result.height} "
                 f"com=({result.com[0]:.1f},{result.com[1]:.1f}) -> {args.dst}"
             )
             print(LIMITATION)

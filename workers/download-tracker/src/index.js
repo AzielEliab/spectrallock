@@ -1,14 +1,16 @@
-import { LIMITATION, MODES, VERSION, overlayFromB64 } from "./overlay.js";
+import { LIMITATION, MODES, TARGETS, VERSION, overlayFromB64 } from "./overlay.js";
 const EXAMPLE_PAYLOAD = {
   "mode": "rosetta",
-  "note": "Hosted overlay is a 256px preview, not a spectrometer."
+  "lens": "rosetta",
+  "target": "ink",
+  "note": "Rosetta spectral analysis preview (256px). Same lenses as Aziel Corpus Library OCR."
 };
 
-const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Author Aziel Eliab.\n---\n\n# SpectralLock\n\nAdvisory digital overlays on photographs of manuscript pages. Not a lab spectrometer. Not real UV photography hardware. Not forensic ink proof. The human still reads the page. Author: Aziel Eliab.\n\n**THIS IS:** advisory digital overlays on photographs of manuscript pages.\n\n**THIS IS NOT:** a lab spectrometer, real UV photography hardware, forensic ink proof, or OCR truth. The human still reads the page.\n\nAuthor: **Aziel Eliab**. Forks are welcome and always allowed. Apache-2.0.\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List overlay modes. |\n| POST | `/v1/overlay` | Advisory overlay on a posted PNG (base64). Not a spectrometer. |\n\nGrok: import OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/modes\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.2.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n\n## Catalog + local UI\n\nAuthor: **Aziel Eliab**. Honest scope: Overlay preview modes. 256px hosted preview, not a spectrometer, not forensic.\n\n- Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- This Worker skill: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`\n\nLocal UI: **Import JSON file** (`type=file`) and **Export JSON**. Then `spectrallock doctor`.\n\nGrok: import catalog or Worker OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.\n";
+const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Rosetta spectral analysis — same lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.\n---\n\n# SpectralLock\n\nRosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. Author: **Aziel Eliab**.\n\n**THIS IS:** Rosetta spectral analysis — SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr).\n\n**THIS IS NOT:** a court exhibit or a claim of authenticity. Hosted `/v1` does not increment downloads or views.\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- Corpus OCR (reference): https://www.azielcorpuslibrary.net/ocr\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List SpectralLock lenses. |\n| GET | `/v1/lenses` | Alias for `/v1/modes`. |\n| GET | `/v1/targets` | Ink and page targets. |\n| POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses` and `target` (`ink`\\|`page`). |\n\nGrok: import OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/lenses\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\nspectrallock doctor\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n\n## Catalog + local UI\n\nAuthor: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full pipeline is the Python package.\n\n- Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- This Worker skill: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`\n\nLocal UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page. Then `spectrallock doctor`.\n\nGrok: import catalog or Worker OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.\n";
 /**
  * SpectralLock download tracker (Cloudflare Worker).
  *
- * GET  /download?asset=spectrallock-0.2.0.tar.gz
+ * GET  /download?asset=spectrallock-0.3.0.tar.gz
  *      increments KV, serves the tarball via env.ASSETS.fetch
  *      (does not 302 to GitHub)
  * GET  /stats   JSON totals + per-repo + per-branch breakdown
@@ -24,7 +26,7 @@ const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling S
  */
 
 const PROJECT = "spectrallock";
-const DEFAULT_ASSET = "spectrallock-0.2.0.tar.gz";
+const DEFAULT_ASSET = "spectrallock-0.3.0.tar.gz";
 const DEFAULT_OWNER = "AzielEliab";
 const DEFAULT_REPO = "spectrallock";
 const DEFAULT_BRANCH = "main";
@@ -289,11 +291,11 @@ async function indexHtml(env) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SpectralLock — Aziel Eliab</title>
-<meta name="description" content="Digital overlays on photographs of manuscript pages by Aziel Eliab; advisory visualization, not a lab spectrometer.">
+<meta name="description" content="Rosetta spectral analysis by Aziel Eliab. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page).">
 <meta name="author" content="Aziel Eliab">
 <link rel="canonical" href="https://spectrallock-download-tracker.vibelock.workers.dev/">
 <meta property="og:title" content="SpectralLock — Aziel Eliab">
-<meta property="og:description" content="Digital overlays on photographs of manuscript pages by Aziel Eliab; advisory visualization, not a lab spectrometer.">
+<meta property="og:description" content="Rosetta spectral analysis by Aziel Eliab. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page).">
 <meta property="og:url" content="https://spectrallock-download-tracker.vibelock.workers.dev/">
 <meta property="og:type" content="website">
 <script type="application/ld+json">
@@ -309,7 +311,7 @@ async function indexHtml(env) {
   "downloadUrl": "https://spectrallock-download-tracker.vibelock.workers.dev/download",
   "license": "https://www.apache.org/licenses/LICENSE-2.0",
   "url": "https://spectrallock-download-tracker.vibelock.workers.dev/",
-  "description": "Digital overlays on photographs of manuscript pages by Aziel Eliab; advisory visualization, not a lab spectrometer."
+  "description": "Rosetta spectral analysis by Aziel Eliab. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page)."
 }
 </script>
 <!-- gitbaby-seo -->
@@ -343,8 +345,8 @@ async function indexHtml(env) {
 </style>
 <body>
   <h1>SpectralLock</h1>
-  <p class="motto">Digital overlays on photographs of manuscript pages. Advisory, not a spectrometer. Author Aziel Eliab.</p>
-  <p class="banner">Advisory digital overlays on photographs of manuscript pages. Not a lab spectrometer. Not real UV photography hardware. Not forensic ink proof. The human still reads the page. Author: Aziel Eliab.</p>
+  <p class="motto">Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.</p>
+  <p class="banner">RSA-2.0 family. Lenses: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance. Ink isolates writing; page isolates parchment. Balance never invents marks. Author: Aziel Eliab.</p>
   <div class="card">
     <div class="nums">
       <p class="count">${v}<span>Views</span></p>
@@ -423,19 +425,21 @@ function openapiSpec(request) {
     info: {
       title: "SpectralLock runtime",
       version: VERSION,
-      summary: "Digital overlays on manuscript photographs. Advisory visualization, not a spectrometer.",
+      summary: "Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page).",
       description: LIMITATION,
     },
     servers: [{ url: origin }],
     paths: {
             "/v1/example": { get: { operationId: "spectrallockExample", summary: "Sample JSON payload. Does not increment downloads.", responses: { "200": { description: "OK" } } } },
       "/v1/health": { get: { operationId: "spectrallock_health", summary: "Liveness. Does not increment download KV.", responses: { "200": { description: "ok" } } } },
-      "/v1/modes": { get: { operationId: "spectrallock_modes", summary: "List live overlay modes (zero, tazel, vyrn, uv, rosetta, zen, chaos, balance).", responses: { "200": { description: "modes" } } } },
+      "/v1/modes": { get: { operationId: "spectrallock_modes", summary: "List SpectralLock lenses (zero, tazel, vyrn, uv, rosetta, zen, chaos, balance).", responses: { "200": { description: "modes" } } } },
+      "/v1/lenses": { get: { operationId: "spectrallock_lenses", summary: "Alias for /v1/modes — Corpus OCR lens names.", responses: { "200": { description: "lenses" } } } },
+      "/v1/targets": { get: { operationId: "spectrallock_targets", summary: "Ink and page targets (Corpus OCR ink/page modes).", responses: { "200": { description: "targets" } } } },
       "/v1/overlay": {
         post: {
           operationId: "spectrallock_overlay",
-          summary: "Simplified overlay preview. PNG b64 in, longest side capped at 256 px. Not the full Python pipeline. Does not increment download KV.",
-          requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { b64: { type: "string" }, mode: { type: "string", enum: ["zero","tazel","vyrn","uv","rosetta","zen","chaos","balance"] } }, required: ["b64", "mode"] } } } },
+          summary: "Rosetta spectral overlay preview. PNG b64 in, longest side capped at 256 px. Accepts mode/lens/lenses and target ink|page. Does not increment download KV.",
+          requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { b64: { type: "string" }, mode: { type: "string", enum: ["zero","tazel","vyrn","uv","rosetta","zen","chaos","balance"] }, lens: { type: "string" }, lenses: { type: "array", items: { type: "string" } }, target: { type: "string", enum: ["ink", "page"] } }, required: ["b64"] } } } },
           responses: { "200": { description: "png_b64 + metadata" } },
         },
       },
@@ -464,7 +468,7 @@ function aiHelpPage(request) {
 <pre>curl ${origin}/v1/health
 curl ${origin}/v1/modes
 curl -X POST ${origin}/v1/overlay -H 'content-type: application/json' \\
-  -d '{"mode":"rosetta","b64":"<png-base64>"}'
+  -d '{"mode":"rosetta","target":"ink","b64":"<png-base64>"}'
 </pre>
 <p>GET/POST under <code>/v1</code> never increment the download counter. Hosted overlay is a simplified preview (max 256 px). Full pipeline is the Python package.</p>
 <p><a href="/">Downloads</a></p>
@@ -480,8 +484,10 @@ async function handleRuntime(request, url) {
       version: VERSION,
       runtime: true,
       kv_increment: false,
-      not_a_spectrometer: true,
-      not_forensic_proof: true,
+      rosetta_spectral_analysis: true,
+      corpus_ocr_aligned: true,
+      lenses: ["zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"],
+      targets: ["ink", "page"],
       synthetic_uv: true,
       limitation: LIMITATION,
     });
@@ -509,8 +515,27 @@ async function handleRuntime(request, url) {
     });
   }
 
-  if (path === "/v1/modes" && request.method === "GET") {
-    return json({ product: "spectrallock", version: VERSION, modes: MODES, advisory: LIMITATION });
+  if ((path === "/v1/modes" || path === "/v1/lenses") && request.method === "GET") {
+    return json({
+      product: "spectrallock",
+      version: VERSION,
+      author: "Aziel Eliab",
+      rosetta_spectral_analysis: true,
+      corpus_ocr_aligned: true,
+      modes: MODES,
+      lenses: MODES,
+      targets: TARGETS,
+      advisory: LIMITATION,
+    });
+  }
+  if (path === "/v1/targets" && request.method === "GET") {
+    return json({
+      product: "spectrallock",
+      version: VERSION,
+      author: "Aziel Eliab",
+      targets: TARGETS,
+      advisory: LIMITATION,
+    });
   }
   if (path === "/openapi.json" && request.method === "GET") {
     return json(openapiSpec(request));
@@ -524,17 +549,21 @@ async function handleRuntime(request, url) {
       return json({ error: "JSON body required", limitation: LIMITATION }, 400);
     }
     const b64 = body && (body.b64 || body.image);
-    const mode = body && body.mode;
+    const mode = body && (body.mode || body.lens);
     if (!b64) return json({ error: "b64 PNG required", limitation: LIMITATION }, 400);
     if (String(b64).length > 2_000_000) {
       return json({ error: "image too large for hosted preview", limitation: LIMITATION }, 413);
     }
-    const result = await overlayFromB64(b64, mode);
+    const result = await overlayFromB64(b64, mode, {
+      lens: body && body.lens,
+      lenses: body && body.lenses,
+      target: body && (body.target || body.polarity),
+    });
     const status = result.error ? 400 : 200;
     return json(result, status);
   }
   if (path.startsWith("/v1/") || path === "/v1") {
-    return json({ error: "not found", hint: "GET /v1/health /v1/modes ; POST /v1/overlay", limitation: LIMITATION }, 404);
+    return json({ error: "not found", hint: "GET /v1/health /v1/lenses /v1/targets ; POST /v1/overlay", limitation: LIMITATION }, 404);
   }
   return null;
 }

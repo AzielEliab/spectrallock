@@ -1,8 +1,11 @@
 include LICENSE
 include README.md
 include CONTRIBUTING.md
+include SKILL.md
+include install.sh
 include pyproject.toml
 include .gitignore
+include scripts/build_tarball.sh
 graft docs
 graft examples
 graft tests

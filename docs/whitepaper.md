@@ -1,4 +1,4 @@
-# SpectralLock 0.2.0 — product spec
+# SpectralLock 0.3.0 — product spec
 
 **Author:** Aziel Eliab  
 **Date:** 2026  
@@ -8,18 +8,21 @@ Source papers (verbatim extracts) live in [`docs/source/`](source/).
 
 ## What this is
 
-SpectralLock applies **named digital overlays** to ordinary photographs of
-manuscript pages so a human can look again. It is image processing
-(Pillow + numpy): hue weighting, histogram equalization, band-pass,
-unsharp, and documented linear mixes of those channels.
+SpectralLock is **Rosetta spectral analysis** software (RSA-2.0 family).
+It applies the same **SpectralLock lenses** used by
+[Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr):
+named overlays plus ink/page targets on ordinary photographs of
+manuscript pages.
+
+It is image processing (Pillow + numpy): hue weighting, histogram
+equalization, band-pass, unsharp, documented linear mixes, then an
+ink or page polarity.
 
 ## What this is not
 
-- Not a lab spectrometer.
-- Not real UV photography hardware, not a 365 nm lamp, not fluorescence capture.
-- Not a forensic proof of hidden ink.
-- Not OCR and not transcription.
-- Not a claim of scribal truth, dating, authorship, or conservation science.
+- Not a court exhibit or a claim of authenticity.
+- Not a substitute for a human reading the page.
+- Synthetic UV is a 365–400 nm *look* from an ordinary photograph, not a lamp.
 - Balance never invents marks or symbols.
 
 The human still reads the page.
@@ -32,7 +35,9 @@ The human still reads the page.
 | Vyrn | `#C00066` | ~350° | purification / pressure (magenta–red-violet) |
 | Zero | `#6F6485` | ~260° | equilibrium (indigo / blue-violet) |
 
-## Live engines (v1.0 / package 0.2.0)
+## Live lenses (package 0.3.0)
+
+Same ids as the Corpus OCR SpectralLock lens checkboxes.
 
 ### ZSA-1.0 `zero`
 
@@ -53,7 +58,7 @@ the background.
 
 **Synthetic** 365–400 nm simulation from an ordinary RGB photo: boost
 parchment luminance, blue-violet weight, microtexture high-pass, ink
-darker. Not a real UV lamp.
+darker.
 
 ### RSA-2.0 `rosetta`
 
@@ -90,17 +95,36 @@ RGB = α·Zen + (1 − α)·Chaos
 Never invents marks: every output pixel is a convex combination of the
 Zen and Chaos pixels already computed.
 
+## Ink / page targets
+
+Applied after the lens overlay. Reweights existing pixels only.
+Parchment color is estimated from the brightest quintile of the photo.
+
+### `ink`
+
+Isolate writing: crush parchment toward the estimated page color, keep
+strokes darker. Default. Matches Corpus OCR ink mode.
+
+### `page`
+
+Isolate substrate: wash ink toward the estimated parchment color, keep
+large-scale page texture. Matches Corpus OCR page mode.
+
+Several lenses may be selected (Corpus OCR checkbox family). They are
+mixed equally, then the target is applied.
+
 ## Hosted preview vs package
 
 The Cloudflare Worker `/v1/overlay` is a simplified JavaScript port
 (PNG decode, longest side ≤ 256 px, approximate hue matrices + the same
-published weights). Full histogram / band-pass / unsharp lives in the
-Python package.
+published weights, plus ink/page). Full histogram / band-pass / unsharp
+lives in the Python package.
 
 ## UI
 
 `spectrallock ui` binds **127.0.0.1:8861** only. Dark gold. Add file or
-Sample page, Simple/Advanced labels, overlay-only or side-by-side, Export
-PNG + JSON sidecar, Verify receipt (mode, paper, SHA-256 in/out, size).
-Banner: overlays are not forensic proof. `spectrallock doctor` checks all
-eight modes, no NaN, loopback, no telemetry.
+Sample page, SpectralLock lens grid (multi-select), Ink/Page target,
+Simple/Advanced labels, overlay-only or side-by-side, Export PNG + JSON
+sidecar, Verify receipt (lenses, target, paper, SHA-256 in/out, size).
+`spectrallock doctor` checks all eight lenses × both targets, no NaN,
+loopback, no telemetry.

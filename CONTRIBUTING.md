@@ -19,10 +19,10 @@ No network.
 
 ## Ground rules
 
-1. **Advisory overlays only.** Digital reweighting of photographs of
-   manuscript pages. Not a lab spectrometer, not real UV photography
-   hardware, not a forensic proof of hidden ink, not OCR, not a claim
-   of scribal truth. The human still reads the page.
+1. **Rosetta spectral analysis.** Same SpectralLock lenses as Aziel
+   Corpus Library OCR: overlays plus ink/page targets. Digital
+   reweighting of photographs of manuscript pages. The human still
+   reads the page. Author Aziel Eliab only.
 2. **Do not invent marks.** Balance (BSA) reweights Zen vs Chaos. It
    must not draw symbols that were not in the photograph.
 3. **Synthetic UV is a simulation** of a 365–400 nm look from an

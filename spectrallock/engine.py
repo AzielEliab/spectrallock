@@ -1,9 +1,8 @@
-"""SpectralLock overlay engines (Pillow + numpy). Advisory visualization only.
+"""SpectralLock overlay engines (Pillow + numpy). Rosetta spectral analysis.
 
-Digital overlays on photographs of manuscript pages. Not a lab spectrometer,
-not real UV photography hardware, not a forensic proof of hidden ink, not OCR,
-not a claim of scribal truth. The human still reads the page. Balance never
-invents marks — it only reweights existing readings.
+RSA-2.0 family. Same SpectralLock lenses as Aziel Corpus Library OCR:
+overlays plus ink/page targets. Balance never invents marks — it only
+reweights existing readings. The human still reads the page.
 """
 
 from __future__ import annotations
@@ -23,6 +22,8 @@ __all__ = [
     "LIMITATION",
     "MODES",
     "LIVE_MODES",
+    "LENSES",
+    "TARGETS",
     "ROSETTA_WEIGHTS",
     "ZEN_WEIGHTS",
     "CHAOS_WEIGHTS",
@@ -34,7 +35,14 @@ __all__ = [
     "ZERO_HUE",
     "OverlayResult",
     "apply_mode",
+    "analyze",
+    "apply_target",
+    "compose_lenses",
+    "normalize_lenses",
+    "normalize_target",
     "list_modes",
+    "list_lenses",
+    "list_targets",
     "load_rgb",
     "save_rgb",
     "png_bytes",
@@ -62,11 +70,12 @@ __all__ = [
 ]
 
 LIMITATION = (
-    "Advisory digital overlays on photographs of manuscript pages. "
-    "Not a lab spectrometer, not real UV photography hardware, not a "
-    "forensic proof of hidden ink, not OCR, and not a claim of scribal truth. "
-    "Synthetic UV simulates a 365–400 nm look from an ordinary photo. "
-    "Balance never invents marks. The human still reads the page."
+    "Rosetta spectral analysis (RSA-2.0 family). SpectralLock lenses match "
+    "Aziel Corpus Library OCR — overlays plus ink/page targets "
+    "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance). "
+    "Synthetic UV is a 365–400 nm look from an ordinary photograph. "
+    "Balance never invents marks. The human still reads the page. "
+    "Author Aziel Eliab."
 )
 
 TAZEL_HEX = "#1EC9A5"
@@ -97,16 +106,24 @@ class OverlayResult:
     height: int
     paper: str
     channels: dict[str, np.ndarray] | None = None
+    target: str = "ink"
+    lenses: tuple[str, ...] = ()
 
     def to_meta(self) -> dict:
+        lenses = list(self.lenses) or [self.mode]
         return {
             "mode": self.mode,
+            "lens": lenses[0] if len(lenses) == 1 else "+".join(lenses),
+            "lenses": lenses,
+            "target": self.target,
             "com": {"x": self.com[0], "y": self.com[1]},
             "width": self.width,
             "height": self.height,
             "paper": self.paper,
             "product": "spectrallock",
             "version": _package_version(),
+            "rosetta_spectral_analysis": True,
+            "corpus_ocr_aligned": True,
             "advisory": LIMITATION,
         }
 
@@ -144,11 +161,17 @@ def make_receipt(
     size_out: int,
     width: int,
     height: int,
+    target: str = "ink",
+    lenses: list[str] | tuple[str, ...] | None = None,
 ) -> dict:
+    lens_list = [str(x) for x in (lenses or [mode]) if str(x).strip()]
     return {
         "product": "spectrallock",
         "version": _package_version(),
         "mode": mode,
+        "lens": lens_list[0] if len(lens_list) == 1 else "+".join(lens_list),
+        "lenses": lens_list,
+        "target": normalize_target(target),
         "paper": paper,
         "sha256_in": sha256_in,
         "sha256_out": sha256_out,
@@ -158,8 +181,9 @@ def make_receipt(
         "height": int(height),
         "limitation": LIMITATION,
         "advisory": LIMITATION,
-        "not_a_spectrometer": True,
-        "not_forensic_proof": True,
+        "rosetta_spectral_analysis": True,
+        "corpus_ocr_aligned": True,
+        "author": "Aziel Eliab",
     }
 
 
@@ -500,10 +524,20 @@ def synthetic_page(width: int = 96, height: int = 96) -> np.ndarray:
     return img
 
 
-def _pack(mode: str, rgb_out: np.ndarray, paper: str, channels=None, *, source: np.ndarray | None = None) -> OverlayResult:
+def _pack(
+    mode: str,
+    rgb_out: np.ndarray,
+    paper: str,
+    channels=None,
+    *,
+    source: np.ndarray | None = None,
+    target: str = "ink",
+    lenses: list[str] | tuple[str, ...] | None = None,
+) -> OverlayResult:
     clean = finite01(rgb_out)
     h, w = clean.shape[:2]
     lum = luminance(finite01(source) if source is not None else clean)
+    lens_tuple = tuple(lenses) if lenses else (mode,)
     return OverlayResult(
         rgb=clean,
         mode=mode,
@@ -512,7 +546,115 @@ def _pack(mode: str, rgb_out: np.ndarray, paper: str, channels=None, *, source: 
         height=h,
         paper=paper,
         channels=channels,
+        target=normalize_target(target),
+        lenses=lens_tuple,
     )
+
+
+def normalize_target(target: str | None) -> str:
+    key = str(target or "ink").strip().lower()
+    if key in {"page", "parchment", "substrate", "folio"}:
+        return "page"
+    return "ink"
+
+
+def normalize_lenses(
+    mode: str | list[str] | tuple[str, ...] | None = None,
+    lens: str | list[str] | tuple[str, ...] | None = None,
+    lenses: str | list[str] | tuple[str, ...] | None = None,
+) -> list[str]:
+    raw: list[object] = []
+    for item in (lenses, lens, mode):
+        if item is None or item == "":
+            continue
+        if isinstance(item, (list, tuple)):
+            raw.extend(item)
+        else:
+            raw.extend(str(item).replace("+", ",").split(","))
+    out: list[str] = []
+    for item in raw:
+        key = str(item or "").strip().lower()
+        if not key:
+            continue
+        if key not in MODES:
+            known = ", ".join(MODES)
+            raise ValueError(f"unknown lens {key!r}. Known: {known}")
+        if key not in out:
+            out.append(key)
+    return out or ["rosetta"]
+
+
+def parchment_estimate(rgb: np.ndarray) -> np.ndarray:
+    """Mean color of the brightest quintile — from the photo, not invented."""
+    lum = luminance(rgb)
+    q = float(np.quantile(lum, 0.80))
+    mask = lum >= q
+    if not np.any(mask):
+        return rgb.reshape(-1, 3).mean(axis=0).astype(np.float32)
+    return rgb[mask].mean(axis=0).astype(np.float32)
+
+
+def apply_target(rgb: np.ndarray, target: str = "ink") -> np.ndarray:
+    """Ink isolates writing; page isolates parchment/substrate. Reweights only."""
+    key = normalize_target(target)
+    rgb = finite01(rgb)
+    lum = luminance(rgb)
+    t = normalize01(lum)
+    parchment = parchment_estimate(rgb)
+    if key == "page":
+        ink = np.clip((0.50 - t) / 0.50, 0.0, 1.0)
+        out = rgb * (1.0 - 0.72 * ink[..., None]) + parchment * (0.72 * ink[..., None])
+        hp = lum - blur_gray(lum, 1.4)
+        out = np.clip(out + hp[..., None] * 0.35, 0.0, 1.0)
+        return out.astype(np.float32)
+    page = np.clip((t - 0.38) / 0.40, 0.0, 1.0)
+    ink = (t < 0.48).astype(np.float32)
+    washed = rgb * (1.0 - 0.50 * page[..., None]) + parchment * (0.50 * page[..., None])
+    out = washed * (1.0 - 0.28 * ink[..., None])
+    return np.clip(out, 0.0, 1.0).astype(np.float32)
+
+
+def compose_lenses(rgb: np.ndarray, lenses: list[str], *, tint: bool = True) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """Equal mix of selected lens luma — same multi-lens checkbox family as Corpus OCR."""
+    rgb = finite01(rgb)
+    selected = normalize_lenses(lenses=lenses)
+    channels: dict[str, np.ndarray] = {}
+    for name in selected:
+        result = apply_mode(rgb, name, tint=tint)
+        channels[name] = normalize01(luminance(result.rgb))
+    if len(selected) == 1:
+        return apply_mode(rgb, selected[0], tint=tint).rgb, channels
+    weight = 1.0 / float(len(selected))
+    mix = blend_channels(channels, {name: weight for name in selected})
+    return gray_to_rgb(np.clip(mix, 0.0, 1.0)), channels
+
+
+def analyze(
+    rgb: np.ndarray,
+    mode: str | list[str] | tuple[str, ...] | None = None,
+    *,
+    lens: str | list[str] | tuple[str, ...] | None = None,
+    lenses: str | list[str] | tuple[str, ...] | None = None,
+    target: str = "ink",
+    tint: bool = True,
+) -> OverlayResult:
+    """Rosetta spectral analysis: lens overlay(s) then ink/page target."""
+    selected = normalize_lenses(mode=mode, lens=lens, lenses=lenses)
+    dest = normalize_target(target)
+    rgb = finite01(rgb)
+    debug(f"analyze lenses={selected} target={dest} size={rgb.shape[1]}x{rgb.shape[0]}")
+    if len(selected) == 1:
+        base = apply_mode(rgb, selected[0], tint=tint)
+        out = apply_target(base.rgb, dest)
+        paper = base.paper
+        channels = base.channels
+        key = selected[0]
+    else:
+        mixed, channels = compose_lenses(rgb, selected, tint=tint)
+        out = apply_target(mixed, dest)
+        paper = "MULTI"
+        key = "+".join(selected)
+    return _pack(key, out, paper, channels, source=rgb, target=dest, lenses=selected)
 
 
 def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResult:
@@ -589,13 +731,13 @@ MODES: dict[str, dict] = {
     },
     "rosetta": {
         "id": "rosetta",
-        "kid_label": "Mix of three",
-        "kid_hint": "Blends zero, tazel, and vyrn. Advisory only.",
+        "kid_label": "Rosetta",
+        "kid_hint": "RSA-2.0 decoding composite: zero + tazel + vyrn. Same Rosetta lens as Corpus OCR.",
         "paper": "RSA-2.0",
         "status": "live",
         "hue": None,
         "hex": None,
-        "summary": "0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize.",
+        "summary": "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize.",
     },
     "zen": {
         "id": "zen",
@@ -630,7 +772,33 @@ MODES: dict[str, dict] = {
 }
 
 LIVE_MODES = tuple(MODES.keys())
+LENSES = LIVE_MODES
+
+TARGETS: dict[str, dict] = {
+    "ink": {
+        "id": "ink",
+        "kid_label": "Ink",
+        "kid_hint": "Isolate writing. Same ink target as Aziel Corpus Library OCR.",
+        "summary": "Ink mode: crush parchment, keep strokes. Reweights existing pixels only.",
+        "status": "live",
+    },
+    "page": {
+        "id": "page",
+        "kid_label": "Page",
+        "kid_hint": "Isolate parchment and substrate. Same page target as Aziel Corpus Library OCR.",
+        "summary": "Page mode: lift substrate, wash ink. Reweights existing pixels only.",
+        "status": "live",
+    },
+}
 
 
 def list_modes() -> list[dict]:
     return [dict(v) for v in MODES.values()]
+
+
+def list_lenses() -> list[dict]:
+    return list_modes()
+
+
+def list_targets() -> list[dict]:
+    return [dict(v) for v in TARGETS.values()]

@@ -1,7 +1,7 @@
 name: spectrallock
-description: Advisory overlays on manuscript photographs. Not a spectrometer.
+description: Rosetta spectral analysis. Same lenses as Aziel Corpus Library OCR.
 publish_to: "none"
-version: 0.2.0+1
+version: 0.3.0+1
 
 environment:
   sdk: ">=3.3.0 <4.0.0"

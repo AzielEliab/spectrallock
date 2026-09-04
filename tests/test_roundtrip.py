@@ -26,7 +26,9 @@ def test_import_export_roundtrip_png_sidecar(tmp_path: Path) -> None:
     assert rec["size_in"] == src.stat().st_size
     assert rec["size_out"] == dst.stat().st_size
     assert "limitation" in rec
-    assert "forensic" in rec["limitation"].lower()
+    assert "rosetta" in rec["limitation"].lower()
+    assert rec["target"] == "ink"
+    assert rec["rosetta_spectral_analysis"] is True
     img = Image.open(dst)
     assert img.size == (48, 32)
 
