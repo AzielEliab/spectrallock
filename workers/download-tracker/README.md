@@ -7,7 +7,9 @@ Serves gzip via `ASSETS.fetch`, `Cache-Control: private, no-store`.
 
 `/v1` never increments DOWNLOADS KV.
 
-## Use with Grok, ChatGPT, Venice
+## Use with ChatGPT, Grok, Venice, Claude, Cursor, and other MCP/OpenAPI-capable assistants
+
+Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants.
 
 - OpenAPI: `https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json`
 - Health: `GET /v1/health`

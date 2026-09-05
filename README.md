@@ -178,14 +178,14 @@ Isolated counter: Worker `spectrallock-download-tracker`, project `spectrallock`
 KV `SPECTRALLOCK_DOWNLOADS`. `totalKey` `spectrallock|__total__`. `/download`
 serves gzip from Worker assets (`private, no-store`). No 302 to GitHub.
 
-## Use with Grok / ChatGPT / Venice
+## Use with ChatGPT, Grok, Venice, Claude, Cursor, and other MCP/OpenAPI-capable assistants
 
 Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json
 Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`
 This Worker skill: https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill
 This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json
 
-Grok: import the catalog or Worker OpenAPI as a custom tool. ChatGPT: GPT Actions (no auth). Venice: HTTP tools. Always send `User-Agent: Mozilla/5.0`.
+Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import the catalog or Worker OpenAPI as a custom tool, GPT Action (no auth), HTTP tool, or MCP connector. Always send `User-Agent: Mozilla/5.0`.
 
 ## Cite this
 
