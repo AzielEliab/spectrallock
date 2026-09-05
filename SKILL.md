@@ -32,7 +32,7 @@ Ops (do **not** increment downloads or views):
 | GET | `/v1/targets` | Ink and page targets. |
 | POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses` and `target` (`ink`\|`page`). |
 
-Grok: import OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.
+Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector.
 
 ## Example
 
@@ -68,4 +68,4 @@ Author: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full p
 
 Local UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page. Then `spectrallock doctor`.
 
-Grok: import catalog or Worker OpenAPI as a custom tool. ChatGPT: GPT Actions. Venice: HTTP tools.
+Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import catalog or Worker OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector.
