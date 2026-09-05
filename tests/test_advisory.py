@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import re
 from pathlib import Path
 
 from spectrallock.engine import LIMITATION
@@ -73,6 +75,7 @@ def test_copy_lists_full_ai_clients_not_exclusive_trio() -> None:
 def test_worker_skill_embed_matches_skill_md() -> None:
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     js = (ROOT / "workers" / "download-tracker" / "src" / "index.js").read_text(encoding="utf-8")
-    for line in skill.splitlines():
-        if line.strip():
-            assert line in js, f"Worker SKILL_MARKDOWN missing {line!r}"
+    match = re.search(r"const SKILL_MARKDOWN = (\".*?\");", js, flags=re.S)
+    assert match, "SKILL_MARKDOWN constant missing from Worker"
+    embedded = ast.literal_eval(match.group(1))
+    assert embedded.rstrip() == skill.rstrip()
