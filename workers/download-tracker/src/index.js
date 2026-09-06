@@ -13,6 +13,7 @@ const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling S
  * GET  /download?asset=spectrallock-0.3.0.tar.gz
  *      increments KV, serves the tarball via env.ASSETS.fetch
  *      (does not 302 to GitHub)
+ * GET  /count   JSON {project, views, downloads, total}. Does not increment.
  * GET  /stats   JSON totals + per-repo + per-branch breakdown
  * POST /event   forks report a download {owner,repo,branch,fork,asset}
  *
@@ -191,6 +192,13 @@ async function collectStats(env) {
 
 
 
+function countPayload(stats) {
+  const views = Number(stats && stats.views) || 0;
+  const downloads = Number(stats && (stats.downloads != null ? stats.downloads : stats.total)) || 0;
+  const total = Number(stats && (stats.total != null ? stats.total : downloads)) || 0;
+  return { project: PROJECT, views, downloads, total };
+}
+
 function viewsKey() {
   return PROJECT + "|__views__";
 }
@@ -362,7 +370,7 @@ async function indexHtml(env) {
     <p class="meta">The download count ticks on the Download click. The Worker serves the gzip (HTTP 200). No 302 to GitHub. Forks using this same link are counted automatically. ${DEFAULT_ASSET} — ${n} counted.</p>
     <p class="iso">Isolated counter: Worker <code>spectrallock-download-tracker</code>, project <code>spectrallock</code>, KV <code>SPECTRALLOCK_DOWNLOADS</code>. Not mixed with any other product. /v1 does not increment downloads.</p>
     
-    <p class="meta"><a href="/stats">JSON stats</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/v1/skill">Skill</a> · <a href="/ai">AI runtime</a> · <a href="${GITHUB_REPO}">GitHub</a> · <a href="${GITHUB_LATEST}">releases</a></p>
+    <p class="meta"><a href="/count">JSON count</a> · <a href="/stats">JSON stats</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/v1/skill">Skill</a> · <a href="/ai">AI runtime</a> · <a href="${GITHUB_REPO}">GitHub</a> · <a href="${GITHUB_LATEST}">releases</a></p>
     <script>
       (function () {
         var cmd = "curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash";
@@ -430,6 +438,31 @@ function openapiSpec(request) {
     },
     servers: [{ url: origin }],
     paths: {
+      "/count": {
+        get: {
+          operationId: "spectrallockCount",
+          summary: "Counted views and downloads. Does not increment KV.",
+          responses: {
+            "200": {
+              description: "{project, views, downloads, total}",
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    required: ["project", "views", "downloads", "total"],
+                    properties: {
+                      project: { type: "string" },
+                      views: { type: "integer" },
+                      downloads: { type: "integer" },
+                      total: { type: "integer" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
             "/v1/example": { get: { operationId: "spectrallockExample", summary: "Sample JSON payload. Does not increment downloads.", responses: { "200": { description: "OK" } } } },
       "/v1/health": { get: { operationId: "spectrallock_health", summary: "Liveness. Does not increment download KV.", responses: { "200": { description: "ok" } } } },
       "/v1/modes": { get: { operationId: "spectrallock_modes", summary: "List SpectralLock lenses (zero, tazel, vyrn, uv, rosetta, zen, chaos, balance).", responses: { "200": { description: "modes" } } } },
@@ -604,9 +637,9 @@ export default {
       });
     }
 
-    if (url.pathname === "/count" && request.method === "GET") {
+    if ((url.pathname === "/count" || url.pathname === "/count/") && request.method === "GET") {
       const stats = await collectStats(env);
-      return json({ project: PROJECT, total: stats.total || 0 });
+      return json(countPayload(stats));
     }
 
     if (url.pathname === "/stats" && request.method === "GET") {

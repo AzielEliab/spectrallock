@@ -45,7 +45,8 @@ The Worker serves the gzip itself (HTTP 200, no 302 to GitHub).
 Direct tarball (also counted):
 [spectrallock-0.3.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz)
 
-- Live count JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/stats](https://spectrallock-download-tracker.vibelock.workers.dev/stats)
+- Live count JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/count](https://spectrallock-download-tracker.vibelock.workers.dev/count) (`{project, views, downloads, total}`)
+- Full stats JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/stats](https://spectrallock-download-tracker.vibelock.workers.dev/stats)
 - OpenAPI: [https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json](https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json)
 - Skill: [https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill](https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill)
 - One-click install: [https://spectrallock-download-tracker.vibelock.workers.dev/install.sh](https://spectrallock-download-tracker.vibelock.workers.dev/install.sh)
