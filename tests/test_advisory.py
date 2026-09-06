@@ -72,6 +72,18 @@ def test_copy_lists_full_ai_clients_not_exclusive_trio() -> None:
         assert "Grok / ChatGPT / Venice" not in text
 
 
+def test_worker_hosts_default_asset() -> None:
+    js = (ROOT / "workers" / "download-tracker" / "src" / "index.js").read_text(encoding="utf-8")
+    match = re.search(r'const DEFAULT_ASSET = "([^"]+)";', js)
+    assert match, "DEFAULT_ASSET constant missing from Worker"
+    asset = match.group(1)
+    path = ROOT / "workers" / "download-tracker" / "public" / asset
+    assert path.is_file(), f"Worker DEFAULT_ASSET {asset} is not hosted in public/"
+    data = path.read_bytes()
+    assert data[:2] == b"\x1f\x8b", f"{asset} is not gzip"
+    assert len(data) > 1024, f"{asset} is too small to be a release sdist"
+
+
 def test_worker_skill_embed_matches_skill_md() -> None:
     skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
     js = (ROOT / "workers" / "download-tracker" / "src" / "index.js").read_text(encoding="utf-8")
