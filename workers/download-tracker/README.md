@@ -4,6 +4,8 @@ Isolated Worker `spectrallock-download-tracker`. Project `spectrallock`.
 KV namespace `SPECTRALLOCK_DOWNLOADS` bound as `DOWNLOADS`.
 totalKey `spectrallock|__total__`. Does not 302 to GitHub on `/download`.
 Serves gzip via `ASSETS.fetch`, `Cache-Control: private, no-store`.
+
+`GET /count` returns `{project, views, downloads, total}` and does not increment KV.
 `DEFAULT_ASSET` (`spectrallock-0.3.0.tar.gz`) must live in `public/` or `/download` returns `asset not hosted`.
 Build it with `scripts/build_tarball.sh`. Author Aziel Eliab.
 
