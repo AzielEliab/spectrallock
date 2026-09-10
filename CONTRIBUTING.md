@@ -30,8 +30,11 @@ No network.
 4. **Keep the dependency list tiny.** Pillow + numpy. No OpenCV.
 5. **UI binds loopback only** (`127.0.0.1:8861`). Do not listen on `0.0.0.0`.
 6. **Do not mix the download tracker** with any other product's Worker or KV.
-7. New behavior needs a test that fails without the change.
-8. Hosted `/v1/overlay` is a simplified preview (max 256 px). The full
+7. **Door vs local op.** `/v1/mesh/*` PROXY to aziel-runtime. Local ops are `/v1/{op}` only.
+   Suite mesh default OFF; QNM rollup live|locked|isolated; no Node Gate;
+   no auto-heal; not anonymity.
+8. New behavior needs a test that fails without the change.
+9. Hosted `/v1/overlay` is a simplified preview (max 256 px). The full
    pipeline is this Python package.
 
 ## Where to change things
@@ -41,6 +44,7 @@ No network.
 - Local UI: `spectrallock/ui.py`, `spectrallock/web/`
 - Papers: `docs/source/`, spec: `docs/whitepaper.md`
 - Hosted preview: `workers/download-tracker/src/overlay.js`
+- Suite mesh / QNM Live Nodes: `workers/download-tracker/src/mesh.js` (`/v1/mesh/*` PROXY to aziel-runtime).
 - Flutter approximation: `mobile/lib/`
 
 ## License of contributions

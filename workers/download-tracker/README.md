@@ -10,6 +10,9 @@ Serves gzip via `ASSETS.fetch`, `Cache-Control: private, no-store`.
 Build it with `scripts/build_tarball.sh`. Author Aziel Eliab.
 
 `/v1` never increments DOWNLOADS KV.
+`/v1/mesh/*` PROXY to aziel-runtime suite mesh (`AZIEL_RUNTIME` / `https://aziel-runtime.vibelock.workers.dev`). Default OFF. QNM-BUILD-1.0 live|locked|isolated. No Node Gate. No auto-heal. Not anonymity. Human UI Live Nodes strip polls `GET /v1/mesh`.
+
+Verify: `curl -sS -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh/status` returns MESH-OK style JSON with `enabled: false` by default.
 
 ## Use with ChatGPT, Grok, Venice, Claude, Cursor, and other MCP/OpenAPI-capable assistants
 

@@ -120,6 +120,12 @@ The Cloudflare Worker `/v1/overlay` is a simplified JavaScript port
 published weights, plus ink/page). Full histogram / band-pass / unsharp
 lives in the Python package.
 
+The Worker homepage shows a suite Live Nodes strip. `/v1/mesh/*` PROXY
+to aziel-runtime. Suite mesh default OFF. QNM rollup is
+live|locked|isolated counts only. No Node Gate. No auto-heal. Not an
+anonymity network. Anon-broadcast is not a publish path. SpectralLock
+remains Rosetta spectral analysis.
+
 ## UI
 
 `spectrallock ui` binds **127.0.0.1:8861** only. Dark gold. Add file or
