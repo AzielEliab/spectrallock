@@ -1,3 +1,4 @@
+import { handleMeshApi, meshOpenApiPaths, meshPointer } from "./mesh.js";
 import { LIMITATION, MODES, TARGETS, VERSION, overlayFromB64 } from "./overlay.js";
 const EXAMPLE_PAYLOAD = {
   "mode": "rosetta",
@@ -6,7 +7,7 @@ const EXAMPLE_PAYLOAD = {
   "note": "Rosetta spectral analysis preview (256px). Same lenses as Aziel Corpus Library OCR."
 };
 
-const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Rosetta spectral analysis — same lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.\n---\n\n# SpectralLock\n\nRosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. Author: **Aziel Eliab**.\n\n**THIS IS:** Rosetta spectral analysis — SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr).\n\n**THIS IS NOT:** a court exhibit or a claim of authenticity. Hosted `/v1` does not increment downloads or views.\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- Corpus OCR (reference): https://www.azielcorpuslibrary.net/ocr\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List SpectralLock lenses. |\n| GET | `/v1/lenses` | Alias for `/v1/modes`. |\n| GET | `/v1/targets` | Ink and page targets. |\n| POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses` and `target` (`ink`\\|`page`). |\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/lenses\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\nspectrallock doctor\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n\n## Catalog + local UI\n\nAuthor: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full pipeline is the Python package.\n\n- Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- This Worker skill: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`\n\nLocal UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page. Then `spectrallock doctor`.\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import catalog or Worker OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector.\n";
+const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Dual surface: Worker /v1 + catalog MCP. This Worker /v1/mesh/* PROXY to aziel-runtime via AZIEL_RUNTIME. Suite mesh default OFF. QNM-BUILD-1.0 live|locked|isolated. No Node Gate. No auto-heal. Not anonymity. Rosetta spectral analysis — same lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.\n---\n\n# SpectralLock\n\nRosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. Author: **Aziel Eliab**.\n\n**THIS IS:** Rosetta spectral analysis — SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr).\n\n**THIS IS NOT:** a court exhibit or a claim of authenticity. Hosted `/v1` does not increment downloads or views.\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- Suite mesh: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh` (PROXY; default OFF)\n- Corpus OCR (reference): https://www.azielcorpuslibrary.net/ocr\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List SpectralLock lenses. |\n| GET | `/v1/lenses` | Alias for `/v1/modes`. |\n| GET | `/v1/targets` | Ink and page targets. |\n| POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses` and `target` (`ink`\\|`page`). |\n| GET | `/v1/mesh` | PROXY suite mesh status. Default OFF. QNM live|locked|isolated. Never enables. |\n| GET | `/v1/mesh/nodes` | PROXY Live Nodes roster (5-minute presence). |\n| POST | `/v1/mesh/{enable,disable,join,heartbeat,leave,broadcast}` | PROXY. Bearer required to enable. No auto-heal. Anon-broadcast is not a publish path. |\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector. Catalog MCP `mesh_*` + FragGate `slug=mesh`. Suite mesh default OFF. QNM-BUILD-1.0 live|locked|isolated. No Node Gate. No auto-heal. Not anonymity.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/lenses\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\nspectrallock doctor\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n\n## Catalog + local UI\n\nAuthor: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full pipeline is the Python package.\n\n- Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- This Worker skill: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`\n- Suite mesh: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh` PROXY (default OFF)\n\nLocal UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page. Then `spectrallock doctor`. Worker homepage Live Nodes strip polls `GET /v1/mesh` (default OFF).\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import catalog or Worker OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector. MCP clients can use the catalog MCP endpoint. Suite mesh: `GET /v1/mesh` PROXY (default OFF). Catalog MCP `mesh_*` + FragGate `slug=mesh`.\n";
 /**
  * SpectralLock download tracker (Cloudflare Worker).
  *
@@ -24,6 +25,7 @@ const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling S
  * Not mixed with any other product.
  *
  * Hosted /v1 never increments DOWNLOADS KV.
+ * /v1/mesh/* PROXY to aziel-runtime via AZIEL_RUNTIME (HTTP fallback).
  */
 
 const PROJECT = "spectrallock";
@@ -40,8 +42,8 @@ const HOST = "https://spectrallock-download-tracker.vibelock.workers.dev";
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, POST, HEAD, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Accept, Authorization, X-Aziel-Runtime-Token, User-Agent",
   };
 }
 
@@ -350,11 +352,33 @@ async function indexHtml(env) {
   .cite h2 { font-size: 1.05rem; margin: 0 0 .4rem; }
   .cite p { color: #c5ccd8; font-size: .95rem; }
   .cite a { color: #c9d4ff; }
+  #meshStrip { border: 1px solid #c9a227; border-radius: 12px; padding: .85rem 1rem; background: #151922; margin: 0 0 1.2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1rem; font-size: .88rem; color: #9aa3b2; }
+  #meshStrip .live { color: #e8eaef; }
+  #meshStrip .live b { color: #c9a227; font-size: 1.35rem; margin-right: .35rem; }
+  #meshStrip .rollup b { color: #c9a227; }
+  #meshStrip button { font: 700 .78rem/1 ui-monospace, Menlo, Consolas, monospace; height: 2rem; padding: 0 .75rem; border-radius: 8px; background: #101010; color: #e8eaef; border: 1px solid #c9a227; cursor: pointer; }
+  #meshStrip button:hover { background: #241c0d; color: #c9a227; }
+  #meshStrip input { width: 10rem; padding: .4rem .55rem; border: 1px solid #c9a227; border-radius: 8px; background: #0e0e0e; color: #e8eaef; font: inherit; }
+  #meshProducts { flex-basis: 100%; margin: 0; }
 </style>
 <body>
   <h1>SpectralLock</h1>
   <p class="motto">Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.</p>
   <p class="banner">RSA-2.0 family. Lenses: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance. Ink isolates writing; page isolates parchment. Balance never invents marks. Author: Aziel Eliab.</p>
+  <div id="meshStrip" aria-label="Suite Live Nodes">
+    <div class="live"><b id="meshLiveCount">0</b> Live Nodes</div>
+    <div id="meshLine">Suite mesh: off (default). QNM-BUILD-1.0. Not an anonymity network.</div>
+    <div class="rollup">live <b id="qnmLive">0</b> · locked <b id="qnmLocked">0</b> · isolated <b id="qnmIsolated">0</b></div>
+    <div>No Node Gate · No auto-heal · Aziel Eliab only</div>
+    <div>
+      <input id="meshBearer" type="text" maxlength="80" placeholder="bearer (required to enable)" aria-label="mesh bearer">
+      <button id="meshEnable" type="button" title="Enable suite mesh. Declared bearer required. Default off.">Enable</button>
+      <button id="meshDisable" type="button" title="Disable suite mesh (always allowed)">Disable</button>
+      <button id="meshJoin" type="button" title="Join as spectrallock. Refused while mesh is OFF. No auto-join.">Join</button>
+      <button id="meshLeave" type="button" title="Leave this node. No auto-heal.">Leave</button>
+    </div>
+    <p id="meshProducts">Catalog MCP mesh_* · FragGate slug=mesh · /v1/mesh/* PROXY · not AnonBroadcast · not AZMail ring · not a Node Gate</p>
+  </div>
   <div class="card">
     <div class="nums">
       <p class="count">${v}<span>Views</span></p>
@@ -370,7 +394,7 @@ async function indexHtml(env) {
     <p class="meta">The download count ticks on the Download click. The Worker serves the gzip (HTTP 200). No 302 to GitHub. Forks using this same link are counted automatically. ${DEFAULT_ASSET} — ${n} counted.</p>
     <p class="iso">Isolated counter: Worker <code>spectrallock-download-tracker</code>, project <code>spectrallock</code>, KV <code>SPECTRALLOCK_DOWNLOADS</code>. Not mixed with any other product. /v1 does not increment downloads.</p>
     
-    <p class="meta"><a href="/count">JSON count</a> · <a href="/stats">JSON stats</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/v1/skill">Skill</a> · <a href="/ai">AI runtime</a> · <a href="${GITHUB_REPO}">GitHub</a> · <a href="${GITHUB_LATEST}">releases</a></p>
+    <p class="meta"><a href="/count">JSON count</a> · <a href="/stats">JSON stats</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/v1/mesh">/v1/mesh</a> · <a href="/v1/skill">Skill</a> · <a href="/ai">AI runtime</a> · <a href="${GITHUB_REPO}">GitHub</a> · <a href="${GITHUB_LATEST}">releases</a></p>
     <script>
       (function () {
         var cmd = "curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash";
@@ -395,6 +419,106 @@ async function indexHtml(env) {
             }
           }
         });
+      })();
+      (function () {
+        function $(id) { return document.getElementById(id); }
+        function meshNum() {
+          for (var i = 0; i < arguments.length; i++) {
+            var raw = arguments[i];
+            if (raw == null || raw === "") continue;
+            var n = typeof raw === "number" ? raw : Number(String(raw).replace(/,/g, ""));
+            if (Number.isFinite(n) && n >= 0) return Math.floor(n);
+          }
+          return 0;
+        }
+        function unwrapMesh(j) {
+          if (!j || typeof j !== "object") return {};
+          if (j.result && typeof j.result === "object") return Object.assign({}, j, j.result);
+          if (j.mesh && typeof j.mesh === "object") return Object.assign({}, j, j.mesh);
+          return j;
+        }
+        function paintMesh(raw) {
+          var j = unwrapMesh(raw);
+          var on = j.enabled === true || j.enabled === 1 || String(j.status || "").toLowerCase() === "on";
+          var r = (j.rollup && typeof j.rollup === "object") ? j.rollup : {};
+          var live = on ? meshNum(r.live, j.live_nodes, j.live) : 0;
+          var locked = on ? meshNum(r.locked, j.locked_nodes, j.locked) : 0;
+          var isolated = on ? meshNum(r.isolated, j.isolated_nodes, j.isolated) : 0;
+          $("meshLiveCount").textContent = String(live);
+          $("qnmLive").textContent = String(live);
+          $("qnmLocked").textContent = String(locked);
+          $("qnmIsolated").textContent = String(isolated);
+          var line = $("meshLine");
+          if (on) line.textContent = "Suite mesh: on · live " + live + " · locked " + locked + " · isolated " + isolated + ". Not an anonymity network.";
+          else if (j.status === "unavailable" || (j.ok === false && j.error)) line.textContent = "Suite mesh: off (unavailable). QNM-BUILD-1.0. Not an anonymity network.";
+          else line.textContent = "Suite mesh: off (default). QNM-BUILD-1.0. Not an anonymity network.";
+          var products = j.products_present || j.products || [];
+          var names = Array.isArray(products) ? products.map(function (p) { return typeof p === "string" ? p : (p && (p.product || p.slug)) || ""; }).filter(Boolean) : [];
+          var nodes = Array.isArray(j.nodes) ? j.nodes : [];
+          var extra = names.length ? " · products " + names.join(", ") : (nodes.length ? " · " + nodes.length + " node labels" : "");
+          $("meshProducts").textContent = "Catalog MCP mesh_* · FragGate slug=mesh · /v1/mesh/* PROXY · not AnonBroadcast · not AZMail ring · not a Node Gate" + extra;
+        }
+        async function meshGet(path) {
+          var r = await fetch(path, { headers: { "user-agent": "Mozilla/5.0", accept: "application/json" } });
+          return r.json();
+        }
+        async function meshPost(path, payload) {
+          var r = await fetch(path, { method: "POST", headers: { "content-type": "application/json", "user-agent": "Mozilla/5.0" }, body: JSON.stringify(payload || {}) });
+          return r.json();
+        }
+        async function refreshMesh() {
+          try {
+            var status = await meshGet("/v1/mesh");
+            var merged = status;
+            var inner = unwrapMesh(status);
+            var on = inner.enabled === true;
+            if (on) {
+              try {
+                var nodes = await meshGet("/v1/mesh/nodes");
+                merged = Object.assign({}, inner, unwrapMesh(nodes));
+              } catch (e) { /* status is enough */ }
+            }
+            paintMesh(merged);
+            var nodeId = sessionStorage.getItem("spectrallock_mesh_node");
+            if (on && nodeId) {
+              try { await meshPost("/v1/mesh/heartbeat", { node_id: nodeId }); } catch (e) { /* no auto-heal */ }
+            }
+          } catch (e) {
+            paintMesh({ ok: false, enabled: false, status: "unavailable", error: "mesh_unavailable" });
+          }
+        }
+        $("meshEnable").onclick = async function () {
+          var bearer = ($("meshBearer").value || "").trim();
+          paintMesh(await meshPost("/v1/mesh/enable", bearer ? { bearer: bearer } : {}));
+          refreshMesh();
+        };
+        $("meshDisable").onclick = async function () {
+          sessionStorage.removeItem("spectrallock_mesh_node");
+          paintMesh(await meshPost("/v1/mesh/disable", {}));
+          refreshMesh();
+        };
+        $("meshJoin").onclick = async function () {
+          var j = await meshPost("/v1/mesh/join", { product: "spectrallock", label: "SpectralLock Worker" });
+          var inner = unwrapMesh(j);
+          var id = inner.node_id || inner.id || (inner.session && inner.session.node_id);
+          if (id) sessionStorage.setItem("spectrallock_mesh_node", String(id));
+          paintMesh(j);
+          refreshMesh();
+        };
+        $("meshLeave").onclick = async function () {
+          var id = sessionStorage.getItem("spectrallock_mesh_node");
+          if (id) await meshPost("/v1/mesh/leave", { node_id: id });
+          sessionStorage.removeItem("spectrallock_mesh_node");
+          refreshMesh();
+        };
+        window.addEventListener("pagehide", function () {
+          var id = sessionStorage.getItem("spectrallock_mesh_node");
+          if (!id || typeof navigator.sendBeacon !== "function") return;
+          try { navigator.sendBeacon("/v1/mesh/leave", new Blob([JSON.stringify({ node_id: id })], { type: "application/json" })); } catch (e) { /* leave expires in 5 minutes */ }
+        });
+        refreshMesh();
+        setInterval(refreshMesh, 30000);
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshMesh(); });
       })();
     </script>
     <h2>Per repo / branch / fork</h2>
@@ -434,10 +558,11 @@ function openapiSpec(request) {
       title: "SpectralLock runtime",
       version: VERSION,
       summary: "Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page).",
-      description: LIMITATION,
+      description: LIMITATION + " Suite mesh /v1/mesh/* PROXY to aziel-runtime (AZIEL_RUNTIME). Default OFF. QNM-BUILD-1.0 live|locked|isolated. No Node Gate. No auto-heal. Not anonymity. Aziel Eliab only.",
     },
     servers: [{ url: origin }],
     paths: {
+      ...meshOpenApiPaths(),
       "/count": {
         get: {
           operationId: "spectrallockCount",
@@ -497,9 +622,11 @@ function aiHelpPage(request) {
 <h1>SpectralLock runtime</h1>
 <p class="banner">${LIMITATION}</p>
 <p>OpenAPI: <a href="${origin}/openapi.json">${origin}/openapi.json</a></p>
-<p>Catalog: <a href="https://aziel-runtime.vibelock.workers.dev/">aziel-runtime.vibelock.workers.dev</a></p>
+<p>Catalog: <a href="https://aziel-runtime.vibelock.workers.dev/">aziel-runtime.vibelock.workers.dev</a> (catalog <code>mesh_*</code> + FragGate <code>slug=mesh</code>).</p>
+<p>Suite mesh: <a href="${origin}/v1/mesh">${origin}/v1/mesh</a> PROXY to aziel-runtime. Default OFF. QNM-BUILD-1.0 live|locked|isolated. No Node Gate. No auto-heal. Not anonymity. Author: Aziel Eliab only.</p>
 <pre>curl ${origin}/v1/health
 curl ${origin}/v1/modes
+curl ${origin}/v1/mesh
 curl -X POST ${origin}/v1/overlay -H 'content-type: application/json' \\
   -d '{"mode":"rosetta","target":"ink","b64":"<png-base64>"}'
 </pre>
@@ -511,6 +638,7 @@ curl -X POST ${origin}/v1/overlay -H 'content-type: application/json' \\
 
 async function handleRuntime(request, url) {
   const path = url.pathname.replace(/\/+$/, "") || "/";
+  if (path === "/v1/mesh" || path.startsWith("/v1/mesh/")) return null;
   if (path === "/v1/health" && request.method === "GET") {
     return json({
       ok: true, author: "Aziel Eliab",
@@ -524,6 +652,7 @@ async function handleRuntime(request, url) {
       targets: ["ink", "page"],
       synthetic_uv: true,
       limitation: LIMITATION,
+      mesh: meshPointer(),
     });
   }
   if ((path === "/v1/example" || path === "/v1/example/") && (request.method === "GET" || request.method === "HEAD")) {
@@ -597,7 +726,7 @@ async function handleRuntime(request, url) {
     return json(result, status);
   }
   if (path.startsWith("/v1/") || path === "/v1") {
-    return json({ error: "not found", hint: "GET /v1/health /v1/lenses /v1/targets ; POST /v1/overlay", limitation: LIMITATION }, 404);
+    return json({ error: "not found", hint: "GET /v1/health /v1/lenses /v1/targets /v1/mesh ; POST /v1/overlay", limitation: LIMITATION }, 404);
   }
   return null;
 }
@@ -615,6 +744,9 @@ export default {
       const res = await this.fetch(getReq, env);
       return new Response(null, { status: res.status, headers: res.headers });
     }
+
+    const mesh = await handleMeshApi(request, url, env);
+    if (mesh) return mesh;
 
     const runtime = await handleRuntime(request, url);
     if (runtime) return runtime;
@@ -696,7 +828,7 @@ export default {
       });
     }
     if ((url.pathname === "/sitemap.xml" || url.pathname === "/sitemap.xml/") && request.method === "GET") {
-      const locs = [HOST + "/", HOST + "/download", HOST + "/install.sh", HOST + "/v1/skill", HOST + "/openapi.json", GITHUB_REPO];
+      const locs = [HOST + "/", HOST + "/download", HOST + "/install.sh", HOST + "/v1/skill", HOST + "/v1/mesh", HOST + "/openapi.json", GITHUB_REPO];
       const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + locs.map((u) => "  <url><loc>" + u + "</loc></url>").join("\n")
         + "\n</urlset>\n";
