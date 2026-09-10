@@ -1,7 +1,8 @@
 /**
  * Suite node mesh — QNM-BUILD-1.0 Live Nodes contract.
+ * QNS-CD-1.0 cross-map (photon QNS1 packet transfer): hub cite only.
  * Default OFF. Public rollup is live|locked|isolated counts only.
- * No Node Gate. No auto-heal. Not an anonymity network.
+ * No Node Gate. No auto-heal. No public qnsd proxy. Not an anonymity network.
  * /v1/mesh/* PROXY to aziel-runtime (AZIEL_RUNTIME binding).
  * Author: Aziel Eliab only.
  */
@@ -13,6 +14,7 @@ const SERVICE_BINDING_ORIGIN = "https://aziel-runtime";
 const IDENTITY = "Aziel Eliab";
 
 export const QNM_SPEC = "QNM-BUILD-1.0";
+export const QNS_CD_SPEC = "QNS-CD-1.0";
 export const MESH_KERNEL = "NM-0.1";
 export const MESH_DEFAULT_OFF = true;
 export const MESH_ANONYMITY_NETWORK = false;
@@ -31,9 +33,36 @@ export const MESH_HEARTBEAT_PATH = "/v1/mesh/heartbeat";
 export const MESH_LEAVE_PATH = "/v1/mesh/leave";
 export const MESH_BROADCAST_PATH = "/v1/mesh/broadcast";
 export const ANON_BROADCAST = "https://github.com/AzielEliab/anon-broadcast";
+export const QNS_CD_NODE = "https://github.com/AzielEliab/qnm-node";
+export const QNS_CD_RUNTIME = "https://github.com/AzielEliab/aziel-runtime";
+export const QNS_CD_INTERFACE = "https://github.com/AzielEliab/azinterface";
+export const QNS_CD_DESIGNS = "https://github.com/AzielEliab/aziel-runtime/tree/main/docs/designs";
+export const QNS_CD_NODE_MESH = "https://github.com/AzielEliab/aziel-runtime/blob/main/docs/NODE_MESH.md";
+export const QNS_CD_SKILL = "https://github.com/AzielEliab/aziel-runtime/blob/main/SKILL.md";
+
+/** Hub cite / Worker mesh cross-map only. Not a Softwares-tab product. No public qnsd proxy. */
+export const QNS_CD = Object.freeze({
+  spec: QNS_CD_SPEC,
+  name: "photon QNS1 packet transfer",
+  kind: "cross-map",
+  local_daemon: "qnsd",
+  local_repo: QNS_CD_NODE,
+  runtime_repo: QNS_CD_RUNTIME,
+  designs: QNS_CD_DESIGNS,
+  node_mesh: QNS_CD_NODE_MESH,
+  skill: QNS_CD_SKILL,
+  pair_custody: QNS_CD_INTERFACE,
+  softwares_tab: false,
+  public_proxy: false,
+  node_gate: false,
+  default_off: true,
+  author: IDENTITY,
+  identity: IDENTITY,
+  note: "Hub cite / Worker mesh cross-map only. Local qnsd is coded in qnm-node. Runtime cites + catalog field live in aziel-runtime. AZInterface holds pair custody. Not a Softwares-tab product. No public qnsd proxy. No Node Gate. Author: Aziel Eliab only.",
+});
 
 export const MESH_NOTE =
-  "QNM-BUILD-1.0. Suite mesh default off. Live|locked|isolated counts only. No Node Gate. No auto-heal. Not an anonymity network. Author: Aziel Eliab only.";
+  "QNM-BUILD-1.0. QNS-CD-1.0 photon QNS1 packet transfer (hub cite / Worker mesh cross-map only). Suite mesh default off. Live|locked|isolated counts only. No Node Gate. No auto-heal. No public qnsd proxy. Not an anonymity network. Author: Aziel Eliab only.";
 
 export const MESH_OPS = Object.freeze([
   "status",
@@ -107,6 +136,16 @@ export function emptyRollup() {
   return { live: 0, locked: 0, isolated: 0 };
 }
 
+/** Stamp the QNS-CD-1.0 cross-map onto a Live Nodes / mesh status payload. Does not enable mesh. */
+export function attachQnsCd(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return data;
+  return {
+    ...data,
+    qns_cd_spec: QNS_CD_SPEC,
+    qns_cd: QNS_CD,
+  };
+}
+
 export function meshRollup(mesh) {
   const m = mesh && typeof mesh === "object" ? mesh : {};
   const r = m.rollup && typeof m.rollup === "object" && !Array.isArray(m.rollup) ? m.rollup : {};
@@ -164,6 +203,8 @@ export function emptyMesh(extra = {}) {
     identity: MESH_IDENTITY,
     note: MESH_NOTE,
     door: MESH_PATH,
+    qns_cd_spec: QNS_CD_SPEC,
+    qns_cd: QNS_CD,
     ...extra,
     spec: QNM_SPEC,
     rollup,
@@ -172,6 +213,8 @@ export function emptyMesh(extra = {}) {
     anonymity_network: false,
     author: MESH_IDENTITY,
     identity: MESH_IDENTITY,
+    qns_cd_spec: QNS_CD_SPEC,
+    qns_cd: QNS_CD,
   };
 }
 
@@ -233,8 +276,10 @@ export function parseMeshDoc(body) {
     source: inner.source || "parsed",
     door: inner.door || MESH_PATH,
     note: enabled
-      ? "QNM-BUILD-1.0. Suite mesh is on. Live|locked|isolated counts only. No Node Gate. No auto-heal. Not an anonymity network."
+      ? "QNM-BUILD-1.0. QNS-CD-1.0 photon QNS1 packet transfer (hub cite / Worker mesh cross-map only). Suite mesh is on. Live|locked|isolated counts only. No Node Gate. No auto-heal. No public qnsd proxy. Not an anonymity network."
       : MESH_NOTE,
+    qns_cd_spec: QNS_CD_SPEC,
+    qns_cd: QNS_CD,
   });
 }
 
@@ -272,6 +317,8 @@ export function publicMesh(mesh) {
     ops: MESH_OPS.slice(),
     origin: RUNTIME + MESH_PATH,
     note: m.note || MESH_NOTE,
+    qns_cd_spec: QNS_CD_SPEC,
+    qns_cd: QNS_CD,
   };
 }
 
@@ -282,9 +329,9 @@ export function meshStatusLine(mesh) {
     return "Suite mesh: on · live " + r.live + " · locked " + r.locked + " · isolated " + r.isolated + ". Not an anonymity network.";
   }
   if (m.status === "unavailable") {
-    return "Suite mesh: off (unavailable). QNM-BUILD-1.0. Not an anonymity network.";
+    return "Suite mesh: off (unavailable). QNM-BUILD-1.0. QNS-CD-1.0. Not an anonymity network.";
   }
-  return "Suite mesh: off (default). QNM-BUILD-1.0. Not an anonymity network.";
+  return "Suite mesh: off (default). QNM-BUILD-1.0. QNS-CD-1.0. Not an anonymity network.";
 }
 
 /** Public Live Nodes count. Never auto-heal a visiting floor. */
@@ -309,9 +356,11 @@ export function meshPointer() {
     catalog_mcp: FRAGGATE_MCP,
     fraggate_slug: MESH_SLUG,
     origin: RUNTIME + MESH_PATH,
-    note: "PROXY to aziel-runtime /v1/mesh/* via AZIEL_RUNTIME. Not a local op. Not AnonBroadcast. Not AZMail's product-local ring. SpectralLock remains Rosetta spectral analysis (RSA-2.0 family). Full node process is local qnm-node/. " + MESH_NOTE,
+    note: "PROXY to aziel-runtime /v1/mesh/* via AZIEL_RUNTIME. Not a local op. Not AnonBroadcast. Not AZMail's product-local ring. SpectralLock remains Rosetta spectral analysis (RSA-2.0 family). Full node process is local qnm-node/. QNS-CD-1.0 is a hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). Not a Softwares-tab product. No public qnsd proxy. " + MESH_NOTE,
     anon_broadcast: ANON_BROADCAST,
     anon_broadcast_publish_path: false,
+    qns_cd_spec: QNS_CD_SPEC,
+    qns_cd: QNS_CD,
   };
 }
 
@@ -398,6 +447,8 @@ function meshErrFields({ message, door_url, http_status, content_type, via, extr
     anonymity_network: false,
     enabled: false,
     default_off: true,
+    qns_cd_spec: QNS_CD_SPEC,
+    qns_cd: QNS_CD,
     message,
     door_url: door_url || "",
     http_status: http_status == null ? null : http_status,
@@ -546,7 +597,17 @@ export async function runMeshProxy(env, request, pathAndQuery) {
   }
 
   if (method === "HEAD") {
-    return { status: res.status, data: { ok: res.ok, code: res.ok ? "MESH-OK" : "MESH-ERR", door: "mesh", via, enabled: false } };
+    return {
+      status: res.status,
+      data: attachQnsCd({
+        ok: res.ok,
+        code: res.ok ? "MESH-OK" : "MESH-ERR",
+        door: "mesh",
+        via,
+        enabled: false,
+        default_off: true,
+      }),
+    };
   }
 
   const text = await res.text();
@@ -570,7 +631,7 @@ export async function runMeshProxy(env, request, pathAndQuery) {
       }),
     };
   }
-  return { status: res.status, data };
+  return { status: res.status, data: attachQnsCd(data) };
 }
 
 /**
