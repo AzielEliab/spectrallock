@@ -239,6 +239,12 @@ def test_cli_unredact_json(tmp_path: Path, capsys) -> None:
     assert main(["unredact", "recover", str(rec), "--json"]) == 0
     recovered = json.loads(capsys.readouterr().out)
     assert recovered["leftover_bytes"] is True
+    dead = tmp_path / "opaque.pdf"
+    dead.write_bytes(pdf_opaque_rewrite())
+    assert main(["unredact", "recover", str(dead), "--json"]) == 2
+    dead_payload = json.loads(capsys.readouterr().out)
+    assert dead_payload["leftover_bytes"] is False
+    assert dead_payload["refuse_code"] == REFUSE_OPAQUE
     img = tmp_path / "box.png"
     img.write_bytes(opaque_png())
     assert main(["lift", str(img), "--json"]) == 2

@@ -563,8 +563,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"recovered_from: {','.join(recovered_from) if recovered_from else 'none'}")
             print(f"note: {finding.get('note')}")
             print(UNREDACT_NOTE)
-        if finding.get("refuse_code") == REFUSE_OPAQUE and finding.get("op") in {"refuse", "lift"}:
-            return 2 if op in {"lift", "recover", "refuse"} else 0
+        if finding.get("refuse_code") == REFUSE_OPAQUE and op in {"lift", "recover", "refuse"}:
+            return 2
         return 0
 
     parser.error(f"unknown command {args.cmd}")
