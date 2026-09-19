@@ -23,7 +23,8 @@ ink or page polarity.
 - Not a court exhibit or a claim of authenticity.
 - Not a substitute for a human reading the page.
 - Synthetic UV is a 365–400 nm *look* from an ordinary photograph, not a lamp.
-- Balance never invents marks or symbols.
+- Candlelight, indent, and lemon are synthetic looks from ordinary photos.
+- Balance never invents marks or symbols. Lemon never invents marks.
 
 The human still reads the page.
 
@@ -56,9 +57,31 @@ the background.
 
 ### UVSA-1.0 `uv`
 
-**Synthetic** 365–400 nm simulation from an ordinary RGB photo: boost
-parchment luminance, blue-violet weight, microtexture high-pass, ink
-darker.
+Ultraviolet light analysis (synthetic). 365–400 nm *look* from an
+ordinary RGB photo: boost parchment luminance, blue-violet weight,
+microtexture high-pass, ink darker. Aliases: `ultraviolet`, `uv-light`,
+`uvsa`.
+
+### CLSA-1.0 `candle`
+
+Warm flame-side illumination look (~1800–2700 K ambers, parchment glow,
+ink readable) from an ordinary photograph. Not real multispectral
+capture. Aliases: `candlelight`, `candle-light`.
+
+### ISA-1.0 `indent`
+
+Suppress visible writing so paper-fiber / pressure indentations and
+surface relief are easier to see. Image-enhancement heuristic. Prefer
+target `page`. Not ESDA / electrostatic detection, and not a claim of
+recovering invisible writing with certainty. Aliases: `indentation`,
+`suppress-ink`, `ink-suppress`, `revealer-indent`.
+
+### LISA-1.0 `lemon`
+
+Heat-/acid-revealed style lemon (citrus) invisible-ink cues: warm
+browning and contrast shifts already in the pixels. Not a chemical test.
+Never invents marks. Aliases: `lemon-ink`, `hidden-lemon`,
+`invisible-ink-lemon`.
 
 ### RSA-2.0 `rosetta`
 
@@ -132,5 +155,7 @@ remains Rosetta spectral analysis.
 Sample page, SpectralLock lens grid (multi-select), Ink/Page target,
 Simple/Advanced labels, overlay-only or side-by-side, Export PNG + JSON
 sidecar, Verify receipt (lenses, target, paper, SHA-256 in/out, size).
-`spectrallock doctor` checks all eight lenses × both targets, no NaN,
+`spectrallock doctor` checks all live lenses × both targets, no NaN,
 loopback, no telemetry.
+
+Runtime rehash after merge: [runtime-sync.md](runtime-sync.md).

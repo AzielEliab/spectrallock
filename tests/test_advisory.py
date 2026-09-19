@@ -22,8 +22,10 @@ def test_readme_and_whitepaper_are_rosetta() -> None:
     assert "never invent" in blob or "never invents" in blob
     assert "not a spectrometer" not in blob
     assert "not a lab spectrometer" not in blob
-    for mode in ("zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"):
+    for mode in ("zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance", "candle", "indent", "lemon"):
         assert mode in readme
+    assert "clsa-1.0" in readme or "candlelight" in readme
+    assert "runtime-sync" in readme or "runtime sync" in readme
 
 
 FULL_AI_CLIENTS = (

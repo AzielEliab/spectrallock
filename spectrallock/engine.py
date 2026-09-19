@@ -62,20 +62,29 @@ __all__ = [
     "tazel_overlay",
     "vyrn_overlay",
     "uv_overlay",
+    "candle_overlay",
+    "indent_overlay",
+    "lemon_overlay",
     "rosetta_overlay",
     "zen_overlay",
     "chaos_overlay",
     "balance_overlay",
     "synthetic_page",
+    "MODE_ALIASES",
+    "STUB_MODES",
+    "resolve_mode",
 ]
 
 LIMITATION = (
     "Rosetta spectral analysis (RSA-2.0 family). SpectralLock lenses match "
     "Aziel Corpus Library OCR — overlays plus ink/page targets "
-    "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance). "
+    "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon). "
     "Synthetic UV is a 365–400 nm look from an ordinary photograph. "
-    "Balance never invents marks. The human still reads the page. "
-    "Author Aziel Eliab."
+    "Candlelight is a warm flame-side look from an ordinary photo. "
+    "Indent is an image-enhancement heuristic for surface relief, not electrostatic detection. "
+    "Lemon enhances heat-/acid-style browning already in the pixels; it never invents marks. "
+    "Balance never invents marks. Lamb Lens: Service → Clarity → Peace. "
+    "The human still reads the page. Author Aziel Eliab."
 )
 
 TAZEL_HEX = "#1EC9A5"
@@ -451,6 +460,75 @@ def uv_overlay(rgb: np.ndarray) -> np.ndarray:
     return np.clip(out, 0.0, 1.0).astype(np.float32)
 
 
+def candle_overlay(rgb: np.ndarray) -> np.ndarray:
+    """CLSA-1.0: warm flame-side look (~1800–2700K) from an ordinary photo.
+
+    Not real multispectral capture. Amber parchment glow; ink stays readable.
+    """
+    rgb = finite01(rgb)
+    h, w = rgb.shape[:2]
+    lum = luminance(rgb)
+    t = normalize01(lum)
+    # left = flame side (brighter / warmer)
+    flame = np.broadcast_to(np.linspace(1.0, 0.58, w, dtype=np.float32), (h, w))
+    glow = np.clip(np.power(np.clip(t, 0.0, 1.0), 0.82) * (0.78 + 0.28 * flame), 0.0, 1.0)
+    ink = np.clip((0.44 - t) / 0.44, 0.0, 1.0)
+    r = np.clip(rgb[..., 0] * 0.42 + glow * 1.16 + 0.05, 0.0, 1.0)
+    g = np.clip(rgb[..., 1] * 0.40 + glow * 0.70 + 0.02, 0.0, 1.0)
+    b = np.clip(rgb[..., 2] * 0.22 + glow * 0.26, 0.0, 1.0)
+    out = np.stack([r, g, b], axis=-1)
+    # keep dark strokes readable from the source pixels
+    out = out * (1.0 - 0.40 * ink[..., None]) + rgb * (0.28 * ink[..., None])
+    return np.clip(out, 0.0, 1.0).astype(np.float32)
+
+
+def indent_overlay(rgb: np.ndarray) -> np.ndarray:
+    """ISA-1.0: suppress visible ink; lift fiber / pressure relief.
+
+    Image-enhancement heuristic from an ordinary photo. Not ESDA / electrostatic
+    detection, and not a claim of recovering invisible writing with certainty.
+    Prefer target=page; ink|page both allowed.
+    """
+    rgb = finite01(rgb)
+    lum = luminance(rgb)
+    t = normalize01(lum)
+    parchment = parchment_estimate(rgb)
+    ink = np.clip((0.52 - t) / 0.52, 0.0, 1.0)
+    washed = rgb * (1.0 - 0.84 * ink[..., None]) + parchment * (0.84 * ink[..., None])
+    fine = blur_gray(lum, 0.7)
+    coarse = blur_gray(lum, 5.5)
+    relief = normalize01(np.abs(fine - coarse))
+    hp = lum - blur_gray(lum, 1.3)
+    gray = luminance(washed)
+    mixed = np.clip(gray * 0.58 + relief * 0.62 + hp * 0.90 + 0.16, 0.0, 1.0)
+    mixed = unsharp(mixed, amount=0.78, radius=0.9)
+    out = washed * 0.42 + gray_to_rgb(mixed) * 0.58
+    return np.clip(out, 0.0, 1.0).astype(np.float32)
+
+
+def lemon_overlay(rgb: np.ndarray) -> np.ndarray:
+    """LISA-1.0: heat-/acid-style lemon (citrus) invisible-ink cues.
+
+    Reweights warm browning already in the pixels. Not a chemical test.
+    Never invents marks that are not supported by the photograph.
+    """
+    rgb = finite01(rgb)
+    h, s, v = rgb_to_hsv(rgb)
+    brown = np.exp(-0.5 * (hue_distance(h, 36.0) / 22.0) ** 2)
+    warm = np.exp(-0.5 * (hue_distance(h, 28.0) / 30.0) ** 2)
+    w = np.clip(0.65 * brown + 0.35 * warm, 0.0, 1.0)
+    # support: existing chroma near midtones — no invented strokes
+    mid = np.clip(1.0 - np.abs(v - 0.42) / 0.45, 0.0, 1.0)
+    support = np.clip(s * 1.85, 0.0, 1.0) * mid
+    gain = w * support
+    s2 = np.clip(s * (1.0 + 0.58 * gain) + 0.04 * gain, 0.0, 1.0)
+    v2 = unsharp(np.clip(v * (1.0 + 0.10 * gain) - 0.07 * gain, 0.0, 1.0), amount=0.42, radius=1.0)
+    out = hsv_to_rgb(h, s2, v2)
+    tint = np.array([0.62, 0.38, 0.14], dtype=np.float32)
+    out = np.clip(out * (1.0 - 0.22 * gain[..., None]) + tint * (v2 * 0.22 * gain)[..., None], 0.0, 1.0)
+    return out.astype(np.float32)
+
+
 def _channel_luma(rgb: np.ndarray, fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
     return normalize01(luminance(fn(rgb)))
 
@@ -521,6 +599,13 @@ def synthetic_page(width: int = 96, height: int = 96) -> np.ndarray:
     img[62:67, 10 : width - 12] = 0.78 * parchment + 0.22 * cyan
     # magenta correction (vyrn target)
     img[24:30, 20 : width - 18] = (0.78, 0.08, 0.42)
+    # faint heat-style brown (lemon cue) — only when the canvas is tall enough
+    if height >= 80 and width >= 28:
+        brown = np.array([0.58, 0.36, 0.16], dtype=np.float32)
+        img[74:79, 14 : width - 14] = 0.70 * parchment + 0.30 * brown
+    # pressure groove: slight luma dip, not ink
+    if height >= 88 and width >= 16:
+        img[84:86, 8 : width - 8] *= 0.88
     return img
 
 
@@ -576,9 +661,7 @@ def normalize_lenses(
         key = str(item or "").strip().lower()
         if not key:
             continue
-        if key not in MODES:
-            known = ", ".join(MODES)
-            raise ValueError(f"unknown lens {key!r}. Known: {known}")
+        key = resolve_mode(key, kind="lens")
         if key not in out:
             out.append(key)
     return out or ["rosetta"]
@@ -658,10 +741,7 @@ def analyze(
 
 
 def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResult:
-    key = (mode or "").strip().lower()
-    if key not in MODES:
-        known = ", ".join(MODES)
-        raise ValueError(f"unknown mode {mode!r}. Known: {known}")
+    key = resolve_mode(mode)
     rgb = finite01(rgb)
     debug(f"apply_mode mode={key} size={rgb.shape[1]}x{rgb.shape[0]}")
     info = MODES[key]
@@ -673,6 +753,12 @@ def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResul
         return _pack(key, vyrn_overlay(rgb), info["paper"], source=rgb)
     if key == "uv":
         return _pack(key, uv_overlay(rgb), info["paper"], source=rgb)
+    if key == "candle":
+        return _pack(key, candle_overlay(rgb), info["paper"], source=rgb)
+    if key == "indent":
+        return _pack(key, indent_overlay(rgb), info["paper"], source=rgb)
+    if key == "lemon":
+        return _pack(key, lemon_overlay(rgb), info["paper"], source=rgb)
     if key == "rosetta":
         out, ch = rosetta_overlay(rgb, tint=tint)
         return _pack(key, out, info["paper"], ch, source=rgb)
@@ -722,12 +808,13 @@ MODES: dict[str, dict] = {
     "uv": {
         "id": "uv",
         "kid_label": "Fake UV look",
-        "kid_hint": "A 365–400 nm look from an ordinary photo. Not a real UV lamp.",
+        "kid_hint": "Ultraviolet light analysis (synthetic). A 365–400 nm look from an ordinary photo. Not a real UV lamp.",
         "paper": "UVSA-1.0",
         "status": "live",
         "hue": None,
         "hex": None,
-        "summary": "Synthetic 365–400 nm simulation. Not a real UV lamp.",
+        "aliases": ["ultraviolet", "uv-light", "uvsa"],
+        "summary": "Ultraviolet light analysis (synthetic). 365–400 nm look from an ordinary photograph. Not a real UV lamp.",
     },
     "rosetta": {
         "id": "rosetta",
@@ -769,7 +856,88 @@ MODES: dict[str, dict] = {
         "hex": None,
         "summary": "B=(Zn-Cn)/(Zn+Cn+ε), α=(1+B)/2, RGB=α·Zen+(1-α)·Chaos. Never invents marks.",
     },
+    "candle": {
+        "id": "candle",
+        "kid_label": "Candlelight",
+        "kid_hint": "Warm flame-side look from an ordinary photo. Not a real lamp.",
+        "paper": "CLSA-1.0",
+        "status": "live",
+        "hue": None,
+        "hex": None,
+        "aliases": ["candlelight", "candle-light"],
+        "summary": "Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look; parchment glow; ink readable. Not multispectral capture.",
+    },
+    "indent": {
+        "id": "indent",
+        "kid_label": "Ink-suppress / indent",
+        "kid_hint": "Washes visible ink so paper fibers and pressure dents are easier to look at. Prefer Page. Not ESDA.",
+        "paper": "ISA-1.0",
+        "status": "live",
+        "hue": None,
+        "hex": None,
+        "aliases": ["indentation", "suppress-ink", "ink-suppress", "revealer-indent"],
+        "preferred_target": "page",
+        "summary": "Ink-suppress / indentation reveal (synthetic). Image-enhancement heuristic for fiber and pressure relief. Prefer target=page. Not electrostatic detection.",
+    },
+    "lemon": {
+        "id": "lemon",
+        "kid_label": "Hidden lemon ink",
+        "kid_hint": "Boosts warm browning already in the photo. Never invents marks.",
+        "paper": "LISA-1.0",
+        "status": "live",
+        "hue": None,
+        "hex": None,
+        "aliases": ["lemon-ink", "hidden-lemon", "invisible-ink-lemon"],
+        "summary": "Hidden lemon ink analysis (synthetic). Heat-/acid-style citrus browning from existing pixels. Not a chemical test. Never invents marks.",
+    },
 }
+
+MODE_ALIASES: dict[str, str] = {
+    "candlelight": "candle",
+    "candle-light": "candle",
+    "ultraviolet": "uv",
+    "uv-light": "uv",
+    "uvsa": "uv",
+    "indentation": "indent",
+    "suppress-ink": "indent",
+    "ink-suppress": "indent",
+    "revealer-indent": "indent",
+    "lemon-ink": "lemon",
+    "hidden-lemon": "lemon",
+    "invisible-ink-lemon": "lemon",
+}
+
+STUB_MODES: dict[str, dict] = {
+    "spectrometer": {
+        "id": "spectrometer",
+        "status": "stub",
+        "refuse": "spectrometer is a stub. SpectralLock is synthetic image analysis from an ordinary photograph, not a lab instrument.",
+    },
+    "forensic": {
+        "id": "forensic",
+        "status": "stub",
+        "refuse": "forensic is a stub. SpectralLock is not forensic certification.",
+    },
+    "invent_mark": {
+        "id": "invent_mark",
+        "status": "stub",
+        "refuse": "invent_mark is a stub and stays refused. SpectralLock never invents marks.",
+    },
+}
+
+
+def resolve_mode(name: str, *, kind: str = "mode") -> str:
+    """Map a lens id or alias to a canonical LIVE mode. Stubs refuse honestly."""
+    key = str(name or "").strip().lower()
+    if key in MODES:
+        return key
+    alias = MODE_ALIASES.get(key)
+    if alias:
+        return alias
+    if key in STUB_MODES:
+        raise ValueError(STUB_MODES[key]["refuse"])
+    known = ", ".join(MODES)
+    raise ValueError(f"unknown {kind} {name!r}. Known: {known}")
 
 LIVE_MODES = tuple(MODES.keys())
 LENSES = LIVE_MODES

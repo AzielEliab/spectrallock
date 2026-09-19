@@ -1,0 +1,26 @@
+LEMON INK SPECTRAL ANALYSIS (LISA-1.0)
+Definition
+LISA-1.0 = LEMON-S only. Hidden lemon ink analysis is a synthetic enhancement
+aimed at heat-/acid-revealed style lemon (or citrus) invisible-ink cues in
+ordinary photographs: warm browning and midtone contrast shifts. This is not
+a chemical test and not guaranteed detection. Never invent marks that are
+not supported by the pixels.
+Functional Behavior
+A. Warm browning:
+   - Boosts amber–brown hues (~28–36°) where chroma already exists.
+B. Midtone support:
+   - Gain is gated by existing saturation and midtone value.
+C. No invention:
+   - Pixels without supporting chroma are not painted with fake writing.
+Operational Pipeline
+1. Convert RGB to HSV.
+2. Weight hue distance to browned-lemon / amber.
+3. Gate by existing saturation × midtone support.
+4. Reweight saturation / value and apply a brown tint only on the gain map.
+5. Output LISA-1.0.
+Usage
+Commands that activate LISA-1.0:
+- "Hidden lemon ink analysis"
+- "Run lemon on this page"
+- "lemon-ink" / "hidden-lemon" / "invisible-ink-lemon"
+Author Aziel Eliab.

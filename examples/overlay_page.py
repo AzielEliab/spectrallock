@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from spectrallock.engine import LIMITATION, analyze, save_rgb, synthetic_page
+from spectrallock.engine import LIMITATION, LIVE_MODES, analyze, save_rgb, synthetic_page
 
 
 def main() -> None:
@@ -13,7 +13,7 @@ def main() -> None:
     out.mkdir(exist_ok=True)
     page = synthetic_page(128, 96)
     save_rgb(page, str(out / "page.png"))
-    for mode in ("zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"):
+    for mode in LIVE_MODES:
         for target in ("ink", "page"):
             result = analyze(page, mode, target=target)
             dest = out / f"{mode}-{target}.png"

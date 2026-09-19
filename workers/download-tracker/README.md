@@ -22,7 +22,7 @@ Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic
 - Health: `GET /v1/health`
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
-- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target}` — PNG, max 256 px. Rosetta preview.
+- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target}` — PNG, max 256 px. LIVE: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon (aliases resolve). Rosetta preview.
 - Setup HTML: `GET /ai`
 
 Banner: Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.

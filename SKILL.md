@@ -5,7 +5,7 @@ description: Use when calling SpectralLock hosted /v1 or installing the local pa
 
 # SpectralLock
 
-Rosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. Author: **Aziel Eliab**.
+Rosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. LIVE modes: `zero`, `tazel`, `vyrn`, `uv` (aliases `ultraviolet`, `uv-light`, `uvsa`), `rosetta`, `zen`, `chaos`, `balance`, `candle` (aliases `candlelight`, `candle-light`), `indent` (aliases `indentation`, `suppress-ink`, `ink-suppress`, `revealer-indent`), `lemon` (aliases `lemon-ink`, `hidden-lemon`, `invisible-ink-lemon`). Synthetic image analysis — not a lab instrument, not forensic certification. Stub: `spectrometer`, `forensic`, `invent_mark`. Author: **Aziel Eliab**.
 
 **THIS IS:** Rosetta spectral analysis — SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr).
 
@@ -28,7 +28,7 @@ Ops (do **not** increment downloads or views):
 |--------|------|------|
 | GET | `/v1/health` | Liveness. Does not increment downloads. |
 | GET | `/v1/skill` | This markdown. Does not increment downloads. |
-| GET | `/v1/modes` | List SpectralLock lenses. |
+| GET | `/v1/modes` | List SpectralLock lenses (canonical ids + aliases). |
 | GET | `/v1/lenses` | Alias for `/v1/modes`. |
 | GET | `/v1/targets` | Ink and page targets. |
 | POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses` and `target` (`ink`\|`page`). |
@@ -62,7 +62,7 @@ GitHub: https://github.com/AzielEliab/spectrallock
 
 ## Catalog + local UI
 
-Author: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full pipeline is the Python package.
+Author: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full pipeline is the Python package. Lamb Lens: Service → Clarity → Peace. Never invent marks.
 
 - Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/
 - Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json

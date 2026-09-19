@@ -23,10 +23,14 @@ No network.
    Corpus Library OCR: overlays plus ink/page targets. Digital
    reweighting of photographs of manuscript pages. The human still
    reads the page. Author Aziel Eliab only.
-2. **Do not invent marks.** Balance (BSA) reweights Zen vs Chaos. It
-   must not draw symbols that were not in the photograph.
-3. **Synthetic UV is a simulation** of a 365–400 nm look from an
-   ordinary photo. Do not imply a UV lamp or fluorescence hardware.
+2. **Do not invent marks.** Balance (BSA) reweights Zen vs Chaos. Lemon
+   and indent only reweight pixels already in the photograph. They must
+   not draw symbols that were not there. `invent_mark` stays a stub.
+3. **Synthetic looks are simulations** from an ordinary photo: UV
+   (365–400 nm look), candlelight (warm flame-side), indent (fiber /
+   pressure heuristic, not ESDA), lemon (heat-style browning, not a
+   chemical test). Do not imply a lamp, lab instrument, or forensic
+   certification. `spectrometer` and `forensic` stay stubs.
 4. **Keep the dependency list tiny.** Pillow + numpy. No OpenCV.
 5. **UI binds loopback only** (`127.0.0.1:8861`). Do not listen on `0.0.0.0`.
 6. **Do not mix the download tracker** with any other product's Worker or KV.
@@ -42,7 +46,7 @@ No network.
 - Engines / formulas: `spectrallock/engine.py`
 - CLI: `spectrallock/cli.py`
 - Local UI: `spectrallock/ui.py`, `spectrallock/web/`
-- Papers: `docs/source/`, spec: `docs/whitepaper.md`
+- Papers: `docs/source/`, spec: `docs/whitepaper.md`, runtime sync: `docs/runtime-sync.md`
 - Hosted preview: `workers/download-tracker/src/overlay.js`
 - Suite mesh / QNM Live Nodes: `workers/download-tracker/src/mesh.js` (`/v1/mesh/*` PROXY to aziel-runtime). QNS-CD-1.0 is a hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). Not a Softwares-tab product. No public qnsd proxy.
 - Flutter approximation: `mobile/lib/`
