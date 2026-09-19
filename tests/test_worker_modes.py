@@ -85,7 +85,7 @@ if (parseUnredactOp("redact-locate") !== "locate") throw new Error("locate alias
 if (parseUnredactOp("leftover-bytes") !== "recover") throw new Error("recover alias");
 if (REFUSE_OPAQUE !== "SL-UNREDACT-OPAQUE") throw new Error("refuse code");
 if (!UNREDACT_NOTE.includes("leftover")) throw new Error("leftover copy");
-if (!UNREDACT_NOTE.includes("not a transcript")) throw new Error("transcript copy");
+if (!UNREDACT_NOTE.includes("residual overlays")) throw new Error("transcript copy");
 if (!UNREDACT_NOTE.includes("never invent") && !UNREDACT_NOTE.includes("does not invent")) throw new Error("invent copy");
 if (!UNREDACT_NOTE.includes("OCR")) throw new Error("ocr copy");
 const card = listUnredact();
@@ -252,8 +252,8 @@ buf.set([0.10, 0.72, 0.62, 0.78, 0.08, 0.42, 0.93, 0.88, 0.76, 0.12, 0.09, 0.06]
 const band = gateInband(buf);
 if (typeof band.tazel_inband_pct !== "number") throw new Error("tazel field");
 if (typeof band.vyrn_inband_pct !== "number") throw new Error("vyrn field");
-if (!INJECT_NOTE.includes("not recovered pigment")) throw new Error("note");
-if (!LIMITATION.includes("not recovered pigment")) throw new Error("limitation");
+if (!INJECT_NOTE.includes("paints membership")) throw new Error("note");
+if (!LIMITATION.includes("false-color membership")) throw new Error("limitation");
 if (inbandPct(new Float32Array([0.93, 0.88, 0.76]), 170, 24) !== 0) throw new Error("empty gate");
 process.stdout.write(JSON.stringify({{ ok: true, band }}));
 """

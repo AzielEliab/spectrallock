@@ -16,9 +16,8 @@ RSA-2.0 is the decoding composite `0.40·Z′ + 0.35·T′ + 0.25·V′`. Ink is
 writing; page isolates parchment. Balance never invents marks — it only
 reweights existing readings. Synthetic UV is a 365–400 nm look from an
 ordinary photograph. Candlelight, indent, and lemon are synthetic looks
-from ordinary photos (not a lab instrument, not forensic certification).
-Hosted `/v1/overlay` is a 256 px preview; the full pipeline is this
-Python package.
+from ordinary photos. Hosted `/v1/overlay` is a 256 px preview; the full
+pipeline is this Python package.
 
 **Forks are welcome and always allowed.**
 
@@ -51,11 +50,14 @@ Direct tarball (also counted):
 - Full stats JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/stats](https://spectrallock-download-tracker.vibelock.workers.dev/stats)
 - OpenAPI: [https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json](https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json)
 - Skill: [https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill](https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill)
-- Suite mesh proxy: [https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh](https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh) — default OFF; QNM live / locked / isolated; QNS-CD-1.0 cross-map (photon QNS1 packet transfer; not a Softwares-tab product; no public qnsd proxy)
+- Suite mesh proxy: [https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh](https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh) — default OFF; QNM live / locked / isolated; QNS-CD-1.0 cross-map (photon QNS1 packet transfer; no public qnsd proxy)
+- llms.txt: [https://spectrallock-download-tracker.vibelock.workers.dev/llms.txt](https://spectrallock-download-tracker.vibelock.workers.dev/llms.txt)
+- ai.txt: [https://spectrallock-download-tracker.vibelock.workers.dev/ai.txt](https://spectrallock-download-tracker.vibelock.workers.dev/ai.txt)
+- cite.json: [https://spectrallock-download-tracker.vibelock.workers.dev/cite.json](https://spectrallock-download-tracker.vibelock.workers.dev/cite.json)
 - One-click install: [https://spectrallock-download-tracker.vibelock.workers.dev/install.sh](https://spectrallock-download-tracker.vibelock.workers.dev/install.sh)
 - GitHub: [https://github.com/AzielEliab/spectrallock](https://github.com/AzielEliab/spectrallock)
 
-Isolated counter: Worker `spectrallock-download-tracker`, KV `SPECTRALLOCK_DOWNLOADS`. Not mixed with any other product. `/v1` does not increment downloads.
+Isolated counter: Worker `spectrallock-download-tracker`, KV `SPECTRALLOCK_DOWNLOADS`. SpectralLock only. `/v1` does not increment downloads.
 
 
 ## Quick start
@@ -92,19 +94,17 @@ How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 v1 is **image processing** (Pillow + numpy) on a photograph you already
 have. It reweights hues and contrast so faint marks are easier to *look
-at*. It does not recover lost ink, date a page, identify a scribe, or
-stand in for a conservator.
+at*.
 
 The hosted Worker `/v1/overlay` is a **simplified preview** (longest side
 capped at 256 px, PNG in/out). The full pipeline is this Python package.
 
 **Unredact / lift-overlay** locates leftover bytes and residual only.
-It does not invent letters. Opaque replace with no leftover container
-bytes refuses (`SL-UNREDACT-OPAQUE`). A heatmap is not a transcript.
+Never invent letters. Opaque replace with no leftover container
+bytes refuses (`SL-UNREDACT-OPAQUE`). Heatmaps are residual overlays.
 
 **Handwriting** is synthetic image analysis of a scan or photo of ink
-on paper. Indicators are heuristics. Not ESDA, not chemical dating,
-not writer identity, not a court finding.
+on paper. Indicators are heuristics — human verification required.
 
 ## Lenses (all live in 0.3.0)
 
@@ -122,31 +122,31 @@ indent / lemon synthetic looks. Aliases resolve to the canonical id.
 | `chaos` | CSA-1.0 | `0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′` after normalize. |
 | `balance` | BSA | `B=(Zn−Cn)/(Zn+Cn+ε)`, `α=(1+B)/2`, `RGB = α·Zen + (1−α)·Chaos`. Never invents marks. |
 | `candle` | CLSA-1.0 | Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look. Aliases: `candlelight`, `candle-light`. |
-| `indent` | ISA-1.0 | Ink-suppress / indentation reveal (synthetic). Prefer `page`. Not ESDA. Aliases: `indentation`, `suppress-ink`, `ink-suppress`, `revealer-indent`. |
+| `indent` | ISA-1.0 | Ink-suppress / indentation reveal (synthetic). Prefer `page`. Aliases: `indentation`, `suppress-ink`, `ink-suppress`, `revealer-indent`. |
 | `lemon` | LISA-1.0 | Hidden lemon ink analysis (synthetic). Heat-/acid-style browning from existing pixels. Never invents marks. Aliases: `lemon-ink`, `hidden-lemon`, `invisible-ink-lemon`. |
 
 Stub (refused): `spectrometer`, `forensic`, `invent_mark`.
 
 ## Unredact / lift-overlay (operator lock — NO-LIE)
 
-Not a spectral lens. Family: `unredact` / `lift` / `redact-locate`.
+Family: `unredact` / `lift` / `redact-locate`.
 Ops: `locate`, `lift`, `recover`, `refuse`.
 
 | op | honesty |
 |----|---------|
 | `locate` | Report text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes, and historical page revisions (stale `/Page` graphs, prior streams, xref/ObjStm, after-EOF, incremental `startxref`/`Prev` revision graph + per-revision tip-cut copies). Do not invent letters. |
-| `lift` | Non-opaque cover only. Contrast / residual with `--no-inject` (gray of the same gate). Heatmap ≠ transcript. |
-| `recover` | If leftover / historical bytes remain (incremental update, unused/orphan objects, prior streams, stale pages, attachments, after-EOF), extract them with character provenance. That is reading present bytes — not guessing a black box. |
+| `lift` | Non-opaque cover only. Contrast / residual with `--no-inject` (gray of the same gate). Heatmaps are residual overlays. |
+| `recover` | If leftover / historical bytes remain (incremental update, unused/orphan objects, prior streams, stale pages, attachments, after-EOF), extract them with character provenance. That is reading present bytes. |
 | `refuse` | Opaque sanitized rewrite / flattened screenshot and no leftover bytes → `SL-UNREDACT-OPAQUE`. |
 
-Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`, `page_revisions`, `revision_compare`, `revision_graph` (revisions + edges + tip-cut `copy` / embeds; hosted may cite sha256+offsets when `b64` is capped), `operator_text`, `classifications`, `recovered_characters` (page, object_id, generation, xref_revision, stream_offset, operator, font, decoded_bytes, source_revision, sha256), `ocr` (after structural only; `covered_letters_from_context` is always false), `refuse_code`. OCR never reconstructs covered letters from context. Never claim pigment recovery, ESDA, chemical, lab, or forensic certification.
+Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`, `page_revisions`, `revision_compare`, `revision_graph` (revisions + edges + tip-cut `copy` / embeds; hosted may cite sha256+offsets when `b64` is capped), `operator_text`, `classifications`, `recovered_characters` (page, object_id, generation, xref_revision, stream_offset, operator, font, decoded_bytes, source_revision, sha256), `ocr` (after structural only; `covered_letters_from_context` is always false), `refuse_code`. OCR never reconstructs covered letters from context. Never invents letters.
 
 ## Handwriting / ink-on-paper (operator lock — NO-LIE)
 
-Not a spectral lens and not a lab instrument. Family: `handwriting` / `handwrite` / `ink-hand` / `forgery-scan`.
+Family: `handwriting` / `handwrite` / `ink-hand` / `forgery-scan`.
 Ops: `analyze`, `compare`, `side-by-side`, `graph`, `forgery-indicators`, `refuse`.
 
-Synthetic image analysis of a user-supplied scan or photo of physical ink on paper. Looks at present pixels only: stroke-weight variation (pressure proxy), speed cues (taper / tremor — heuristic), ink density, bleed / feathering, baseline / slant / size shifts, erasures, tracing evidence, and forgery indicators (tremor-copy, unnatural lifts, retouch, dual-ink, clone-stamp, compression paste-up, ductus, style-shift). Side-by-side questioned vs known. Stroke/feature graph flags anomalous edges. Density / bleed / erasure heatmaps are **not** transcripts and **not** court findings.
+Synthetic image analysis of a user-supplied scan or photo of physical ink on paper. Looks at present pixels only: stroke-weight variation (pressure proxy), speed cues (taper / tremor — heuristic), ink density, bleed / feathering, baseline / slant / size shifts, erasures, tracing evidence, and forgery indicators (tremor-copy, unnatural lifts, retouch, dual-ink, clone-stamp, compression paste-up, ductus, style-shift). Side-by-side questioned vs known. Stroke/feature graph flags anomalous edges. Density / bleed / erasure heatmaps are residual overlays.
 
 | honesty | meaning |
 |---------|---------|
@@ -190,18 +190,18 @@ Worker `POST /v1/overlay` `{inject: true|false}`).
 
 | switch | meaning |
 |--------|---------|
-| **ON** (`--inject`) | False-color membership tint (paint). **Not** recovered pigment. |
+| **ON** (`--inject`) | False-color membership tint (paint). |
 | **OFF** (`--no-inject`) | Luminance of the **same gate** (gray). |
 | `zero` | Ignores the switch (stays gray either way). |
 
 - `tazel`: 170° `#1EC9A5` teal heat on in-band pixels when ON.
 - `vyrn`: 350° `#C00066` magenta heat on in-band pixels when ON.
-- `uv`: synthetic 365–400 look (violet parchment / residual) — still not a lamp.
-- `rosetta` / `zen` / `chaos` / `balance`: composite tint when ON; gray gate when OFF. Balance does not invent marks.
+- `uv`: synthetic 365–400 look (violet parchment / residual) from an ordinary photograph.
+- `rosetta` / `zen` / `chaos` / `balance`: composite tint when ON; gray gate when OFF. Balance never invents marks.
 - `candle` / `indent` / `lemon`: honest ON tint vs OFF gray of the same gate.
 
 Overlay and verify JSON report **`tazel_inband_pct`** and **`vyrn_inband_pct`**
-before any hit claim. Empty gate ≠ broken lens. Copy-of-copy only works if
+before any hit claim. An empty gate is a valid reading. Copy-of-copy only works if
 the hue is still in-band.
 
 ```bash
@@ -213,8 +213,7 @@ python3 spectrallock_inject.py page.jpg --mode zero --target ink --no-inject
 ```
 
 Hosted `/v1/overlay` may accept `inject` on a 256 px PNG preview. Prefer the
-local package (`spectrallock_inject.py`) for the full pipeline. The Worker
-does not claim pigment recovery.
+local package (`spectrallock_inject.py`) for the full pipeline.
 
 ## Install
 
@@ -257,7 +256,7 @@ PNG or JPEG in. `--verify` prints lenses, target, paper, sha256 in/out, size.
 ## iPhone & Android
 
 Flutter sources: [`mobile/`](mobile/). Application id `com.azieeliab.spectrallock`.
-Offline color-matrix approximation of the hues. Not the full Python pipeline.
+Offline color-matrix approximation of the hues. The full Python pipeline is this package.
 **Add file** + **Export**.
 
 ```bash
@@ -273,11 +272,11 @@ flutter run
 - Health: `GET /v1/health`
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
-- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px longest side. `inject` true\|false is paint, not pigment. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
+- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px longest side. `inject` true\|false is paint (false-color membership). Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
 - Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query, twin_b64?}` locate / leftover-historical recover / residual lift. Returns `revision_graph` (startxref/Prev edges + per-revision tip-cut copies). Opaque rewrite + no leftover → `SL-UNREDACT-OPAQUE`. Aliases `POST /v1/lift`, `POST /v1/redact-locate`. Hosted preview may cap size / copy `b64` (sha256+offset cites, no invented bytes) and has no OCR engine — it does not lie about that. Never invents letters.
-- Recover: `GET /v1/recover` ops + LIVE vs SLOT matrix; `POST /v1/recover` `{b64, op, filename, twin_b64?}` universal artifact recovery. Present bytes only. Secrets suppressed. SLOT is not LIVE. Audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`.
-- Handwriting: `GET /v1/handwriting` ops + LIVE vs SLOT features; `POST /v1/handwriting` `{b64, op, filename, twin_b64?}` synthetic ink-on-paper scan heuristics. Hosted 256 px PNG preview. Not ESDA / chemical dating / writer identity / court finding. Audit: `docs/audit/HANDWRITING-FORGERY-AUDIT.md`.
-- Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy; not a Softwares-tab product)
+- Recover: `GET /v1/recover` ops + LIVE vs SLOT matrix; `POST /v1/recover` `{b64, op, filename, twin_b64?}` universal artifact recovery. Present bytes only. Secrets suppressed. SLOT stays SLOT; LIVE stays LIVE. Audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`.
+- Handwriting: `GET /v1/handwriting` ops + LIVE vs SLOT features; `POST /v1/handwriting` `{b64, op, filename, twin_b64?}` synthetic ink-on-paper scan heuristics. Hosted 256 px PNG preview. Audit: `docs/audit/HANDWRITING-FORGERY-AUDIT.md`.
+- Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy)
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`; catalog `mesh_*` + FragGate `slug=mesh`)
 - Corpus OCR: https://www.azielcorpuslibrary.net/ocr
@@ -292,7 +291,7 @@ Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json
 Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`
 This Worker skill: https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill
 This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json
-Suite mesh `/v1/mesh/*` PROXY via `AZIEL_RUNTIME` (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only; no Node Gate; no public qnsd proxy). Catalog MCP `mesh_*` + FragGate `slug=mesh`. Local qnsd lives in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites + catalog field live in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime). AZInterface holds pair custody. Not a Softwares-tab product.
+Suite mesh `/v1/mesh/*` PROXY via `AZIEL_RUNTIME` (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only; no Node Gate; no public qnsd proxy). Catalog MCP `mesh_*` + FragGate `slug=mesh`. Local qnsd lives in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites + catalog field live in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime). AZInterface holds pair custody.
 
 Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import the catalog or Worker OpenAPI as a custom tool, GPT Action (no auth), HTTP tool, or MCP connector. Always send `User-Agent: Mozilla/5.0`.
 

@@ -12,10 +12,10 @@ const EXAMPLE_PAYLOAD = {
   "lens": "rosetta",
   "target": "ink",
   "inject": true,
-  "note": "Rosetta spectral analysis preview (256px). inject true|false is paint, not pigment recovery. Same lenses as Aziel Corpus Library OCR."
+  "note": "Rosetta spectral analysis preview (256px). inject true|false is false-color membership paint. Same lenses as Aziel Corpus Library OCR."
 };
 
-const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Dual surface: Worker /v1 + catalog MCP. This Worker /v1/mesh/* PROXY to aziel-runtime via AZIEL_RUNTIME. Suite mesh default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). No Node Gate. No public qnsd proxy. No auto-heal. Not anonymity. Not a Softwares-tab product. Rosetta spectral analysis \u2014 same lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.\n---\n\n# SpectralLock\n\nRosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. LIVE modes: `zero`, `tazel`, `vyrn`, `uv` (aliases `ultraviolet`, `uv-light`, `uvsa`), `rosetta`, `zen`, `chaos`, `balance`, `candle` (aliases `candlelight`, `candle-light`), `indent` (aliases `indentation`, `suppress-ink`, `ink-suppress`, `revealer-indent`), `lemon` (aliases `lemon-ink`, `hidden-lemon`, `invisible-ink-lemon`). Honest unredact family (not a lens): `unredact` / `lift` / `redact-locate` with ops `locate`, `lift`, `recover`, `refuse`. Locate leftover / historical page bytes and residual only \u2014 never invent letters. Opaque rewrite with nothing left refuses `SL-UNREDACT-OPAQUE`. OCR only after structural recovery. Honest handwriting family (not a lens): `handwriting` / `handwrite` / `ink-hand` / `forgery-scan` with ops `analyze`, `compare`, `side-by-side`, `graph`, `forgery-indicators`, `refuse`. Synthetic scan heuristics of ink on paper \u2014 not ESDA, not chemical dating, not a court finding, not writer identity. Synthetic image analysis \u2014 not a lab instrument, not forensic certification. Stub: `spectrometer`, `forensic`, `invent_mark`. Author: **Aziel Eliab**.\n\n**THIS IS:** Rosetta spectral analysis \u2014 SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr).\n\n**THIS IS NOT:** a court exhibit or a claim of authenticity. Hosted `/v1` does not increment downloads or views.\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- Suite mesh: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh` (PROXY; default OFF; QNS-CD-1.0 cross-map)\n- Corpus OCR (reference): https://www.azielcorpuslibrary.net/ocr\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List SpectralLock lenses (canonical ids + aliases). |\n| GET | `/v1/lenses` | Alias for `/v1/modes`. |\n| GET | `/v1/targets` | Ink and page targets. |\n| POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses`, `target` (`ink`\\|`page`), and `inject` (`true`\\|`false`). ON is false-color membership tint (paint), not recovered pigment. OFF is gray of the same gate. Zero ignores the switch. Returns `tazel_inband_pct` and `vyrn_inband_pct` before any hit claim. 256 px preview; prefer local `spectrallock_inject.py`. |\n| GET | `/v1/unredact` | Honesty banner + unredact ops (`locate`, `lift`, `recover`, `refuse`). Does not increment downloads. |\n| POST | `/v1/unredact` | Locate leftover / historical page bytes. Body `{b64, op, query, twin_b64?}`. Returns `leftover_bytes`, `recovered_from`, `page_revisions`, `revision_compare`, `revision_graph` (`revisions[]` with tip-cut `copy` `{media_type, filename, b64, sha256, byte_length, source_revision}` plus surviving embeds; `edges[]` with added/replaced/deleted/freed / `page_deltas` / `redaction_ops` classified `replaced` \\| `overlaid` \\| `detached` \\| `sanitized rewrite`; `root_startxref`, `eof_offsets`), `operator_text`, `classifications`, `recovered_characters` (page / object_id / generation / xref_revision / stream_offset / operator / font / decoded_bytes / source_revision / sha256), `ocr` (after structural only; never covered letters from context), `refuse_code` (`SL-UNREDACT-OPAQUE`). Hosted preview may cap copy size (sha256+offset cites; no invented bytes) and has no OCR engine \u2014 it does not lie about that. Aliases: `POST /v1/lift`, `POST /v1/redact-locate`. |\n| GET | `/v1/recover` | Universal recover ops + LIVE vs SLOT format matrix. Does not increment downloads. Not a catalog door op. |\n| POST | `/v1/recover` | Universal artifact recovery. Body `{b64, op, filename, query, twin_b64?}`. Ops: `locate` \u00b7 `deep-recover` \u00b7 `revision-graph` \u00b7 `cross-compare` \u00b7 `extract-embedded` \u00b7 `scan-orphans` \u00b7 `scan-metadata` \u00b7 `scan-sidecars` \u00b7 `scan-history` \u00b7 `refuse`. Envelope: `{artifact, type, revisions, metadata, embedded, orphans, prior_content, redaction_regions, recovered, refused, provenance, no_lie}`. Present bytes only. Secrets: `secret_material_present` + path/offset; values suppressed. SLOT parsers are not advertised as LIVE. |\n| GET | `/v1/handwriting` | Handwriting ops + LIVE vs SLOT feature matrix. Does not increment downloads. Not a catalog door op. Not a lab. |\n| POST | `/v1/handwriting` | Synthetic handwriting analysis of a user-supplied PNG scan/photo of paper. Body `{b64, op, filename, twin_b64?}`. Ops: `analyze` \u00b7 `compare` \u00b7 `side-by-side` \u00b7 `graph` \u00b7 `forgery-indicators` \u00b7 `refuse`. Envelope: `{artifact, strokes, features, forgery_indicators, side_by_side, graph, overlays, provenance, refused, warnings, no_lie}`. Indicators / heuristics / candidates \u2014 human verification required. Confidence is pixel signal quality, not \u201cthis is forged.\u201d Never ESDA, chemical dating, court examiner opinion, or writer identification as fact. Heatmaps \u2260 transcripts. Hosted 256 px PNG preview; full pipeline is the local package. |\n| GET | `/v1/mesh` | PROXY suite mesh status. Default OFF. QNM live|locked|isolated. QNS-CD-1.0 cross-map (photon QNS1; not a Softwares-tab product). Never enables. No public qnsd proxy. |\n| GET | `/v1/mesh/nodes` | PROXY Live Nodes roster (5-minute presence). Peers see the QNS-CD-1.0 cross-map. |\n| POST | `/v1/mesh/{enable,disable,join,heartbeat,leave,broadcast}` | PROXY. Bearer required to enable. No auto-heal. Anon-broadcast is not a publish path. |\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector. Catalog MCP `mesh_*` + FragGate `slug=mesh`. Suite mesh default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer; local qnsd in https://github.com/AzielEliab/qnm-node; runtime cites in https://github.com/AzielEliab/aziel-runtime). No Node Gate. No public qnsd proxy. No auto-heal. Not anonymity. Not a Softwares-tab product.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/lenses\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\nspectrallock doctor\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n\n## Catalog + local UI\n\nAuthor: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full pipeline is the Python package. Lamb Lens: Service \u2192 Clarity \u2192 Peace. Never invent marks.\n\n- Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- This Worker skill: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`\n- Suite mesh: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh` PROXY (default OFF; QNS-CD-1.0 cross-map)\n\nLocal UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page + inject ON/OFF. Then `spectrallock doctor`. Worker homepage Live Nodes strip polls `GET /v1/mesh` (default OFF). QNS-CD-1.0 is a hub cite / Worker mesh cross-map only \u2014 not a Softwares-tab product; no public qnsd proxy.\n\nColor inject (operator lock 19 Sep 2026): `--inject` / `--no-inject` on every named mode. ON paints membership; OFF is luminance of the same gate; `zero` stays gray. tazel=170\u00b0 `#1EC9A5`, vyrn=350\u00b0 `#C00066`. UV is synthetic, not a lamp. Balance does not invent marks. Report `tazel_inband_pct` and `vyrn_inband_pct` before claiming a hit. Empty gate \u2260 broken lens. Prefer `python3 spectrallock_inject.py`. Identity: Aziel Eliab. Lamb Lens: Service \u2192 Clarity \u2192 Peace. NO-LIE.\n\nUnredact / lift-overlay (operator lock 2026-09-19 \u2014 NO-LIE): `locate` reports text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes, and historical page revisions (stale `/Page` graphs, prior streams, xref/ObjStm, after-EOF, incremental `startxref`/`Prev` revision graph + per-revision tip-cut PDF/embed copies). That is reading bytes that are still present \u2014 not guessing a black box. `lift` is non-opaque residual with `--no-inject` only; heatmaps are not transcripts. Opaque sanitized rewrite with nothing left refuses `SL-UNREDACT-OPAQUE`. If leftover / historical bytes remain, `recover` surfaces them with character provenance. OCR runs only after structural recovery and never reconstructs covered letters from context. Hosted `/v1/unredact` may keep preview limits (copy-size cap cites sha256 + offsets; never invents bytes) but does not lie about capabilities. Never invent letters. Never claim pigment recovery, ESDA, chemical, lab, or forensic certification.\n\nUniversal recover (operator lock 2026-09-19 \u2014 NO-LIE): `spectrallock recover \u2026` and `GET|POST /v1/recover`. Search all physically present representations (old streams, tracked changes, thumbnails, JSON/XML tombstones, metadata, attachments, siblings, SQLite freelist, Git objects when `.git` is supplied, shared strings, comments, hidden sheets, archive members) before declaring gone. Confidence is provenance quality, not guessed correctness. Audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`. Catalog LIVE_OPS stay honest \u2014 do not invent a FragGate `recover` door.\n\nHandwriting / ink-hand (operator lock 2026-09-19 \u2014 NO-LIE): `spectrallock handwriting analyze|compare|graph FILE` (aliases `handwrite`, `ink-hand`, `forgery-scan`) and `GET|POST /v1/handwriting`. Synthetic image analysis of user-supplied scans/photos of physical ink on paper. Looks for stroke-weight variation, speed cues, density, bleed/feathering, baseline/slant/size shifts, erasures, tracing, and forgery indicators (tremor-copy, unnatural lifts, retouch, dual-ink, clone-stamp, compression paste-up, ductus, style-shift). Side-by-side panes + stroke/feature graph + density/bleed/erasure heatmaps. Spectral helpers (`uv`, `candle`, `indent`, `lemon`) may be cited with inject OFF. Never invents marks. Empty gate \u2260 broken lens. Never claim ESDA, chemical ink dating, court-qualified examiner opinion, or writer identification as identity fact. Phrasing: indicator / heuristic / candidate \u2014 human verification required. Audit: `docs/audit/HANDWRITING-FORGERY-AUDIT.md`. Catalog LIVE_OPS stay honest \u2014 do not invent a FragGate `handwriting` door.\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import catalog or Worker OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector. MCP clients can use the catalog MCP endpoint. Suite mesh: `GET /v1/mesh` PROXY (default OFF). QNS-CD-1.0 cross-map (photon QNS1 packet transfer). Catalog MCP `mesh_*` + FragGate `slug=mesh`.\n";
+const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling SpectralLock hosted /v1 or installing the local package. Dual surface: Worker /v1 + catalog MCP. This Worker /v1/mesh/* PROXY to aziel-runtime via AZIEL_RUNTIME. Suite mesh default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). No Node Gate. No public qnsd proxy. No auto-heal. Rosetta spectral analysis \u2014 same lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.\n---\n\n# SpectralLock\n\nRosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. LIVE modes: `zero`, `tazel`, `vyrn`, `uv` (aliases `ultraviolet`, `uv-light`, `uvsa`), `rosetta`, `zen`, `chaos`, `balance`, `candle` (aliases `candlelight`, `candle-light`), `indent` (aliases `indentation`, `suppress-ink`, `ink-suppress`, `revealer-indent`), `lemon` (aliases `lemon-ink`, `hidden-lemon`, `invisible-ink-lemon`). Honest unredact family: `unredact` / `lift` / `redact-locate` with ops `locate`, `lift`, `recover`, `refuse`. Locate leftover / historical page bytes and residual only \u2014 never invent letters. Opaque rewrite with nothing left refuses `SL-UNREDACT-OPAQUE`. OCR only after structural recovery. Honest handwriting family: `handwriting` / `handwrite` / `ink-hand` / `forgery-scan` with ops `analyze`, `compare`, `side-by-side`, `graph`, `forgery-indicators`, `refuse`. Synthetic scan heuristics of ink on paper. Stub: `spectrometer`, `forensic`, `invent_mark`. Author: **Aziel Eliab**.\n\n**THIS IS:** Rosetta spectral analysis \u2014 SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr).\n\nAlways send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.\n\n## Call these URLs\n\n- Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- Live skill (this markdown): `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- Suite mesh: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh` (PROXY; default OFF; QNS-CD-1.0 cross-map)\n- Corpus OCR (reference): https://www.azielcorpuslibrary.net/ocr\n- llms.txt: `GET https://spectrallock-download-tracker.vibelock.workers.dev/llms.txt`\n- ai.txt: `GET https://spectrallock-download-tracker.vibelock.workers.dev/ai.txt`\n- cite.json: `GET https://spectrallock-download-tracker.vibelock.workers.dev/cite.json`\n\nOps (do **not** increment downloads or views):\n\n| Method | Path | What |\n|--------|------|------|\n| GET | `/v1/health` | Liveness. Does not increment downloads. |\n| GET | `/v1/skill` | This markdown. Does not increment downloads. |\n| GET | `/v1/modes` | List SpectralLock lenses (canonical ids + aliases). |\n| GET | `/v1/lenses` | Alias for `/v1/modes`. |\n| GET | `/v1/targets` | Ink and page targets. |\n| POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses`, `target` (`ink`\\|`page`), and `inject` (`true`\\|`false`). ON is false-color membership tint (paint). OFF is gray of the same gate. Zero ignores the switch. Returns `tazel_inband_pct` and `vyrn_inband_pct` before any hit claim. 256 px preview; prefer local `spectrallock_inject.py`. |\n| GET | `/v1/unredact` | Honesty banner + unredact ops (`locate`, `lift`, `recover`, `refuse`). Does not increment downloads. |\n| POST | `/v1/unredact` | Locate leftover / historical page bytes. Body `{b64, op, query, twin_b64?}`. Returns `leftover_bytes`, `recovered_from`, `page_revisions`, `revision_compare`, `revision_graph` (`revisions[]` with tip-cut `copy` `{media_type, filename, b64, sha256, byte_length, source_revision}` plus surviving embeds; `edges[]` with added/replaced/deleted/freed / `page_deltas` / `redaction_ops` classified `replaced` \\| `overlaid` \\| `detached` \\| `sanitized rewrite`; `root_startxref`, `eof_offsets`), `operator_text`, `classifications`, `recovered_characters` (page / object_id / generation / xref_revision / stream_offset / operator / font / decoded_bytes / source_revision / sha256), `ocr` (after structural only; never covered letters from context), `refuse_code` (`SL-UNREDACT-OPAQUE`). Hosted preview may cap copy size (sha256+offset cites; never invents bytes) and has no OCR engine \u2014 it does not lie about that. Aliases: `POST /v1/lift`, `POST /v1/redact-locate`. |\n| GET | `/v1/recover` | Universal recover ops + LIVE vs SLOT format matrix. Does not increment downloads. Worker `/v1` present-bytes recovery. |\n| POST | `/v1/recover` | Universal artifact recovery. Body `{b64, op, filename, query, twin_b64?}`. Ops: `locate` \u00b7 `deep-recover` \u00b7 `revision-graph` \u00b7 `cross-compare` \u00b7 `extract-embedded` \u00b7 `scan-orphans` \u00b7 `scan-metadata` \u00b7 `scan-sidecars` \u00b7 `scan-history` \u00b7 `refuse`. Envelope: `{artifact, type, revisions, metadata, embedded, orphans, prior_content, redaction_regions, recovered, refused, provenance, no_lie}`. Present bytes only. Secrets: `secret_material_present` + path/offset; values suppressed. SLOT parsers stay SLOT; LIVE parsers stay LIVE. |\n| GET | `/v1/handwriting` | Handwriting ops + LIVE vs SLOT feature matrix. Does not increment downloads. Worker `/v1` ink-on-paper scan heuristics. |\n| POST | `/v1/handwriting` | Synthetic handwriting analysis of a user-supplied PNG scan/photo of paper. Body `{b64, op, filename, twin_b64?}`. Ops: `analyze` \u00b7 `compare` \u00b7 `side-by-side` \u00b7 `graph` \u00b7 `forgery-indicators` \u00b7 `refuse`. Envelope: `{artifact, strokes, features, forgery_indicators, side_by_side, graph, overlays, provenance, refused, warnings, no_lie}`. Indicators / heuristics / candidates \u2014 human verification required. Confidence is pixel signal quality. Never invents marks. Heatmaps are residual overlays. Hosted 256 px PNG preview; full pipeline is the local package. |\n| GET | `/v1/mesh` | PROXY suite mesh status. Default OFF. QNM live|locked|isolated. QNS-CD-1.0 cross-map (photon QNS1). Never enables. No public qnsd proxy. |\n| GET | `/v1/mesh/nodes` | PROXY Live Nodes roster (5-minute presence). Peers see the QNS-CD-1.0 cross-map. |\n| POST | `/v1/mesh/{enable,disable,join,heartbeat,leave,broadcast}` | PROXY. Bearer required to enable. No auto-heal. Anon-broadcast issues a SHA-256 receipt. |\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector. Catalog MCP `mesh_*` + FragGate `slug=mesh`. Suite mesh default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer; local qnsd in https://github.com/AzielEliab/qnm-node; runtime cites in https://github.com/AzielEliab/aziel-runtime). No Node Gate. No public qnsd proxy. No auto-heal.\n\n## Example\n\n```bash\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/health\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/lenses\ncurl -s -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh\n```\n\n## Local (after one-click install)\n\n```bash\ncurl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash\nspectrallock ui\nspectrallock doctor\n```\n\nThen open http://127.0.0.1:8861 (loopback only).\n\nCounted download (gzip HTTP 200, no 302): https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz\nGitHub: https://github.com/AzielEliab/spectrallock\n\n## Catalog + local UI\n\nAuthor: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full pipeline is the Python package. Lamb Lens: Service \u2192 Clarity \u2192 Peace. Never invent marks.\n\n- Catalog product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/\n- Catalog OpenAPI: https://aziel-runtime.vibelock.workers.dev/openapi.json\n- Catalog MCP: `POST https://aziel-runtime.vibelock.workers.dev/mcp`\n- This Worker skill: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill`\n- This Worker OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json\n- Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`\n- Suite mesh: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh` PROXY (default OFF; QNS-CD-1.0 cross-map)\n\nLocal UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page + inject ON/OFF. Then `spectrallock doctor`. Worker homepage Live Nodes strip polls `GET /v1/mesh` (default OFF). QNS-CD-1.0 is a hub cite / Worker mesh cross-map only.\n\nColor inject (operator lock 19 Sep 2026): `--inject` / `--no-inject` on every named mode. ON paints membership; OFF is luminance of the same gate; `zero` stays gray. tazel=170\u00b0 `#1EC9A5`, vyrn=350\u00b0 `#C00066`. UV is a synthetic 365\u2013400 nm look from an ordinary photograph. Balance never invents marks. Report `tazel_inband_pct` and `vyrn_inband_pct` before claiming a hit. An empty gate is a valid reading. Prefer `python3 spectrallock_inject.py`. Identity: Aziel Eliab. Lamb Lens: Service \u2192 Clarity \u2192 Peace. NO-LIE.\n\nUnredact / lift-overlay (operator lock 2026-09-19 \u2014 NO-LIE): `locate` reports text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes, and historical page revisions (stale `/Page` graphs, prior streams, xref/ObjStm, after-EOF, incremental `startxref`/`Prev` revision graph + per-revision tip-cut PDF/embed copies). That is reading bytes that are still present. `lift` is non-opaque residual with `--no-inject` only; heatmaps are residual overlays. Opaque sanitized rewrite with nothing left refuses `SL-UNREDACT-OPAQUE`. If leftover / historical bytes remain, `recover` surfaces them with character provenance. OCR runs only after structural recovery and never reconstructs covered letters from context. Hosted `/v1/unredact` may keep preview limits (copy-size cap cites sha256 + offsets; never invents bytes) and does not lie about capabilities. Never invent letters.\n\nUniversal recover (operator lock 2026-09-19 \u2014 NO-LIE): `spectrallock recover \u2026` and `GET|POST /v1/recover`. Search all physically present representations (old streams, tracked changes, thumbnails, JSON/XML tombstones, metadata, attachments, siblings, SQLite freelist, Git objects when `.git` is supplied, shared strings, comments, hidden sheets, archive members) before declaring gone. Confidence is provenance quality. Audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`. Catalog LIVE_OPS stay honest \u2014 do not invent a FragGate `recover` door.\n\nHandwriting / ink-hand (operator lock 2026-09-19 \u2014 NO-LIE): `spectrallock handwriting analyze|compare|graph FILE` (aliases `handwrite`, `ink-hand`, `forgery-scan`) and `GET|POST /v1/handwriting`. Synthetic image analysis of user-supplied scans/photos of physical ink on paper. Looks for stroke-weight variation, speed cues, density, bleed/feathering, baseline/slant/size shifts, erasures, tracing, and forgery indicators (tremor-copy, unnatural lifts, retouch, dual-ink, clone-stamp, compression paste-up, ductus, style-shift). Side-by-side panes + stroke/feature graph + density/bleed/erasure heatmaps. Spectral helpers (`uv`, `candle`, `indent`, `lemon`) may be cited with inject OFF. Never invents marks. An empty gate is a valid reading. Phrasing: indicator / heuristic / candidate \u2014 human verification required. Audit: `docs/audit/HANDWRITING-FORGERY-AUDIT.md`. Catalog LIVE_OPS stay honest \u2014 do not invent a FragGate `handwriting` door.\n\nWorks with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import catalog or Worker OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector. MCP clients can use the catalog MCP endpoint. Suite mesh: `GET /v1/mesh` PROXY (default OFF). QNS-CD-1.0 cross-map (photon QNS1 packet transfer). Catalog MCP `mesh_*` + FragGate `slug=mesh`.\n";
 /**
  * SpectralLock download tracker (Cloudflare Worker).
  *
@@ -30,7 +30,7 @@ const SKILL_MARKDOWN = "---\nname: SpectralLock\ndescription: Use when calling S
  * totalKey() = spectrallock|__total__
  * CORS *. No secrets in this tree.
  * Isolated counter: Worker spectrallock-download-tracker, project spectrallock.
- * Not mixed with any other product.
+ * Isolated counter: SpectralLock only.
  *
  * Hosted /v1 never increments DOWNLOADS KV.
  * /v1/mesh/* PROXY to aziel-runtime via AZIEL_RUNTIME (HTTP fallback).
@@ -48,6 +48,95 @@ const GITHUB_LATEST = "https://github.com/AzielEliab/spectrallock/releases/lates
 const INSTALL_LINE = "curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash";
 const GITHUB_REPO = "https://github.com/AzielEliab/spectrallock";
 const HOST = "https://spectrallock-download-tracker.vibelock.workers.dev";
+
+const CITE_JSON = {
+  author: "Aziel Eliab",
+  identity: "Aziel Eliab only",
+  title: "SpectralLock",
+  version: VERSION,
+  description: "Rosetta spectral analysis (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR — overlays plus ink/page targets.",
+  github: GITHUB_REPO,
+  live: HOST + "/",
+  download: HOST + "/download",
+  openapi: HOST + "/openapi.json",
+  skill: HOST + "/v1/skill",
+  llms: HOST + "/llms.txt",
+  ai: HOST + "/ai.txt",
+  catalog: "https://aziel-runtime.vibelock.workers.dev/",
+  doi: null,
+  license: "Apache-2.0",
+  honesty: "Balance never invents marks. Opaque replace with no leftover container bytes refuses SL-UNREDACT-OPAQUE. Never invent letters. Author: Aziel Eliab only.",
+};
+
+const LLMS_TXT = `# SpectralLock
+
+> Author: Aziel Eliab only
+> Version: ${VERSION}
+> License: Apache-2.0
+> Status: live Rosetta spectral analysis (RSA-2.0 family)
+
+SpectralLock is Rosetta spectral analysis software. Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets.
+
+LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon.
+Targets: ink, page.
+Balance never invents marks. Lemon never invents marks. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE. Never invent letters.
+
+## Public Worker
+
+${HOST}/
+
+- Counted download: /download (gzip HTTP 200)
+- One-click install: /install.sh
+- OpenAPI: /openapi.json
+- Skill: /v1/skill
+- Health: /v1/health
+- Lenses: /v1/lenses
+- Overlay: POST /v1/overlay
+- Unredact: GET|POST /v1/unredact
+- Recover: GET|POST /v1/recover
+- Handwriting: GET|POST /v1/handwriting
+- Suite mesh PROXY: GET /v1/mesh (default OFF; QNM-BUILD-1.0; QNS-CD-1.0)
+- cite.json: /cite.json
+- ai.txt: /ai.txt
+
+## Catalog
+
+- https://aziel-runtime.vibelock.workers.dev/
+- MCP: POST https://aziel-runtime.vibelock.workers.dev/mcp
+- Product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/
+
+## Local package
+
+${GITHUB_REPO}
+
+\`\`\`bash
+curl -fsSL ${HOST}/install.sh | bash
+spectrallock ui
+\`\`\`
+
+Identity: Aziel Eliab only. Lamb Lens: Service → Clarity → Peace. NO-LIE.
+`;
+
+const AI_TXT = `SpectralLock — Rosetta spectral analysis (RSA-2.0 family) by Aziel Eliab only.
+
+Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets.
+LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon.
+Targets: ink, page. Hosted overlay is a 256 px PNG preview. Full pipeline is the Python package.
+
+Balance never invents marks. Never invent letters. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE.
+
+Worker: ${HOST}/
+OpenAPI: ${HOST}/openapi.json
+Skill: ${HOST}/v1/skill
+llms.txt: ${HOST}/llms.txt
+cite.json: ${HOST}/cite.json
+Catalog MCP: POST https://aziel-runtime.vibelock.workers.dev/mcp
+GitHub: ${GITHUB_REPO}
+Corpus OCR: https://www.azielcorpuslibrary.net/ocr
+
+Always send User-Agent: Mozilla/5.0.
+Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants.
+`;
 
 function corsHeaders() {
   return {
@@ -457,7 +546,7 @@ async function indexHtml(env) {
   <p class="banner">RSA-2.0 family. Lenses: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon. Ink isolates writing; page isolates parchment. Balance never invents marks. Author: Aziel Eliab.</p>
   <div id="meshStrip" aria-label="Suite Live Nodes">
     <div class="live"><b id="meshLiveCount">0</b> Live Nodes</div>
-    <div id="meshLine">Suite mesh: off (default). QNM-BUILD-1.0. QNS-CD-1.0. Not an anonymity network.</div>
+    <div id="meshLine">Suite mesh: off (default). QNM-BUILD-1.0. QNS-CD-1.0.</div>
     <div class="rollup">live <b id="qnmLive">0</b> · locked <b id="qnmLocked">0</b> · isolated <b id="qnmIsolated">0</b></div>
     <div>No Node Gate · No auto-heal · Aziel Eliab only</div>
     <div>
@@ -467,7 +556,7 @@ async function indexHtml(env) {
       <button id="meshJoin" type="button" title="Join as spectrallock. Refused while mesh is OFF. No auto-join.">Join</button>
       <button id="meshLeave" type="button" title="Leave this node. No auto-heal.">Leave</button>
     </div>
-    <p id="meshProducts">Catalog MCP mesh_* · FragGate slug=mesh · /v1/mesh/* PROXY · QNS-CD-1.0 cross-map · not AnonBroadcast · not AZMail ring · not a Node Gate · no public qnsd proxy</p>
+    <p id="meshProducts">Catalog MCP mesh_* · FragGate slug=mesh · /v1/mesh/* PROXY · QNS-CD-1.0 cross-map · no public qnsd proxy</p>
   </div>
   <div class="card">
     <div class="nums">
@@ -482,9 +571,9 @@ async function indexHtml(env) {
     <pre id="install-cmd">curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash</pre>
     <p class="kid">Then run: <code>spectrallock ui</code> and open http://127.0.0.1:8861 (this computer only).</p>
     <p class="meta">The download count ticks on the Download click. The Worker serves the gzip (HTTP 200). No 302 to GitHub. Forks using this same link are counted automatically. ${DEFAULT_ASSET} — ${n} counted.</p>
-    <p class="iso">Isolated counter: Worker <code>spectrallock-download-tracker</code>, project <code>spectrallock</code>, KV <code>SPECTRALLOCK_DOWNLOADS</code>. Not mixed with any other product. /v1 does not increment downloads.</p>
+    <p class="iso">Isolated counter: Worker <code>spectrallock-download-tracker</code>, project <code>spectrallock</code>, KV <code>SPECTRALLOCK_DOWNLOADS</code>. SpectralLock only. /v1 does not increment downloads.</p>
     
-    <p class="meta"><a href="/count">JSON count</a> · <a href="/stats">JSON stats</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/v1/mesh">/v1/mesh</a> · <a href="/v1/skill">Skill</a> · <a href="/ai">AI runtime</a> · <a href="${GITHUB_REPO}">GitHub</a> · <a href="${GITHUB_LATEST}">releases</a></p>
+    <p class="meta"><a href="/count">JSON count</a> · <a href="/stats">JSON stats</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/v1/mesh">/v1/mesh</a> · <a href="/v1/skill">Skill</a> · <a href="/llms.txt">llms.txt</a> · <a href="/ai.txt">ai.txt</a> · <a href="/ai">AI runtime</a> · <a href="${GITHUB_REPO}">GitHub</a> · <a href="${GITHUB_LATEST}">releases</a></p>
     <script>
       (function () {
         var cmd = "curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash";
@@ -539,14 +628,14 @@ async function indexHtml(env) {
           $("qnmLocked").textContent = String(locked);
           $("qnmIsolated").textContent = String(isolated);
           var line = $("meshLine");
-          if (on) line.textContent = "Suite mesh: on · live " + live + " · locked " + locked + " · isolated " + isolated + ". Not an anonymity network.";
-          else if (j.status === "unavailable" || (j.ok === false && j.error)) line.textContent = "Suite mesh: off (unavailable). QNM-BUILD-1.0. QNS-CD-1.0. Not an anonymity network.";
-          else line.textContent = "Suite mesh: off (default). QNM-BUILD-1.0. QNS-CD-1.0. Not an anonymity network.";
+          if (on) line.textContent = "Suite mesh: on · live " + live + " · locked " + locked + " · isolated " + isolated + ".";
+          else if (j.status === "unavailable" || (j.ok === false && j.error)) line.textContent = "Suite mesh: off (unavailable). QNM-BUILD-1.0. QNS-CD-1.0.";
+          else line.textContent = "Suite mesh: off (default). QNM-BUILD-1.0. QNS-CD-1.0.";
           var products = j.products_present || j.products || [];
           var names = Array.isArray(products) ? products.map(function (p) { return typeof p === "string" ? p : (p && (p.product || p.slug)) || ""; }).filter(Boolean) : [];
           var nodes = Array.isArray(j.nodes) ? j.nodes : [];
           var extra = names.length ? " · products " + names.join(", ") : (nodes.length ? " · " + nodes.length + " node labels" : "");
-          $("meshProducts").textContent = "Catalog MCP mesh_* · FragGate slug=mesh · /v1/mesh/* PROXY · QNS-CD-1.0 cross-map · not AnonBroadcast · not AZMail ring · not a Node Gate · no public qnsd proxy" + extra;
+          $("meshProducts").textContent = "Catalog MCP mesh_* · FragGate slug=mesh · /v1/mesh/* PROXY · QNS-CD-1.0 cross-map · no public qnsd proxy" + extra;
         }
         async function meshGet(path) {
           var r = await fetch(path, { headers: { "user-agent": "Mozilla/5.0", accept: "application/json" } });
@@ -648,7 +737,7 @@ function openapiSpec(request) {
       title: "SpectralLock runtime",
       version: VERSION,
       summary: "Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page).",
-      description: LIMITATION + " Suite mesh /v1/mesh/* PROXY to aziel-runtime (AZIEL_RUNTIME). Default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). No Node Gate. No public qnsd proxy. No auto-heal. Not anonymity. Not a Softwares-tab product. Aziel Eliab only.",
+      description: LIMITATION + " Suite mesh /v1/mesh/* PROXY to aziel-runtime (AZIEL_RUNTIME). Default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). No Node Gate. No public qnsd proxy. No auto-heal. Aziel Eliab only.",
     },
     servers: [{ url: origin }],
     paths: {
@@ -686,8 +775,8 @@ function openapiSpec(request) {
       "/v1/overlay": {
         post: {
           operationId: "spectrallock_overlay",
-          summary: "Rosetta spectral overlay preview. PNG b64 in, longest side capped at 256 px. Accepts mode/lens/lenses, target ink|page, and inject true|false (paint, not pigment). Does not increment download KV.",
-          requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { b64: { type: "string" }, mode: { type: "string", enum: ["zero","tazel","vyrn","uv","rosetta","zen","chaos","balance","candle","indent","lemon"] }, lens: { type: "string" }, lenses: { type: "array", items: { type: "string" } }, target: { type: "string", enum: ["ink", "page"] }, inject: { type: "boolean", description: "False-color membership tint. Not recovered pigment. Zero ignores the switch." } }, required: ["b64"] } } } },
+          summary: "Rosetta spectral overlay preview. PNG b64 in, longest side capped at 256 px. Accepts mode/lens/lenses, target ink|page, and inject true|false (false-color membership paint). Does not increment download KV.",
+          requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { b64: { type: "string" }, mode: { type: "string", enum: ["zero","tazel","vyrn","uv","rosetta","zen","chaos","balance","candle","indent","lemon"] }, lens: { type: "string" }, lenses: { type: "array", items: { type: "string" } }, target: { type: "string", enum: ["ink", "page"] }, inject: { type: "boolean", description: "False-color membership tint. Zero ignores the switch." } }, required: ["b64"] } } } },
           responses: { "200": { description: "png_b64 + metadata" } },
         },
       },
@@ -696,7 +785,7 @@ function openapiSpec(request) {
         post: {
           operationId: "spectrallock_unredact",
           summary: "Locate leftover / historical page bytes. Returns revision_graph (startxref/Prev edges + per-revision tip-cut copies). Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE. Never invents letters. OCR only after structural recovery.",
-          requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { b64: { type: "string" }, op: { type: "string", enum: ["locate", "lift", "recover", "refuse"] }, query: { type: "string" }, twin_b64: { type: "string", description: "Optional second document (neighboring release). Twin-page compare of operator text + identifiers. Not a transcript." }, twin: { type: "string" } }, required: ["b64"] } } } },
+          requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { b64: { type: "string" }, op: { type: "string", enum: ["locate", "lift", "recover", "refuse"] }, query: { type: "string" }, twin_b64: { type: "string", description: "Optional second document (neighboring release). Twin-page compare of operator text + identifiers." }, twin: { type: "string" } }, required: ["b64"] } } } },
           responses: { "200": { description: "findings including revision_graph (revisions[].copy tip-cut PDF/embeds; edges with replaced|overlaid|detached|sanitized rewrite). Hosted may omit large copy b64 and cite sha256+offsets — never invents bytes." } },
         },
       },
@@ -712,10 +801,10 @@ function openapiSpec(request) {
         },
       },
       "/v1/handwriting": {
-        get: { operationId: "spectrallock_handwriting_ops", summary: "Handwriting / ink-on-paper scan heuristics. Not a lab. Not a court finding. Does not increment downloads.", responses: { "200": { description: "ops + LIVE vs SLOT feature matrix" } } },
+        get: { operationId: "spectrallock_handwriting_ops", summary: "Handwriting / ink-on-paper scan heuristics. Does not increment downloads.", responses: { "200": { description: "ops + LIVE vs SLOT feature matrix" } } },
         post: {
           operationId: "spectrallock_handwriting",
-          summary: "Synthetic handwriting analysis of a user-supplied PNG scan. Ops analyze|compare|side-by-side|graph|forgery-indicators|refuse. Hosted 256 px PNG preview. Never ESDA / chemical dating / writer identity / court finding.",
+          summary: "Synthetic handwriting analysis of a user-supplied PNG scan. Ops analyze|compare|side-by-side|graph|forgery-indicators|refuse. Hosted 256 px PNG preview. Never invents marks.",
           requestBody: { required: true, content: { "application/json": { schema: { type: "object", properties: { b64: { type: "string" }, op: { type: "string", enum: ["analyze", "compare", "side-by-side", "graph", "forgery-indicators", "refuse"] }, filename: { type: "string" }, twin_b64: { type: "string" }, twin: { type: "string" } }, required: ["b64"] } } } },
           responses: { "200": { description: "handwriting envelope (strokes, features, forgery_indicators, side_by_side, graph, overlays, provenance, no_lie)" } },
         },
@@ -742,7 +831,7 @@ function aiHelpPage(request) {
 <p class="banner">${LIMITATION}</p>
 <p>OpenAPI: <a href="${origin}/openapi.json">${origin}/openapi.json</a></p>
 <p>Catalog: <a href="https://aziel-runtime.vibelock.workers.dev/">aziel-runtime.vibelock.workers.dev</a> (catalog <code>mesh_*</code> + FragGate <code>slug=mesh</code>).</p>
-<p>Suite mesh: <a href="${origin}/v1/mesh">${origin}/v1/mesh</a> PROXY to aziel-runtime. Default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). No Node Gate. No public qnsd proxy. No auto-heal. Not anonymity. Not a Softwares-tab product. Author: Aziel Eliab only.</p>
+<p>Suite mesh: <a href="${origin}/v1/mesh">${origin}/v1/mesh</a> PROXY to aziel-runtime. Default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). No Node Gate. No public qnsd proxy. No auto-heal. Author: Aziel Eliab only.</p>
 <pre>curl ${origin}/v1/health
 curl ${origin}/v1/modes
 curl ${origin}/v1/mesh
@@ -1040,7 +1129,7 @@ export default {
       });
     }
     if ((url.pathname === "/sitemap.xml" || url.pathname === "/sitemap.xml/") && request.method === "GET") {
-      const locs = [HOST + "/", HOST + "/download", HOST + "/install.sh", HOST + "/v1/skill", HOST + "/v1/mesh", HOST + "/openapi.json", GITHUB_REPO];
+      const locs = [HOST + "/", HOST + "/download", HOST + "/install.sh", HOST + "/v1/skill", HOST + "/v1/mesh", HOST + "/openapi.json", HOST + "/llms.txt", HOST + "/ai.txt", HOST + "/cite.json", GITHUB_REPO];
       const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         + locs.map((u) => "  <url><loc>" + u + "</loc></url>").join("\n")
         + "\n</urlset>\n";
@@ -1049,8 +1138,20 @@ export default {
         headers: { "Content-Type": "application/xml; charset=utf-8", ...corsHeaders() },
       });
     }
+    if ((url.pathname === "/llms.txt" || url.pathname === "/llms.txt/") && request.method === "GET") {
+      return new Response(LLMS_TXT, {
+        status: 200,
+        headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders() },
+      });
+    }
+    if ((url.pathname === "/ai.txt" || url.pathname === "/ai.txt/") && request.method === "GET") {
+      return new Response(AI_TXT, {
+        status: 200,
+        headers: { "Content-Type": "text/plain; charset=utf-8", ...corsHeaders() },
+      });
+    }
     if ((url.pathname === "/cite.json" || url.pathname === "/cite.json/") && request.method === "GET") {
-      return json({"author": "Aziel Eliab", "title": "SpectralLock", "github": "https://github.com/AzielEliab/spectrallock", "download": "https://spectrallock-download-tracker.vibelock.workers.dev/download", "doi": null, "license": "Apache-2.0", "catalog": "https://aziel-runtime.vibelock.workers.dev/"});
+      return json(CITE_JSON);
     }
     // /gitbaby-seo-routes
     return json({ error: "not found" }, 404);

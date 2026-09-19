@@ -10,26 +10,26 @@ export const LIMITATION =
   "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon). " +
   "Synthetic UV is a 365–400 nm look from an ordinary photograph. " +
   "Candlelight is a warm flame-side look from an ordinary photo. " +
-  "Indent is an image-enhancement heuristic for surface relief, not electrostatic detection. " +
+  "Indent is an image-enhancement heuristic for surface relief. " +
   "Lemon enhances heat-/acid-style browning already in the pixels; it never invents marks. " +
   "Balance never invents marks. " +
-  "Inject ON is false-color membership tint (paint), not recovered pigment. " +
+  "Inject ON is false-color membership tint (paint). " +
   "OFF is luminance of the same gate. Zero ignores the switch. " +
-  "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. " +
+  "An empty gate is a valid reading. Copy-of-copy works only if the hue is still in-band. " +
   "Unredact / lift-overlay locates leftover bytes, historical page revisions, and residual only — never invents letters. " +
   "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). " +
-  "Heatmaps are not transcripts. OCR only after structural recovery; never reconstructs covered letters from context. " +
-  "Handwriting analysis is synthetic scan heuristics of ink-on-paper photos — not ESDA, not chemical dating, not a court finding, not writer identity. " +
+  "Heatmaps are residual overlays. OCR only after structural recovery; never reconstructs covered letters from context. " +
+  "Handwriting analysis is synthetic scan heuristics of ink-on-paper photos. " +
   "Lamb Lens: Service → Clarity → Peace. " +
   "Hosted overlay is a simplified preview (max 256 px); the full pipeline is the Python package. " +
-  "Does not claim pigment recovery. The human still reads the page. Author Aziel Eliab.";
+  "The human still reads the page. Author Aziel Eliab.";
 
 export const INJECT_NOTE =
   "ON paints membership (false color). OFF is the same gate as gray. " +
-  "ON is not recovered pigment. Zero ignores the switch. " +
-  "Synthetic UV is not a lamp. Balance does not invent marks. " +
+  "Zero ignores the switch. " +
+  "UV is a synthetic 365–400 nm look from an ordinary photograph. Balance never invents marks. " +
   "Report tazel_inband_pct and vyrn_inband_pct before claiming a hit. " +
-  "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. " +
+  "An empty gate is a valid reading. Copy-of-copy works only if the hue is still in-band. " +
   "Hosted /v1/overlay is a 256 px preview; prefer spectrallock_inject.py locally.";
 
 export const VERSION = "0.3.0";
@@ -58,13 +58,13 @@ export const MODES = [
   { id: "zero", paper: "ZSA-1.0", status: "live", aliases: [], summary: "Equilibrium / geometry (simplified grayscale stretch)." },
   { id: "tazel", paper: "TSA-1.0", status: "live", aliases: [], summary: "Boost green–gold–turquoise (~170°, #1EC9A5)." },
   { id: "vyrn", paper: "VSA-1.0", status: "live", aliases: [], summary: "Boost magenta–red-violet (~350°, #C00066)." },
-  { id: "uv", paper: "UVSA-1.0", status: "live", aliases: ["ultraviolet", "uv-light", "uvsa"], summary: "Ultraviolet light analysis (synthetic). 365–400 nm look from an ordinary photograph. Not a real UV lamp." },
+  { id: "uv", paper: "UVSA-1.0", status: "live", aliases: ["ultraviolet", "uv-light", "uvsa"], summary: "Ultraviolet light analysis (synthetic). 365–400 nm look from an ordinary photograph." },
   { id: "rosetta", paper: "RSA-2.0", status: "live", aliases: [], summary: "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize." },
   { id: "zen", paper: "ZENA-1.0", status: "live", aliases: [], summary: "(Z′ + T′ + U′ + V′) / 4 after normalize." },
   { id: "chaos", paper: "CSA-1.0", status: "live", aliases: [], summary: "0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize." },
   { id: "balance", paper: "BSA", status: "live", aliases: [], summary: "α·Zen + (1-α)·Chaos. Never invents marks." },
-  { id: "candle", paper: "CLSA-1.0", status: "live", aliases: ["candlelight", "candle-light"], summary: "Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look. Not multispectral capture." },
-  { id: "indent", paper: "ISA-1.0", status: "live", aliases: ["indentation", "suppress-ink", "ink-suppress", "revealer-indent"], preferred_target: "page", summary: "Ink-suppress / indentation reveal (synthetic). Image-enhancement heuristic. Prefer target=page. Not electrostatic detection." },
+  { id: "candle", paper: "CLSA-1.0", status: "live", aliases: ["candlelight", "candle-light"], summary: "Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look." },
+  { id: "indent", paper: "ISA-1.0", status: "live", aliases: ["indentation", "suppress-ink", "ink-suppress", "revealer-indent"], preferred_target: "page", summary: "Ink-suppress / indentation reveal (synthetic). Image-enhancement heuristic. Prefer target=page." },
   { id: "lemon", paper: "LISA-1.0", status: "live", aliases: ["lemon-ink", "hidden-lemon", "invisible-ink-lemon"], summary: "Hidden lemon ink analysis (synthetic). Heat-/acid-style browning from existing pixels. Never invents marks." },
 ];
 
@@ -749,7 +749,7 @@ export async function overlayFromB64(b64, mode, extras = {}) {
     png_b64: bytesToB64(png),
     simplified: true,
     max_side: MAX_SIDE,
-    hosted_preview_honesty: "256px preview; inject is paint not pigment; prefer local spectrallock_inject.py",
+    hosted_preview_honesty: "256px preview; inject is false-color membership paint; prefer local spectrallock_inject.py",
     product: "spectrallock",
     version: VERSION,
     rosetta_spectral_analysis: true,
@@ -784,18 +784,16 @@ export const UNREDACT_NOTE =
   "Locate reports text still in the file, metadata, attachments, twin-page residual, " +
   "leftover container bytes, and historical page revisions (stale /Page, prior streams, " +
   "xref/ObjStm, after-EOF, incremental startxref/Prev revision graph + per-revision tip-cut copies). " +
-  "It does not invent letters. " +
+  "Never invent letters. " +
   "Opaque replace (clipped solid black / true rewrite) with no leftover bytes refuses (" +
   REFUSE_OPAQUE +
   "). That is the only honest switch for visual unredact. " +
   "Non-opaque cover may use contrast / residual with inject OFF. No guessed letters. " +
-  "A heatmap of ghosts is not a transcript. A flattened screenshot of a box is replace. " +
+  "Heatmaps are residual overlays. A flattened screenshot of a box is replace. " +
   "Leftover-bytes recovery reads prior objects / unused streams / attachments / incremental " +
-  "revisions / stale page graphs still in the container — not guessing letters from a black box. " +
+  "revisions / stale page graphs still in the container. " +
   "If the container was rewritten and old bytes are gone, leftover_bytes is false. " +
   "OCR runs only after structural recovery and never reconstructs covered letters from context. " +
-  "Context guesses are not recovery. " +
-  "Never claim pigment recovery, ESDA, chemical, lab, or forensic certification. " +
   "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE.";
 
 export function listUnredact() {
@@ -2278,7 +2276,7 @@ export const RECOVER_OPS = [
 ];
 export const RECOVER_NOTE =
   "Universal artifact recovery. Present bytes and documented structure only. " +
-  "Never infer covered letters from context. SLOT parsers are not advertised as LIVE. " +
+  "Never infer covered letters from context. SLOT parsers stay SLOT; LIVE parsers stay LIVE. " +
   "Secrets: secret_material_present + path/offset; values suppressed. " +
   "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE.";
 
@@ -2476,11 +2474,9 @@ export const HANDWRITING_NOTE =
   "scan or photo of paper. Stroke weight, speed cues, bleed, erasures, " +
   "tracing, and forgery indicators are heuristics from present pixels. " +
   "They are candidates — human verification required. " +
-  "Not ESDA, not chemical ink dating, not a court-qualified examiner " +
-  "opinion, and not writer identification as an identity fact. " +
-  "Heatmaps are not transcripts and not court findings. " +
+  "Heatmaps are residual overlays. " +
   "Hosted /v1/handwriting is a 256 px PNG preview; the full pipeline is the Python package. " +
-  "Empty gate ≠ broken lens. Balance/lemon never invent marks. " +
+  "An empty gate is a valid reading. Balance/lemon never invent marks. " +
   "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE.";
 
 const HANDWRITING_FEATURES = {
