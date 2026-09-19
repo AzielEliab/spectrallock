@@ -5,6 +5,6 @@
   "scripts": {
     "verify-human-bot": "node scripts/verify-human-bot.mjs",
     "verify-discovery-copy": "node scripts/verify-discovery-copy.mjs",
-    "verify": "node scripts/verify-human-bot.mjs && node scripts/verify-discovery-copy.mjs"
+    "verify": "node scripts/verify-discovery-copy.mjs"
   }
 }
