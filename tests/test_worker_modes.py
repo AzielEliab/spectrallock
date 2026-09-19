@@ -76,6 +76,41 @@ process.stdout.write(JSON.stringify({{ ok: true, live: LIVE, aliases: ALIASES }}
     assert body["aliases"] == ALIASES
 
 
+def test_overlay_js_unredact_honesty_in_node() -> None:
+    node = shutil.which("node")
+    assert node, "node is required to execute overlay unredact helpers"
+    script = f"""
+import {{ REFUSE_OPAQUE, UNREDACT_NOTE, parseUnredactOp, locatePdfBytes, classifyCoverBuf, listUnredact }} from {json.dumps(str(OVERLAY))};
+if (parseUnredactOp("redact-locate") !== "locate") throw new Error("locate alias");
+if (parseUnredactOp("leftover-bytes") !== "recover") throw new Error("recover alias");
+if (REFUSE_OPAQUE !== "SL-UNREDACT-OPAQUE") throw new Error("refuse code");
+if (!UNREDACT_NOTE.includes("leftover")) throw new Error("leftover copy");
+if (!UNREDACT_NOTE.includes("not a transcript")) throw new Error("transcript copy");
+if (!UNREDACT_NOTE.includes("never invent") && !UNREDACT_NOTE.includes("does not invent")) throw new Error("invent copy");
+const card = listUnredact();
+if (!card.leftover_bytes_recovery) throw new Error("card leftover");
+const enc = new TextEncoder();
+const pdf = enc.encode("%PDF-1.4\\n1 0 obj << /Title (Docket) >> endobj\\n4 0 obj << /Length 20 >> stream\\nBT (ALICE SMITH) Tj ET\\nendstream\\nendobj\\n4 0 obj << /Length 8 >> stream\\n0 0 0 rg\\nendstream\\nendobj\\n%%EOF\\n%%EOF\\n");
+const loc = locatePdfBytes(pdf);
+if (!loc.leftover_bytes) throw new Error("expected leftover");
+const previews = (loc.recovered || []).map((r) => r.preview || "").join(" ");
+if (!previews.toUpperCase().includes("ALICE")) throw new Error("leftover text missing");
+const buf = new Float32Array(32 * 48 * 3);
+for (let i = 0; i < buf.length; i++) buf[i] = 0.93;
+for (let y = 8; y < 24; y++) for (let x = 6; x < 42; x++) {{
+  const p = (y * 48 + x) * 3; buf[p] = buf[p+1] = buf[p+2] = 0;
+}}
+const cover = classifyCoverBuf(buf, 48, 32);
+if (!cover.opaque_replace) throw new Error("opaque box");
+process.stdout.write(JSON.stringify({{ ok: true, leftover: loc.leftover_bytes, refuse: REFUSE_OPAQUE }}));
+"""
+    raw = subprocess.check_output([node, "--input-type=module", "-e", script], text=True)
+    body = json.loads(raw)
+    assert body["ok"] is True
+    assert body["leftover"] is True
+    assert body["refuse"] == "SL-UNREDACT-OPAQUE"
+
+
 def test_overlay_js_inject_and_inband_in_node() -> None:
     node = shutil.which("node")
     assert node, "node is required to execute overlay inject helpers"

@@ -42,10 +42,15 @@ No network.
    pipeline is this Python package (`spectrallock_inject.py` for the color
    inject switch). Inject ON is paint, not recovered pigment. Zero ignores
    the switch. Report in-band percents before any hit claim.
+10. Unredact / lift-overlay never invents letters. Opaque replace with no
+    leftover container bytes refuses (`SL-UNREDACT-OPAQUE`). Leftover-bytes
+    recovery is a container read (object id / offset / stream), not a guess
+    from a black box. Heatmaps are not transcripts.
 
 ## Where to change things
 
 - Engines / formulas: `spectrallock/engine.py`
+- Unredact / leftover-bytes: `spectrallock/unredact.py`
 - CLI: `spectrallock/cli.py`, inject card: `spectrallock/inject.py`, `spectrallock_inject.py`
 - Local UI: `spectrallock/ui.py`, `spectrallock/web/`
 - Papers: `docs/source/`, spec: `docs/whitepaper.md`, runtime sync: `docs/runtime-sync.md`

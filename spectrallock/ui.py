@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from importlib.resources import files
 from urllib.parse import parse_qs, urlparse
 
-from spectrallock import LIMITATION, __version__
+from spectrallock import LIMITATION, __version__, list_unredact
 from spectrallock.debug import debug
 from spectrallock.engine import (
     PLAIN_NOT_IMAGE,
@@ -88,6 +88,7 @@ class Handler(BaseHTTPRequestHandler):
                 "rosetta_spectral_analysis": True,
                 "corpus_ocr_aligned": True,
                 "simple_default": True,
+                "unredact": list_unredact(),
             })
             return
         if path == "/api/targets":

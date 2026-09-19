@@ -42,6 +42,18 @@ from spectrallock.engine import (
     sha256_hex,
     write_sidecar,
 )
+from spectrallock.unredact import (
+    REFUSE_OPAQUE,
+    UNREDACT_FAMILY,
+    UNREDACT_NOTE,
+    UNREDACT_OPS,
+    analyze_unredact,
+    analyze_unredact_path,
+    classify_cover,
+    list_unredact,
+    locate_pdf,
+    parse_unredact_op,
+)
 
 __version__ = "0.3.0"
 __author__ = "Aziel Eliab"
@@ -77,5 +89,15 @@ __all__ = [
     "sha256_hex",
     "write_sidecar",
     "PLAIN_NOT_IMAGE",
+    "UNREDACT_NOTE",
+    "UNREDACT_OPS",
+    "UNREDACT_FAMILY",
+    "REFUSE_OPAQUE",
+    "analyze_unredact",
+    "analyze_unredact_path",
+    "classify_cover",
+    "list_unredact",
+    "locate_pdf",
+    "parse_unredact_op",
     "__version__",
 ]

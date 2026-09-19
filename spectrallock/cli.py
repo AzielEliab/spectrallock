@@ -8,6 +8,9 @@
                          --target ink|page --inject|--no-inject IN.png OUT.png
     spectrallock overlay --verify --sidecar
     spectrallock inject  # operator-card CLI (also spectrallock_inject.py)
+    spectrallock unredact locate|lift|recover FILE
+    spectrallock lift FILE          # alias: non-opaque residual, leftover recover
+    spectrallock redact-locate FILE # alias: locate
     spectrallock ui
 """
 
@@ -19,7 +22,14 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
-from spectrallock import LIMITATION, __version__, list_lenses, list_modes, list_targets
+from spectrallock import (
+    LIMITATION,
+    __version__,
+    list_lenses,
+    list_modes,
+    list_targets,
+    list_unredact,
+)
 from spectrallock.debug import debug
 from spectrallock.engine import (
     LIVE_MODES,
@@ -128,6 +138,118 @@ def _build_parser() -> argparse.ArgumentParser:
     p_serve.add_argument("--host", default="127.0.0.1")
     p_serve.add_argument("--port", type=int, default=8861)
 
+    def _add_unredact_args(p: argparse.ArgumentParser) -> None:
+        p.add_argument(
+            "src",
+            metavar="IN",
+            help="PDF / PNG / JPEG the operator owns.",
+        )
+        p.add_argument(
+            "--twin",
+            default=None,
+            help="Same page issued twice (less redacted). Residual compare only.",
+        )
+        p.add_argument(
+            "--query",
+            default=None,
+            help="Cite this name if it appears elsewhere in --set / the file. Do not invent.",
+        )
+        p.add_argument(
+            "--set",
+            dest="production",
+            action="append",
+            default=[],
+            help="Other files in the same production. Repeatable.",
+        )
+        p.add_argument(
+            "-o",
+            "--output",
+            dest="output",
+            default=None,
+            help="Optional residual PNG (inject OFF). Never a transcript.",
+        )
+        p.add_argument("--json", action="store_true", dest="as_json", help="Print findings JSON.")
+        inj = p.add_mutually_exclusive_group()
+        inj.add_argument(
+            "--inject",
+            dest="inject",
+            action="store_true",
+            help="Ignored. Lift-overlay forces inject OFF (gray of the same gate).",
+        )
+        inj.add_argument(
+            "--no-inject",
+            dest="inject",
+            action="store_false",
+            help="Gray of the same gate (required honesty for residual).",
+        )
+        p.set_defaults(inject=False)
+
+    p_un = sub.add_parser(
+        "unredact",
+        help="Honest locate / leftover-bytes recover / non-opaque lift. No guessed letters.",
+    )
+    p_un.add_argument(
+        "op_or_src",
+        help="Op (locate|lift|recover|refuse) or the input file if op is omitted.",
+    )
+    p_un.add_argument(
+        "src_opt",
+        nargs="?",
+        default=None,
+        help="Input file when the first token is an op.",
+    )
+    p_un.add_argument(
+        "--twin",
+        default=None,
+        help="Same page issued twice (less redacted). Residual compare only.",
+    )
+    p_un.add_argument(
+        "--query",
+        default=None,
+        help="Cite this name if it appears elsewhere in --set / the file. Do not invent.",
+    )
+    p_un.add_argument(
+        "--set",
+        dest="production",
+        action="append",
+        default=[],
+        help="Other files in the same production. Repeatable.",
+    )
+    p_un.add_argument(
+        "-o",
+        "--output",
+        dest="output",
+        default=None,
+        help="Optional residual PNG (inject OFF). Never a transcript.",
+    )
+    p_un.add_argument("--json", action="store_true", dest="as_json", help="Print findings JSON.")
+    un_inj = p_un.add_mutually_exclusive_group()
+    un_inj.add_argument(
+        "--inject",
+        dest="inject",
+        action="store_true",
+        help="Ignored. Lift-overlay forces inject OFF (gray of the same gate).",
+    )
+    un_inj.add_argument(
+        "--no-inject",
+        dest="inject",
+        action="store_false",
+        help="Gray of the same gate (required honesty for residual).",
+    )
+    p_un.set_defaults(inject=False)
+
+    p_lift = sub.add_parser(
+        "lift",
+        help="Alias for unredact lift. Non-opaque residual only; leftover bytes may recover.",
+    )
+    _add_unredact_args(p_lift)
+
+    p_loc = sub.add_parser(
+        "redact-locate",
+        help="Alias for unredact locate. Report leftover bytes and text still in the file.",
+    )
+    _add_unredact_args(p_loc)
+
     return parser
 
 
@@ -199,6 +321,42 @@ def _run_doctor() -> int:
         lines.append("loopback: fail")
     else:
         lines.append("loopback: 127.0.0.1 only")
+    from spectrallock.unredact import (
+        REFUSE_OPAQUE,
+        analyze_unredact,
+        residual_enhance,
+    )
+    from spectrallock.engine import png_bytes
+
+    cream = np.ones((32, 48, 3), dtype=np.float32) * 0.92
+    cream[8:22, 6:42] = 0.0
+    opaque_png = png_bytes(cream)
+    ghost = np.ones((32, 48, 3), dtype=np.float32) * 0.90
+    yy, xx = np.indices((32, 48))
+    ghost[8:22, 6:42] = (0.22 + 0.18 * ((xx[8:22, 6:42] % 7) / 7.0))[..., None]
+    residual_png = png_bytes(ghost)
+    try:
+        refused = analyze_unredact(opaque_png, op="lift")
+        leftover_empty = analyze_unredact(opaque_png, op="recover")
+        lifted = analyze_unredact(residual_png, op="lift")
+        if refused.get("refuse_code") != REFUSE_OPAQUE or leftover_empty.get("leftover_bytes"):
+            ok = False
+            lines.append("unredact opaque refuse: fail")
+        elif not lifted.get("residual_usable") or not lifted.get("residual_png_b64"):
+            ok = False
+            lines.append("unredact residual lift: fail")
+        else:
+            lines.append("unredact opaque refuse: ok")
+            lines.append("unredact residual lift: ok")
+            enhanced = residual_enhance(ghost)
+            if not np.isfinite(enhanced).all():
+                ok = False
+                lines.append("unredact residual finite: fail")
+    except Exception as exc:  # noqa: BLE001
+        ok = False
+        lines.append("unredact doctor: fail")
+        debug(f"doctor unredact error={type(exc).__name__}")
+
     lines.append("telemetry: none")
     lines.append("ok" if ok else "fail")
     print("\n".join(lines))
@@ -246,6 +404,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "modes": rows,
                 "lenses": list_lenses(),
                 "targets": list_targets(),
+                "unredact": list_unredact(),
             }, indent=2))
         else:
             print(LIMITATION)
@@ -253,6 +412,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             for row in rows:
                 print(f"{row['id']:10} {row['paper']:10} {row['status']:8} {row['summary']}")
             print("targets: ink (writing) · page (parchment)")
+            print("unredact family: locate · lift · recover · refuse (not a lens; leftover bytes only)")
         return 0
 
     if args.cmd == "overlay":
@@ -340,6 +500,71 @@ def main(argv: Sequence[str] | None = None) -> int:
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
             return 2
+        return 0
+
+    if args.cmd in {"unredact", "lift", "redact-locate"}:
+        from spectrallock.unredact import (
+            REFUSE_OPAQUE,
+            UNREDACT_NOTE,
+            analyze_unredact_path,
+            parse_unredact_op,
+        )
+
+        if args.cmd == "unredact":
+            token = str(args.op_or_src)
+            known = {"locate", "lift", "recover", "refuse", "leftover", "leftover-bytes",
+                     "lift-overlay", "redact-locate", "unredact"}
+            if token.lower() in known:
+                op = token
+                src = args.src_opt
+                if not src:
+                    print("unredact: missing input file", file=sys.stderr)
+                    return 2
+            else:
+                op = "locate"
+                src = token
+        elif args.cmd == "lift":
+            op = "lift"
+            src = args.src
+        else:
+            op = "locate"
+            src = args.src
+        try:
+            parse_unredact_op(op)
+            finding = analyze_unredact_path(
+                src,
+                op=op,
+                twin=args.twin,
+                query=args.query,
+                production=args.production or None,
+                inject=False,
+            )
+        except FileNotFoundError:
+            print(f"input not found: {src}", file=sys.stderr)
+            return 2
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        residual_b64 = finding.get("residual_png_b64")
+        if args.output and residual_b64:
+            import base64
+
+            Path(args.output).write_bytes(base64.b64decode(residual_b64))
+            finding["dst"] = args.output
+        if args.as_json:
+            print(json.dumps(finding, indent=2, ensure_ascii=False))
+        else:
+            print(f"op: {finding.get('op')}")
+            print(f"opaque_replace: {str(finding.get('opaque_replace')).lower()}")
+            print(f"residual_usable: {str(finding.get('residual_usable')).lower()}")
+            print(f"leftover_bytes: {str(finding.get('leftover_bytes')).lower()}")
+            print(f"refuse_code: {finding.get('refuse_code') or 'none'}")
+            recovered_from = finding.get("recovered_from") or []
+            print(f"recovered_from: {','.join(recovered_from) if recovered_from else 'none'}")
+            print(f"note: {finding.get('note')}")
+            print(UNREDACT_NOTE)
+        if finding.get("refuse_code") == REFUSE_OPAQUE and finding.get("op") in {"refuse", "lift"}:
+            return 2 if op in {"lift", "recover", "refuse"} else 0
         return 0
 
     parser.error(f"unknown command {args.cmd}")

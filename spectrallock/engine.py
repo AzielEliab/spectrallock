@@ -98,6 +98,9 @@ LIMITATION = (
     "Inject ON is false-color membership tint (paint), not recovered pigment. "
     "OFF is luminance of the same gate. Zero ignores the switch. "
     "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. "
+    "Unredact / lift-overlay locates leftover bytes and residual only — never invents letters. "
+    "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). "
+    "Heatmaps are not transcripts. "
     "Lamb Lens: Service → Clarity → Peace. "
     "The human still reads the page. Author Aziel Eliab."
 )
