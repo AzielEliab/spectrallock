@@ -84,7 +84,6 @@ _PDF_REF_RE = re.compile(rb"(\d+)\s+(\d+)\s+R")
 _PDF_HEX_STR_RE = re.compile(rb"<([0-9A-Fa-f \t\r\n]+)>")
 _PDF_LIT_STR_RE = re.compile(rb"\((?:\\.|[^\\)])*\)")
 _PDF_TJ_RE = re.compile(rb"(?:\((?:\\.|[^\\)])*\)|\[[^\]]*\])\s*T[jJ]")
-_XREF_ROW_RE = re.compile(rb"^(\d{10})\s+(\d{5})\s+([fn])\s*$", re.M)
 
 _PNG_SIG = b"\x89PNG\r\n\x1a\n"
 
