@@ -1,0 +1,27 @@
+INDENTATION SPECTRAL ANALYSIS (ISA-1.0)
+Definition
+ISA-1.0 = INDENT-S only. Ink-suppress / indentation reveal is a synthetic
+image-enhancement heuristic. It washes visible writing toward estimated
+parchment and lifts paper-fiber / pressure relief already in the photograph.
+This is not ESDA, not electrostatic detection apparatus, and not a claim of
+recovering invisible writing with certainty. Prefer target=page. ink|page
+both allowed.
+Functional Behavior
+A. Ink suppress:
+   - Dark strokes are lifted toward the estimated page color.
+B. Surface relief:
+   - Band-pass / high-pass luminance emphasizes fibers and pressure dents
+     that are already in the pixels.
+C. Honesty:
+   - No invented grooves. No forensic certification.
+Operational Pipeline
+1. Estimate parchment from the brightest quintile.
+2. Wash ink toward that parchment color.
+3. Mix in normalized relief from the original luminance.
+4. Output ISA-1.0.
+Usage
+Commands that activate ISA-1.0:
+- "Ink-suppress / indentation reveal"
+- "Run indent on this page"
+- "indentation" / "suppress-ink" / "ink-suppress" / "revealer-indent"
+Author Aziel Eliab.

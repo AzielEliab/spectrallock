@@ -7,26 +7,49 @@
 export const LIMITATION =
   "Rosetta spectral analysis (RSA-2.0 family). SpectralLock lenses match " +
   "Aziel Corpus Library OCR — overlays plus ink/page targets " +
-  "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance). " +
+  "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon). " +
   "Synthetic UV is a 365–400 nm look from an ordinary photograph. " +
-  "Balance never invents marks. Hosted overlay is a simplified preview " +
-  "(max 256 px); the full pipeline is the Python package. The human still reads the page. " +
-  "Author Aziel Eliab.";
+  "Candlelight is a warm flame-side look from an ordinary photo. " +
+  "Indent is an image-enhancement heuristic for surface relief, not electrostatic detection. " +
+  "Lemon enhances heat-/acid-style browning already in the pixels; it never invents marks. " +
+  "Balance never invents marks. Lamb Lens: Service → Clarity → Peace. " +
+  "Hosted overlay is a simplified preview (max 256 px); the full pipeline is the Python package. " +
+  "The human still reads the page. Author Aziel Eliab.";
 
 export const VERSION = "0.3.0";
 export const MAX_SIDE = 256;
-export const LIVE = ["zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"];
+export const LIVE = ["zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance", "candle", "indent", "lemon"];
 export const TARGET_IDS = ["ink", "page"];
 
+export const ALIASES = {
+  candlelight: "candle",
+  "candle-light": "candle",
+  ultraviolet: "uv",
+  "uv-light": "uv",
+  uvsa: "uv",
+  indentation: "indent",
+  "suppress-ink": "indent",
+  "ink-suppress": "indent",
+  "revealer-indent": "indent",
+  "lemon-ink": "lemon",
+  "hidden-lemon": "lemon",
+  "invisible-ink-lemon": "lemon",
+};
+
+export const STUB_MODES = ["spectrometer", "forensic", "invent_mark"];
+
 export const MODES = [
-  { id: "zero", paper: "ZSA-1.0", status: "live", summary: "Equilibrium / geometry (simplified grayscale stretch)." },
-  { id: "tazel", paper: "TSA-1.0", status: "live", summary: "Boost green–gold–turquoise (~170°, #1EC9A5)." },
-  { id: "vyrn", paper: "VSA-1.0", status: "live", summary: "Boost magenta–red-violet (~350°, #C00066)." },
-  { id: "uv", paper: "UVSA-1.0", status: "live", summary: "Synthetic 365–400 nm simulation. Not a real UV lamp." },
-  { id: "rosetta", paper: "RSA-2.0", status: "live", summary: "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize." },
-  { id: "zen", paper: "ZENA-1.0", status: "live", summary: "(Z′ + T′ + U′ + V′) / 4 after normalize." },
-  { id: "chaos", paper: "CSA-1.0", status: "live", summary: "0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize." },
-  { id: "balance", paper: "BSA", status: "live", summary: "α·Zen + (1-α)·Chaos. Never invents marks." },
+  { id: "zero", paper: "ZSA-1.0", status: "live", aliases: [], summary: "Equilibrium / geometry (simplified grayscale stretch)." },
+  { id: "tazel", paper: "TSA-1.0", status: "live", aliases: [], summary: "Boost green–gold–turquoise (~170°, #1EC9A5)." },
+  { id: "vyrn", paper: "VSA-1.0", status: "live", aliases: [], summary: "Boost magenta–red-violet (~350°, #C00066)." },
+  { id: "uv", paper: "UVSA-1.0", status: "live", aliases: ["ultraviolet", "uv-light", "uvsa"], summary: "Ultraviolet light analysis (synthetic). 365–400 nm look from an ordinary photograph. Not a real UV lamp." },
+  { id: "rosetta", paper: "RSA-2.0", status: "live", aliases: [], summary: "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize." },
+  { id: "zen", paper: "ZENA-1.0", status: "live", aliases: [], summary: "(Z′ + T′ + U′ + V′) / 4 after normalize." },
+  { id: "chaos", paper: "CSA-1.0", status: "live", aliases: [], summary: "0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize." },
+  { id: "balance", paper: "BSA", status: "live", aliases: [], summary: "α·Zen + (1-α)·Chaos. Never invents marks." },
+  { id: "candle", paper: "CLSA-1.0", status: "live", aliases: ["candlelight", "candle-light"], summary: "Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look. Not multispectral capture." },
+  { id: "indent", paper: "ISA-1.0", status: "live", aliases: ["indentation", "suppress-ink", "ink-suppress", "revealer-indent"], preferred_target: "page", summary: "Ink-suppress / indentation reveal (synthetic). Image-enhancement heuristic. Prefer target=page. Not electrostatic detection." },
+  { id: "lemon", paper: "LISA-1.0", status: "live", aliases: ["lemon-ink", "hidden-lemon", "invisible-ink-lemon"], summary: "Hidden lemon ink analysis (synthetic). Heat-/acid-style browning from existing pixels. Never invents marks." },
 ];
 
 export const TARGETS = [
@@ -184,6 +207,74 @@ function modeUv(buf) {
   return out;
 }
 
+function modeCandle(buf, w, h) {
+  const out = new Float32Array(buf.length);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      const p = i * 3;
+      const r = buf[p], g = buf[p + 1], b = buf[p + 2];
+      const L = luma(r, g, b);
+      const flame = 1 - (x / Math.max(1, w - 1)) * 0.42;
+      const glow = clamp01(Math.pow(L, 0.82) * (0.78 + 0.28 * flame));
+      const ink = L < 0.44 ? (0.44 - L) / 0.44 : 0;
+      out[p] = clamp01((r * 0.42 + glow * 1.16 + 0.05) * (1 - 0.40 * ink) + r * 0.28 * ink);
+      out[p + 1] = clamp01((g * 0.40 + glow * 0.70 + 0.02) * (1 - 0.40 * ink) + g * 0.28 * ink);
+      out[p + 2] = clamp01((b * 0.22 + glow * 0.26) * (1 - 0.40 * ink) + b * 0.28 * ink);
+    }
+  }
+  return out;
+}
+
+function modeIndent(buf, w, h) {
+  const L = toLuma(buf, w, h);
+  const t = norm01(L);
+  const parch = parchmentEstimate(buf, w, h);
+  const out = new Float32Array(buf.length);
+  for (let i = 0, p = 0; i < t.length; i++, p += 3) {
+    const ink = t[i] < 0.52 ? (0.52 - t[i]) / 0.52 : 0;
+    const wr = buf[p] * (1 - 0.84 * ink) + parch[0] * 0.84 * ink;
+    const wg = buf[p + 1] * (1 - 0.84 * ink) + parch[1] * 0.84 * ink;
+    const wb = buf[p + 2] * (1 - 0.84 * ink) + parch[2] * 0.84 * ink;
+    const gray = luma(wr, wg, wb);
+    // simplified relief: invert residual ink vs parchment (hosted 256px honesty)
+    const relief = clamp01(0.18 + gray * 0.62 + Math.abs(L[i] - gray) * 0.9);
+    out[p] = clamp01(wr * 0.42 + relief * 0.58);
+    out[p + 1] = clamp01(wg * 0.42 + relief * 0.58);
+    out[p + 2] = clamp01(wb * 0.42 + relief * 0.58);
+  }
+  return out;
+}
+
+function modeLemon(buf) {
+  const out = new Float32Array(buf.length);
+  for (let p = 0; p < buf.length; p += 3) {
+    const r = buf[p], g = buf[p + 1], b = buf[p + 2];
+    const [h, s, v] = rgbToHsv(r, g, b);
+    const brown = Math.exp(-0.5 * (hueDist(h, 36) / 22) ** 2);
+    const warm = Math.exp(-0.5 * (hueDist(h, 28) / 30) ** 2);
+    const mid = Math.max(0, 1 - Math.abs(v - 0.42) / 0.45);
+    const gain = clamp01((0.65 * brown + 0.35 * warm) * clamp01(s * 1.85) * mid);
+    const s2 = clamp01(s * (1 + 0.58 * gain) + 0.04 * gain);
+    const v2 = clamp01(v * (1 + 0.10 * gain) - 0.07 * gain);
+    const [nr, ng, nb] = hsvToRgb(h, s2, v2);
+    out[p] = clamp01(nr * (1 - 0.22 * gain) + 0.62 * v2 * 0.22 * gain);
+    out[p + 1] = clamp01(ng * (1 - 0.22 * gain) + 0.38 * v2 * 0.22 * gain);
+    out[p + 2] = clamp01(nb * (1 - 0.22 * gain) + 0.14 * v2 * 0.22 * gain);
+  }
+  return out;
+}
+
+export function resolveMode(name) {
+  const key = String(name || "").trim().toLowerCase();
+  if (LIVE.includes(key)) return key;
+  if (ALIASES[key]) return ALIASES[key];
+  if (STUB_MODES.includes(key)) {
+    return { error: "stub", unknown: key, known: LIVE };
+  }
+  return null;
+}
+
 function mixLuma(channels, weights) {
   const n = channels.zero.length;
   const out = new Float32Array(n);
@@ -219,8 +310,13 @@ function normalizeLenses(mode, lens, lenses) {
   for (const item of raw) {
     const key = String(item || "").trim().toLowerCase();
     if (!key) continue;
-    if (!LIVE.includes(key)) return { error: "unknown lens", unknown: key, known: LIVE };
-    if (!out.includes(key)) out.push(key);
+    const resolved = resolveMode(key);
+    if (resolved && resolved.error === "stub") {
+      return { error: "stub", unknown: resolved.unknown, known: LIVE };
+    }
+    const id = resolved;
+    if (!id || !LIVE.includes(id)) return { error: "unknown lens", unknown: key, known: LIVE };
+    if (!out.includes(id)) out.push(id);
   }
   return { lenses: out.length ? out : ["rosetta"] };
 }
@@ -279,6 +375,9 @@ function applyMode(buf, w, h, mode) {
   if (mode === "tazel") return modeTazel(buf);
   if (mode === "vyrn") return modeVyrn(buf);
   if (mode === "uv") return modeUv(buf);
+  if (mode === "candle") return modeCandle(buf, w, h);
+  if (mode === "indent") return modeIndent(buf, w, h);
+  if (mode === "lemon") return modeLemon(buf);
   const ch = baseChannels(buf, w, h);
   if (mode === "rosetta") return grayToRgb(mixLuma(ch, ROSETTA_W));
   if (mode === "zen") return grayToRgb(mixLuma(ch, ZEN_W));
@@ -492,7 +591,14 @@ function bytesToB64(u8) {
 export async function overlayFromB64(b64, mode, extras = {}) {
   const parsed = normalizeLenses(extras.lenses ? null : mode, extras.lens, extras.lenses);
   if (parsed.error) {
-    return { error: parsed.error, unknown: parsed.unknown, known: LIVE, advisory: LIMITATION };
+    const stub = parsed.error === "stub";
+    return {
+      error: stub ? `${parsed.unknown} is a stub` : parsed.error,
+      unknown: parsed.unknown,
+      known: LIVE,
+      stub,
+      advisory: LIMITATION,
+    };
   }
   const lenses = parsed.lenses;
   const dest = normalizeTarget(extras.target || extras.polarity);

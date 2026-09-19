@@ -14,3 +14,9 @@ ZEN SPECTRAL ANALYSIS (ZENA-1.0)
 Zen = Harmonic UnityFormula: ZENA-1.0 = (Z′ + T′ + U′ + V′) / 4Purpose: Balanced, unbiased, full-spectrum truth of the manuscript.
 CHAOS SPECTRAL ANALYSIS (CSA-1.0)
 Chaos = Anti-Zen (Entropy Analysis)Formula: CSA-1.0 = 0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′Purpose: Reveal conflict, tampering, overwriting, structural fracture.
+CANDLELIGHT SPECTRAL ANALYSIS (CLSA-1.0)
+Candle = Warm flame-side look from an ordinary photo. Ambers ~1800–2700K. Not real multispectral capture.
+INDENTATION SPECTRAL ANALYSIS (ISA-1.0)
+Indent = Suppress visible ink; lift fiber / pressure relief. Image-enhancement heuristic. Not ESDA.
+LEMON INK SPECTRAL ANALYSIS (LISA-1.0)
+Lemon = Heat-/acid-style citrus browning from existing pixels. Not a chemical test. Never invents marks.

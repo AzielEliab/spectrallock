@@ -15,8 +15,10 @@ overlays plus ink/page targets.
 RSA-2.0 is the decoding composite `0.40·Z′ + 0.35·T′ + 0.25·V′`. Ink isolates
 writing; page isolates parchment. Balance never invents marks — it only
 reweights existing readings. Synthetic UV is a 365–400 nm look from an
-ordinary photograph. Hosted `/v1/overlay` is a 256 px preview; the full
-pipeline is this Python package.
+ordinary photograph. Candlelight, indent, and lemon are synthetic looks
+from ordinary photos (not a lab instrument, not forensic certification).
+Hosted `/v1/overlay` is a 256 px preview; the full pipeline is this
+Python package.
 
 **Forks are welcome and always allowed.**
 
@@ -79,7 +81,8 @@ Counted download: [https://spectrallock-download-tracker.vibelock.workers.dev/](
 
 Direct tarball: [spectrallock-0.3.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz)
 
-Papers: [docs/source/](docs/source/) · spec: [docs/whitepaper.md](docs/whitepaper.md)
+Papers: [docs/source/](docs/source/) · spec: [docs/whitepaper.md](docs/whitepaper.md) ·
+runtime sync: [docs/runtime-sync.md](docs/runtime-sync.md)
 
 How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -97,18 +100,24 @@ capped at 256 px, PNG in/out). The full pipeline is this Python package.
 
 ## Lenses (all live in 0.3.0)
 
-Same names as the Corpus OCR SpectralLock lens checkboxes.
+Same names as the Corpus OCR SpectralLock lens checkboxes, plus candle /
+indent / lemon synthetic looks. Aliases resolve to the canonical id.
 
 | id | paper | formula / action |
 |----|-------|------------------|
 | `zero` | ZSA-1.0 | Grayscale, hist-eq, band-pass, unsharp. Hue ~260°, `#6F6485`. |
 | `tazel` | TSA-1.0 | Boost green–gold–turquoise (~170°, `#1EC9A5`). Lift faint midtones. |
 | `vyrn` | VSA-1.0 | Boost magenta–red-violet (~350°, `#C00066`). Suppress green/cyan. |
-| `uv` | UVSA-1.0 | Synthetic 365–400 nm simulation. Parchment glow, ink darker. |
+| `uv` | UVSA-1.0 | Ultraviolet light analysis (synthetic). 365–400 nm look. Aliases: `ultraviolet`, `uv-light`, `uvsa`. |
 | `rosetta` | RSA-2.0 | `0.40·Z′ + 0.35·T′ + 0.25·V′` after per-channel normalize. |
 | `zen` | ZENA-1.0 | `(Z′ + T′ + U′ + V′) / 4` after normalize. |
 | `chaos` | CSA-1.0 | `0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′` after normalize. |
 | `balance` | BSA | `B=(Zn−Cn)/(Zn+Cn+ε)`, `α=(1+B)/2`, `RGB = α·Zen + (1−α)·Chaos`. Never invents marks. |
+| `candle` | CLSA-1.0 | Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look. Aliases: `candlelight`, `candle-light`. |
+| `indent` | ISA-1.0 | Ink-suppress / indentation reveal (synthetic). Prefer `page`. Not ESDA. Aliases: `indentation`, `suppress-ink`, `ink-suppress`, `revealer-indent`. |
+| `lemon` | LISA-1.0 | Hidden lemon ink analysis (synthetic). Heat-/acid-style browning from existing pixels. Never invents marks. Aliases: `lemon-ink`, `hidden-lemon`, `invisible-ink-lemon`. |
+
+Stub (refused): `spectrometer`, `forensic`, `invent_mark`.
 
 ## Ink / page targets
 
@@ -141,7 +150,7 @@ spectrallock version
 spectrallock doctor
 spectrallock modes
 spectrallock lenses
-spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance --target ink|page IN.png OUT.png
+spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon --target ink|page IN.png OUT.png
 spectrallock overlay --lens tazel --target page page.jpg out.png --json
 spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
 spectrallock ui          # 127.0.0.1:8861
@@ -171,7 +180,7 @@ flutter run
 - Health: `GET /v1/health`
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
-- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target}` — PNG, max 256 px longest side. Does **not** increment the download counter.
+- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target}` — PNG, max 256 px longest side. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
 - Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy; not a Softwares-tab product)
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`; catalog `mesh_*` + FragGate `slug=mesh`)

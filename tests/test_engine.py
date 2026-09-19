@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import numpy as np
 
+import pytest
+
 from spectrallock.engine import (
     CHAOS_WEIGHTS,
     EPS,
     LENSES,
     LIMITATION,
     LIVE_MODES,
+    MODE_ALIASES,
     MODES,
     ROSETTA_WEIGHTS,
+    STUB_MODES,
     TARGETS,
     ZEN_WEIGHTS,
     analyze,
@@ -19,11 +23,15 @@ from spectrallock.engine import (
     apply_target,
     balance_blend,
     blend_channels,
+    candle_overlay,
     chaos_overlay,
+    indent_overlay,
+    lemon_overlay,
     luminance,
     normalize01,
     normalize_lenses,
     normalize_target,
+    resolve_mode,
     rosetta_overlay,
     synthetic_page,
     tazel_overlay,
@@ -34,12 +42,21 @@ from spectrallock.engine import (
 )
 
 
-def test_all_eight_modes_live() -> None:
-    assert tuple(MODES) == ("zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance")
+def test_all_live_modes() -> None:
+    assert tuple(MODES) == (
+        "zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance",
+        "candle", "indent", "lemon",
+    )
     assert LIVE_MODES == tuple(MODES)
     for row in MODES.values():
         assert row["status"] == "live"
         assert row["paper"]
+    assert MODES["uv"]["aliases"] == ["ultraviolet", "uv-light", "uvsa"]
+    assert "Ultraviolet light analysis (synthetic)" in MODES["uv"]["summary"]
+    assert MODES["candle"]["paper"] == "CLSA-1.0"
+    assert MODES["indent"]["paper"] == "ISA-1.0"
+    assert MODES["indent"]["preferred_target"] == "page"
+    assert MODES["lemon"]["paper"] == "LISA-1.0"
 
 
 def test_limitation_is_rosetta() -> None:
@@ -176,6 +193,10 @@ def test_normalize_lenses_and_targets() -> None:
     assert normalize_lenses(lens="tazel") == ["tazel"]
     assert normalize_lenses(lenses=["zero", "tazel", "zero"]) == ["zero", "tazel"]
     assert normalize_lenses(mode="rosetta+vyrn") == ["rosetta", "vyrn"]
+    assert normalize_lenses(mode="ultraviolet") == ["uv"]
+    assert normalize_lenses(lenses=["candlelight", "ink-suppress", "hidden-lemon"]) == [
+        "candle", "indent", "lemon",
+    ]
     assert normalize_target("PAGE") == "page"
     assert normalize_target("parchment") == "page"
     assert normalize_target(None) == "ink"
@@ -227,3 +248,82 @@ def test_apply_mode_no_nan_on_bad_pixels() -> None:
         assert np.isfinite(result.rgb).all()
         assert 0.0 <= float(result.rgb.min())
         assert float(result.rgb.max()) <= 1.0 + 1e-5
+
+
+def test_mode_aliases_resolve_to_canonical() -> None:
+    expected = {
+        "candlelight": "candle",
+        "candle-light": "candle",
+        "ultraviolet": "uv",
+        "uv-light": "uv",
+        "uvsa": "uv",
+        "indentation": "indent",
+        "suppress-ink": "indent",
+        "ink-suppress": "indent",
+        "revealer-indent": "indent",
+        "lemon-ink": "lemon",
+        "hidden-lemon": "lemon",
+        "invisible-ink-lemon": "lemon",
+    }
+    assert MODE_ALIASES == expected
+    img = synthetic_page(24, 24)
+    for alias, canonical in expected.items():
+        assert resolve_mode(alias) == canonical
+        result = apply_mode(img, alias)
+        assert result.mode == canonical
+        assert result.paper == MODES[canonical]["paper"]
+
+
+def test_stub_modes_refuse() -> None:
+    img = synthetic_page(16, 16)
+    for stub in ("spectrometer", "forensic", "invent_mark"):
+        assert stub in STUB_MODES
+        with pytest.raises(ValueError, match="stub"):
+            apply_mode(img, stub)
+        with pytest.raises(ValueError, match="stub"):
+            normalize_lenses(mode=stub)
+
+
+def test_candle_warm_parchment_readable_ink() -> None:
+    img = synthetic_page(96, 96)
+    c = candle_overlay(img)
+    parchment = c[2:10, 2:10]
+    ink = c[42:50, 20:70]
+    assert float(parchment[..., 0].mean()) > float(parchment[..., 2].mean())
+    assert float(luminance(parchment).mean()) > float(luminance(ink).mean())
+    assert float(parchment[..., 2].mean()) < float(img[2:10, 2:10, 2].mean()) + 0.02
+    rec = apply_mode(img, "candle")
+    assert rec.paper == "CLSA-1.0"
+
+
+def test_indent_suppresses_ink_lifts_relief() -> None:
+    img = synthetic_page(96, 96)
+    ind = indent_overlay(img)
+    z = zero_overlay(img)
+    stroke = (slice(42, 50), slice(8, 88))
+    # visible ink is washed toward parchment vs zero grayscale
+    assert float(luminance(ind)[stroke].mean()) > float(luminance(z)[stroke].mean())
+    groove = (slice(84, 86), slice(8, 88))
+    parch = (slice(2, 10), slice(2, 10))
+    # pressure groove remains a luma dip vs nearby parchment
+    assert float(luminance(ind)[groove].mean()) < float(luminance(ind)[parch].mean())
+    rec = apply_mode(img, "indent")
+    assert rec.paper == "ISA-1.0"
+    page = analyze(img, "indent", target="page")
+    assert page.target == "page"
+    assert page.lenses == ("indent",)
+
+
+def test_lemon_boosts_existing_brown_never_invents() -> None:
+    img = synthetic_page(96, 96)
+    lem = lemon_overlay(img)
+    brown = (slice(74, 79), slice(14, 82))
+    parch = (slice(2, 10), slice(2, 10))
+    assert float(lem[brown][..., 0].mean()) > float(lem[brown][..., 2].mean())
+    # brown cue stays darker / warmer than parchment; no invented bright marks
+    assert float(luminance(lem)[brown].mean()) < float(luminance(lem)[parch].mean()) + 0.15
+    assert np.isfinite(lem).all()
+    assert 0.0 <= float(lem.min()) and float(lem.max()) <= 1.0 + 1e-5
+    rec = apply_mode(img, "lemon")
+    assert rec.paper == "LISA-1.0"
+    assert "never invents" in MODES["lemon"]["summary"].lower() or "never invent" in LIMITATION.lower()

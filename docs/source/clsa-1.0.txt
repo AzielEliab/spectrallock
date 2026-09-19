@@ -1,0 +1,24 @@
+CANDLELIGHT SPECTRAL ANALYSIS (CLSA-1.0)
+Definition
+CLSA-1.0 = CANDLE-S only. Candlelight analysis is a synthetic warm flame-side
+illumination look from an ordinary RGB photograph. Amber band ~1800–2700K.
+Parchment glows; ink stays readable. This is not a real lamp and not
+multispectral capture.
+Functional Behavior
+A. Flame-side warmth:
+   - One side of the page is treated as nearer the flame (brighter / warmer).
+B. Parchment glow:
+   - High-luma substrate shifts toward amber.
+C. Ink remains readable:
+   - Dark strokes are kept from the source pixels, not washed out.
+Operational Pipeline
+1. Estimate luminance and a left-to-right flame falloff.
+2. Lift parchment with a warm (high-R, low-B) mix.
+3. Reweight dark strokes toward the original photograph so writing stays readable.
+4. Output CLSA-1.0. Never invent marks.
+Usage
+Commands that activate CLSA-1.0:
+- "Candlelight analysis"
+- "Run candle on this page"
+- "candlelight" / "candle-light"
+These commands apply the candle-only channel. Author Aziel Eliab.

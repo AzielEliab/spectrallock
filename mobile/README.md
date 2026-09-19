@@ -1,7 +1,7 @@
 # SpectralLock — iPhone & Android
 
 Pick a photograph of a manuscript page. Apply a named overlay
-(zero / tazel / vyrn / uv / rosetta / zen / chaos / balance) using a
+(zero / tazel / vyrn / uv / rosetta / zen / chaos / balance / candle / indent / lemon) using a
 simple Dart color-matrix that approximates the published hues.
 
 Offline. No analytics. Dark matte / gold.
@@ -29,8 +29,9 @@ Xcode.
 
 ## Honest scope
 
-Rosetta spectral analysis approximation. Synthetic UV is a look, not a
-lamp. Balance never invents marks. The human still reads the page.
+Rosetta spectral analysis approximation. Synthetic UV / candle / indent /
+lemon are looks, not lamps or lab tests. Balance never invents marks.
+The human still reads the page.
 
 ## Desktop package (counted download)
 

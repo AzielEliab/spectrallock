@@ -4,7 +4,7 @@
     spectrallock modes
     spectrallock lenses
     spectrallock doctor
-    spectrallock overlay --mode|--lens zero|tazel|vyrn|uv|rosetta|zen|chaos|balance
+    spectrallock overlay --mode|--lens zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon
                          --target ink|page IN.png OUT.png
     spectrallock overlay --verify --sidecar
     spectrallock ui
@@ -27,6 +27,7 @@ from spectrallock.engine import (
     load_rgb,
     make_receipt,
     png_bytes,
+    resolve_mode,
     sha256_hex,
     write_sidecar,
 )
@@ -47,7 +48,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sub.add_parser("version", help="Print package version.")
     sub.add_parser(
         "doctor",
-        help="Check Python, Pillow, numpy, eight lenses × ink/page, no NaN, loopback, no telemetry.",
+        help="Check Python, Pillow, numpy, live lenses × ink/page, no NaN, loopback, no telemetry.",
     )
 
     p_modes = sub.add_parser("modes", help="List SpectralLock lenses (live papers + ids).")
@@ -61,8 +62,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "--lens",
         dest="mode",
         required=True,
-        choices=list(LIVE_MODES),
-        help="SpectralLock lens id (same names as Corpus OCR).",
+        type=resolve_mode,
+        metavar="MODE",
+        help=(
+            "SpectralLock lens id or alias "
+            "(zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon)."
+        ),
     )
     p_ov.add_argument(
         "--target",

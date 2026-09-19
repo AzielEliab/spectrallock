@@ -39,6 +39,9 @@ def test_cli_modes_lists_all_live(capsys) -> None:
     assert "ZENA-1.0" in out
     assert "CSA-1.0" in out
     assert "BSA" in out
+    assert "CLSA-1.0" in out
+    assert "ISA-1.0" in out
+    assert "LISA-1.0" in out
     assert "live" in out
     assert "reserved" not in out.lower() or "not" in LIMITATION.lower()
 
@@ -91,7 +94,7 @@ def test_ui_rejects_non_loopback() -> None:
 
 
 
-def test_cli_doctor_runs_eight_modes(capsys) -> None:
+def test_cli_doctor_runs_live_modes(capsys) -> None:
     assert main(["doctor"]) == 0
     out = capsys.readouterr().out
     for mode in LIVE_MODES:
@@ -140,3 +143,23 @@ def test_cli_rejects_non_image_plainly(tmp_path: Path, capsys) -> None:
     err = capsys.readouterr().err
     assert "not a picture" in err.lower()
     assert "png" in err.lower() or "jpeg" in err.lower()
+
+
+def test_cli_overlay_accepts_mode_aliases(tmp_path: Path, capsys) -> None:
+    from spectrallock.engine import save_rgb
+
+    src = tmp_path / "page.png"
+    dst = tmp_path / "out.png"
+    save_rgb(synthetic_page(24, 24), str(src))
+    cases = (
+        ("candlelight", "candle", "CLSA-1.0"),
+        ("ultraviolet", "uv", "UVSA-1.0"),
+        ("ink-suppress", "indent", "ISA-1.0"),
+        ("hidden-lemon", "lemon", "LISA-1.0"),
+    )
+    for alias, canonical, paper in cases:
+        assert main(["overlay", "--mode", alias, str(src), str(dst), "--json"]) == 0
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["mode"] == canonical
+        assert payload["paper"] == paper
+        assert payload["lenses"] == [canonical]
