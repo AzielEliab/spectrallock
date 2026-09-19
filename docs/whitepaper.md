@@ -209,6 +209,27 @@ or forensic certification.
 
 Hosted `/v1/unredact` may keep preview limits (payload cap, revision-copy
 cap, no OCR engine) but must not invent bytes or lie about capabilities.
+
+## Universal recover (operator lock — NO-LIE)
+
+Unredact is the PDF-focused leftover-bytes / visual path. `spectrallock recover`
+and `GET|POST /v1/recover` are the universal family: locate, deep-recover,
+revision-graph, cross-compare, extract-embedded, scan-orphans, scan-metadata,
+scan-sidecars, scan-history, refuse.
+
+Black rectangles may be visually unrecoverable while the value still exists
+in old streams, tracked changes, thumbnails, JSON/XML tombstones, metadata,
+attachments, siblings, SQLite freelist pages, supplied Git objects, shared
+strings, comments, hidden sheets, or archive members. Search every
+**physically present** representation before declaring gone. Confidence is
+provenance quality (1.00 exact bytes … 0.85 strong sibling). Linguistic
+reconstruction is not recovery.
+
+Format coverage is an honest LIVE vs SLOT matrix
+(`docs/audit/UNIVERSAL-RECOVER-AUDIT.md`). SLOT parsers (7z, HEIC, YAML AST
+without PyYAML) are never advertised as LIVE. Secrets are cited
+`secret_material_present` with path/offset; values are suppressed.
+
 Runtime rehash after merge
 still copies `overlay.js` only — follow-on aziel-runtime sync after this
 product PR (GitBaby CLEARs). Do not invent a digest.

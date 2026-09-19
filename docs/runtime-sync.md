@@ -74,8 +74,10 @@ concatenated with `path\\n` + bytes + `\\n`). Recompute only from disk.
    sha256), `ocr` (after structural only; hosted OCR unbound), and
    optional `twin_b64` compare. Leftover / historical bytes = recover;
    leftover_bytes is false when the container was rewritten and old
-   bytes are gone. Catalog door ops stay the list above until GitBaby
-   adds `unredact` to LIVE_OPS — do not invent a door op. Rehash still
+   bytes are gone.    Catalog door ops stay the list above until GitBaby
+   adds `unredact` / `recover` to LIVE_OPS — do not invent a door op.
+   Product Worker also serves `GET|POST /v1/recover` (universal family;
+   LIVE vs SLOT matrix; secrets suppressed). Rehash still
    uses `ENGINE_ARTIFACTS.spectrallock = ["spectrallock/overlay.js"]`
    only. **This product PR does not bump the runtime digest.** After
    merge, GitBaby CLEARs `spectrallock` then rehashes. Do not invent

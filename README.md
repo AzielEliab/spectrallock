@@ -140,6 +140,10 @@ Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`,
 ```bash
 spectrallock unredact locate page.pdf --json
 spectrallock unredact recover page.pdf --json
+spectrallock recover locate page.pdf --json
+spectrallock recover deep file.docx --all-metadata --scan-orphans --json
+spectrallock recover compare old.json new.json --json
+spectrallock recover revision-graph page.pdf --json
 spectrallock lift cover.png --no-inject -o residual.png --json
 spectrallock redact-locate page.pdf --twin page_less.pdf --query "Alice"
 ```
@@ -214,6 +218,8 @@ spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
 spectrallock inject page.jpg --mode vyrn --inject -o vyrn_on.jpg
 spectrallock unredact locate page.pdf --json
 spectrallock unredact recover page.pdf --json
+spectrallock recover locate page.pdf --json
+spectrallock recover production ./case_folder --recursive --json
 spectrallock lift cover.png --no-inject -o residual.png --json
 spectrallock redact-locate page.pdf --twin other.pdf --query Alice
 spectrallock ui          # 127.0.0.1:8861
@@ -245,6 +251,7 @@ flutter run
 - Targets: `GET /v1/targets`
 - Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px longest side. `inject` true\|false is paint, not pigment. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
 - Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query, twin_b64?}` locate / leftover-historical recover / residual lift. Returns `revision_graph` (startxref/Prev edges + per-revision tip-cut copies). Opaque rewrite + no leftover → `SL-UNREDACT-OPAQUE`. Aliases `POST /v1/lift`, `POST /v1/redact-locate`. Hosted preview may cap size / copy `b64` (sha256+offset cites, no invented bytes) and has no OCR engine — it does not lie about that. Never invents letters.
+- Recover: `GET /v1/recover` ops + LIVE vs SLOT matrix; `POST /v1/recover` `{b64, op, filename, twin_b64?}` universal artifact recovery. Present bytes only. Secrets suppressed. SLOT is not LIVE. Audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`.
 - Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy; not a Softwares-tab product)
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`; catalog `mesh_*` + FragGate `slug=mesh`)

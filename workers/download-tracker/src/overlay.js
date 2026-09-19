@@ -2271,6 +2271,198 @@ export function twinCompareHistory(a, b) {
   };
 }
 
+export const RECOVER_OPS = [
+  "locate", "deep-recover", "revision-graph", "cross-compare", "extract-embedded",
+  "scan-orphans", "scan-metadata", "scan-sidecars", "scan-history", "refuse",
+];
+export const RECOVER_NOTE =
+  "Universal artifact recovery. Present bytes and documented structure only. " +
+  "Never infer covered letters from context. SLOT parsers are not advertised as LIVE. " +
+  "Secrets: secret_material_present + path/offset; values suppressed. " +
+  "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE.";
+
+const SECRET_KEY_JS = /(password|passwd|secret|api[_-]?key|\btoken\b|authorization|cookie|private[_-]?key|aws_secret|bearer)/i;
+const SECRET_VAL_JS = /((?:password|passwd|secret|api[_-]?key|\btoken\b|authorization|cookie|private[_-]?key|aws_secret|bearer)[^\s:=]*)\s*[:=]\s*\S+/gi;
+
+export function parseRecoverOp(value, fallback = "locate") {
+  const key = String(value || fallback).trim().toLowerCase().replaceAll("_", "-");
+  const aliases = {
+    locate: "locate",
+    deep: "deep-recover",
+    "deep-recover": "deep-recover",
+    "revision-graph": "revision-graph",
+    compare: "cross-compare",
+    "cross-compare": "cross-compare",
+    "extract-embedded": "extract-embedded",
+    "scan-orphans": "scan-orphans",
+    "scan-metadata": "scan-metadata",
+    "scan-sidecars": "scan-sidecars",
+    "scan-history": "scan-history",
+    refuse: "refuse",
+    production: "locate",
+    redactions: "deep-recover",
+  };
+  return aliases[key] || null;
+}
+
+export function listRecover() {
+  return {
+    family: "recover",
+    ops: RECOVER_OPS.slice(),
+    refuse_codes: [
+      "SL-RECOVER-NO-BYTES", "SL-RECOVER-SANITIZED", "SL-RECOVER-OPAQUE",
+      "SL-RECOVER-UNSUPPORTED", "SL-RECOVER-CORRUPT", "SL-RECOVER-ENCRYPTED",
+      "SL-RECOVER-LIMIT", "SL-UNREDACT-OPAQUE",
+    ],
+    live_kinds: ["pdf", "json", "xml", "html", "svg", "txt", "eml", "zip", "png", "jpeg"],
+    slot_kinds: ["7z", "heic", "heif"],
+    no_lie: true,
+    guessed_letters: false,
+    context_reconstruction: false,
+    catalog_door: false,
+    worker_path: "/v1/recover",
+    note: RECOVER_NOTE,
+    author: "Aziel Eliab",
+    status: "live",
+  };
+}
+
+function suppressSecretJs(s) {
+  return String(s || "").replace(SECRET_VAL_JS, (_, a) => a + "=<suppressed>");
+}
+
+function detectKindJs(u8, filename) {
+  const head = bytesToLatin(u8.subarray(0, Math.min(u8.length, 16)));
+  if (head.startsWith("%PDF")) return { kind: "pdf", status: "live", confirmed: true };
+  if (u8.length >= 8 && u8[0] === 0x89 && head.includes("PNG")) return { kind: "png", status: "live", confirmed: true };
+  if (u8[0] === 0xff && u8[1] === 0xd8 && u8[2] === 0xff) return { kind: "jpeg", status: "live", confirmed: true };
+  if (head.startsWith("PK")) return { kind: "zip", status: "live", confirmed: true };
+  if (head.startsWith("7z")) return { kind: "7z", status: "slot", confirmed: true };
+  if (u8.length > 12 && bytesToLatin(u8.subarray(4, 8)) === "ftyp" && /heic|heif|mif1/.test(bytesToLatin(u8.subarray(8, 16)))) {
+    return { kind: "heic", status: "slot", confirmed: true };
+  }
+  const text = bytesToLatin(u8.subarray(0, Math.min(u8.length, 800)));
+  if (/^(from|to|subject|message-id|mime-version):/im.test(text)) return { kind: "eml", status: "live", confirmed: true };
+  if (/^\s*[\[{]/.test(text)) return { kind: "json", status: "live", confirmed: true };
+  if (/^\s*<svg/i.test(text)) return { kind: "svg", status: "live", confirmed: true };
+  if (/^\s*<\?xml|^\s*<html/i.test(text)) return { kind: "xml", status: "live", confirmed: true };
+  const ext = String(filename || "").split(".").pop() || "";
+  if (["txt", "md", "csv", "log", "yml", "yaml"].includes(ext)) return { kind: ext === "yml" ? "yaml" : ext, status: "live", confirmed: true };
+  return { kind: "bin", status: "live-carve", confirmed: false };
+}
+
+function zipNamesJs(u8) {
+  const text = bytesToLatin(u8);
+  const names = [];
+  let at = 0;
+  while ((at = text.indexOf("PK\x03\x04", at)) >= 0 && names.length < 80) {
+    if (at + 30 > u8.length) break;
+    const nameLen = u8[at + 26] | (u8[at + 27] << 8);
+    const extraLen = u8[at + 28] | (u8[at + 29] << 8);
+    const name = text.slice(at + 30, at + 30 + nameLen);
+    if (name) names.push(name);
+    at += 30 + nameLen + extraLen;
+  }
+  return names;
+}
+
+export async function recoverFromB64(b64, extras = {}) {
+  let u8;
+  try {
+    u8 = b64ToBytes(b64);
+  } catch (err) {
+    return { error: "decode failed: " + String(err.message || err), advisory: RECOVER_NOTE, no_lie: true };
+  }
+  const op = parseRecoverOp(extras.op || extras.verb || "locate");
+  if (!op) return { error: "unknown recover op", known: RECOVER_OPS, advisory: RECOVER_NOTE, no_lie: true };
+  const filename = extras.filename || "artifact";
+  const det = detectKindJs(u8, filename);
+  const env = {
+    product: "spectrallock",
+    author: "Aziel Eliab",
+    family: "recover",
+    op,
+    artifact: { filename, kind: det.kind, status: det.status, confirmed: det.confirmed, byte_length: u8.length, invented: false },
+    type: det.kind,
+    format_status: det.status,
+    revisions: [],
+    metadata: [],
+    embedded: [],
+    orphans: [],
+    prior_content: [],
+    redaction_regions: [],
+    recovered: [],
+    refused: [],
+    cross_file_matches: [],
+    provenance: [],
+    warnings: [],
+    secrets: [],
+    carved: [],
+    revision_graph: { revisions: [], edges: [], invented: false },
+    no_lie: true,
+    guessed_letters: false,
+    note: RECOVER_NOTE,
+    invented: false,
+  };
+  if (det.status === "slot") {
+    env.refuse_code = "SL-RECOVER-UNSUPPORTED";
+    env.refused.push({ code: "SL-RECOVER-UNSUPPORTED", note: "Parser unbound (SLOT).", invented: false });
+    env.warnings.push("SLOT: parser not bound. Not advertised as LIVE.");
+  }
+  const text = bytesToLatin(u8);
+  if (SECRET_KEY_JS.test(text)) {
+    env.secret_material_present = true;
+    env.secrets.push({ secret_material_present: true, path: filename, value_suppressed: true, invented: false });
+  }
+  if (det.kind === "pdf") {
+    const hist = await locatePdfHistory(u8);
+    env.revision_graph = hist.revision_graph || env.revision_graph;
+    env.revisions = (env.revision_graph.revisions || []);
+    env.recovered = hist.recovered || [];
+    env.prior_content = env.recovered.filter((r) => /old|prior|after-eof|orphan/.test(String(r.recovered_from || r.source_revision || "")));
+    env.pdf_history = { leftover_bytes: hist.leftover_bytes, recovered_from: hist.recovered_from, invented: false };
+  } else if (det.kind === "json") {
+    for (const key of ["_deleted", "_old", "_previous", "_history", "_backup", "_draft"]) {
+      if (text.includes(key)) env.recovered.push({ kind: "json-tombstone", preview: key, path: "/" + key, state: "present_prior_revision", invented: false });
+    }
+  } else if (det.kind === "zip") {
+    for (const name of zipNamesJs(u8)) {
+      env.embedded.push({ kind: "zip-member", preview: name, path: name, state: "present_embedded", invented: false });
+      if (/(backup|old|final|copy|draft|original|tmp|autosave)/i.test(name)) {
+        env.recovered.push({ kind: "flag-name", preview: name, path: name, state: "present_prior_revision", invented: false });
+      }
+    }
+  } else if (det.kind === "eml") {
+    if (/alice/i.test(text)) env.recovered.push({ kind: "email-body", preview: suppressSecretJs(latinPreview(text, 200)), path: filename, invented: false });
+    if (/content-type:\s*multipart/i.test(text)) env.recovered.push({ kind: "alternate-mime", preview: "multipart", path: filename, invented: false });
+  } else if (det.kind === "png" || det.kind === "jpeg") {
+    if (text.includes("tEXt") || text.includes("Comment")) env.metadata.push({ kind: "image-text", preview: "ancillary", path: filename, invented: false });
+    const iend = text.indexOf("IEND");
+    if (iend >= 0 && iend + 8 < text.length && text.slice(iend + 8).trim()) {
+      env.carved.push({ kind: "after-iend", offset: iend + 8, state: "present_orphan", invented: false });
+    }
+  } else if (det.kind !== "bin") {
+    env.recovered.push({ kind: "text", preview: suppressSecretJs(latinPreview(text, 200)), path: filename, invented: false });
+  }
+  for (const rec of env.recovered) rec.preview = suppressSecretJs(rec.preview || "");
+  env.secret_material_present = !!env.secret_material_present || env.secrets.length > 0;
+  env.recovered_count = env.recovered.length;
+  if (extras.twin_b64) {
+    try {
+      const twin = await recoverFromB64(extras.twin_b64, { op: "locate", filename: "twin" });
+      env.cross_compare = { only_in_first: [], only_in_second: [], invented: false, note: "Hosted compare cites present bytes only." };
+      env.twin_type = twin.type;
+    } catch {
+      env.warnings.push("Twin decode failed. Not guessed.");
+    }
+  }
+  if (!env.recovered_count && !env.carved.length && det.status !== "slot" && op !== "refuse") {
+    env.refuse_code = env.refuse_code || "SL-RECOVER-NO-BYTES";
+    env.refused.push({ code: "SL-RECOVER-NO-BYTES", invented: false });
+  }
+  return env;
+}
+
 void pixelsFromRgb;
 void copyBuf;
 void inflateBytes;

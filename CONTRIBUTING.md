@@ -54,6 +54,8 @@ No network.
 - Engines / formulas: `spectrallock/engine.py`
 - Unredact / leftover-bytes: `spectrallock/unredact.py`
 - Deep historical PDF recovery + incremental revision graph / tip-cut copies: `spectrallock/pdfhist.py`
+- Universal recover family: `spectrallock/recover/` (CLI `spectrallock recover`, Worker `/v1/recover`)
+- Honesty audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`
 - CLI: `spectrallock/cli.py`, inject card: `spectrallock/inject.py`, `spectrallock_inject.py`
 - Local UI: `spectrallock/ui.py`, `spectrallock/web/`
 - Papers: `docs/source/`, spec: `docs/whitepaper.md`, runtime sync: `docs/runtime-sync.md`

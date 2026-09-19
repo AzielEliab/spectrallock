@@ -839,6 +839,14 @@ def analyze_unredact(
     """Run locate / lift / recover / refuse. Never invent letters."""
     op_key = parse_unredact_op(op)
     find = _base_finding(op=op_key)
+
+    def _finish(payload: dict[str, Any]) -> dict[str, Any]:
+        if raw.startswith(b"%PDF"):
+            from spectrallock.recover.api import envelope_from_pdf_finding
+
+            payload["recover"] = envelope_from_pdf_finding(payload, raw, filename or "document.pdf")
+            payload["no_lie"] = True
+        return payload
     find["filename"] = filename or None
     find["size_in"] = len(raw)
     find["sha256_in"] = sha256_hex(raw)
@@ -860,7 +868,7 @@ def analyze_unredact(
     elif rgb is None and not is_pdf:
         find["error"] = "Need a PDF, PNG, or JPEG the operator owns."
         find["refuse_code"] = REFUSE_OPAQUE if op_key in {"lift", "refuse"} else None
-        return find
+        return _finish(find)
 
     if rgb is not None:
         cover = classify_cover(rgb)
@@ -929,7 +937,7 @@ def analyze_unredact(
                 + REFUSE_OPAQUE
             )
             if op_key == "lift":
-                return find
+                return _finish(find)
 
     if op_key == "recover":
         if can_recover:
@@ -938,14 +946,14 @@ def analyze_unredact(
                 "Recovered leftover bytes still in the container. "
                 "Provenance is object id / offset / stream. Not guessed letters."
             )
-            return find
+            return _finish(find)
         find["refuse_code"] = REFUSE_OPAQUE
         find["stop"] = True
         find["note"] = (
             "No leftover container bytes. Opaque rewrite or flattened screenshot "
             "cannot be recovered. " + REFUSE_OPAQUE
         )
-        return find
+        return _finish(find)
 
     if op_key == "lift":
         if can_lift and rgb is not None:
@@ -957,7 +965,7 @@ def analyze_unredact(
                 "Non-opaque cover: residual / contrast with inject OFF. "
                 "Heatmap is not a transcript. No guessed letters."
             )
-            return find
+            return _finish(find)
         if can_recover:
             find["op"] = "recover"
             find["note"] = (
@@ -965,7 +973,7 @@ def analyze_unredact(
                 "were extracted instead (reading present bytes, not guessing)."
             )
             find["refuse_code"] = None
-            return find
+            return _finish(find)
         find["refuse_code"] = REFUSE_OPAQUE
         find["stop"] = True
         find["op"] = "refuse"
@@ -973,7 +981,7 @@ def analyze_unredact(
             "Lift-overlay refuses on clipped black / flattened box with no leftover bytes. "
             + REFUSE_OPAQUE
         )
-        return find
+        return _finish(find)
 
     # locate (default): report; recover leftover if present; do not invent.
     if can_recover:
@@ -995,7 +1003,7 @@ def analyze_unredact(
         )
     else:
         find["note"] = "Locate complete. No invented letters."
-    return find
+    return _finish(find)
 
 
 def load_unredact_path(path: str | Path) -> bytes:

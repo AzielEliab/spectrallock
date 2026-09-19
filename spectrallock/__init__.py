@@ -43,6 +43,15 @@ from spectrallock.engine import (
     write_sidecar,
 )
 from spectrallock.pdfhist import DEEP_CAPABILITIES, recover_pdf_history
+from spectrallock.recover import (
+    RECOVER_NOTE,
+    RECOVER_OPS,
+    analyze_recover,
+    analyze_recover_path,
+    format_matrix,
+    list_recover,
+    parse_recover_op,
+)
 from spectrallock.unredact import (
     REFUSE_OPAQUE,
     UNREDACT_FAMILY,
@@ -102,5 +111,12 @@ __all__ = [
     "parse_unredact_op",
     "DEEP_CAPABILITIES",
     "recover_pdf_history",
+    "RECOVER_NOTE",
+    "RECOVER_OPS",
+    "analyze_recover",
+    "analyze_recover_path",
+    "format_matrix",
+    "list_recover",
+    "parse_recover_op",
     "__version__",
 ]

@@ -80,7 +80,7 @@ def test_overlay_js_unredact_honesty_in_node() -> None:
     node = shutil.which("node")
     assert node, "node is required to execute overlay unredact helpers"
     script = f"""
-import {{ REFUSE_OPAQUE, UNREDACT_NOTE, parseUnredactOp, locatePdfBytes, locatePdfHistory, classifyCoverBuf, listUnredact, DEEP_CAPABILITIES, unredactFromB64 }} from {json.dumps(str(OVERLAY))};
+import {{ REFUSE_OPAQUE, UNREDACT_NOTE, parseUnredactOp, locatePdfBytes, locatePdfHistory, classifyCoverBuf, listUnredact, listRecover, DEEP_CAPABILITIES, unredactFromB64, recoverFromB64, parseRecoverOp }} from {json.dumps(str(OVERLAY))};
 if (parseUnredactOp("redact-locate") !== "locate") throw new Error("locate alias");
 if (parseUnredactOp("leftover-bytes") !== "recover") throw new Error("recover alias");
 if (REFUSE_OPAQUE !== "SL-UNREDACT-OPAQUE") throw new Error("refuse code");
@@ -94,6 +94,10 @@ if (!card.deep_history) throw new Error("card deep");
 if (card.capabilities.length !== 14) throw new Error("14 caps");
 if (DEEP_CAPABILITIES.length !== 14) throw new Error("DEEP 14");
 if (!card.revision_graph || !card.revision_copies) throw new Error("card graph");
+const recCard = listRecover();
+if (!recCard.no_lie || recCard.guessed_letters) throw new Error("recover card");
+if (parseRecoverOp("deep") !== "deep-recover") throw new Error("recover alias");
+if (!recCard.slot_kinds.includes("heic")) throw new Error("heic slot");
 const enc = new TextEncoder();
 const pdf = enc.encode("%PDF-1.4\\n1 0 obj << /Title (Docket) >> endobj\\n4 0 obj << /Length 20 >> stream\\nBT (ALICE SMITH) Tj ET\\nendstream\\nendobj\\n4 0 obj << /Length 8 >> stream\\n0 0 0 rg\\nendstream\\nendobj\\n%%EOF\\n%%EOF\\n");
 const loc = locatePdfBytes(pdf);

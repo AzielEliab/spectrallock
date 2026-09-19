@@ -9,6 +9,7 @@
     spectrallock overlay --verify --sidecar
     spectrallock inject  # operator-card CLI (also spectrallock_inject.py)
     spectrallock unredact locate|lift|recover FILE
+    spectrallock recover locate|deep|compare|revision-graph FILE
     spectrallock lift FILE          # alias: non-opaque residual, leftover recover
     spectrallock redact-locate FILE # alias: locate
     spectrallock ui
@@ -30,6 +31,7 @@ from spectrallock import (
     list_targets,
     list_unredact,
 )
+from spectrallock.recover import list_recover
 from spectrallock.debug import debug
 from spectrallock.engine import (
     LIVE_MODES,
@@ -250,6 +252,48 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     _add_unredact_args(p_loc)
 
+    p_rec = sub.add_parser(
+        "recover",
+        help="Universal artifact recovery. Present bytes only. Never invent letters.",
+    )
+    p_rec.add_argument(
+        "op_or_src",
+        help="Op (locate|deep|revision-graph|compare|…) or the input file if op is omitted.",
+    )
+    p_rec.add_argument(
+        "src_opt",
+        nargs="?",
+        default=None,
+        help="Input file when the first token is an op. Second file for compare.",
+    )
+    p_rec.add_argument(
+        "src_opt2",
+        nargs="?",
+        default=None,
+        help="New file for recover compare OLD NEW.",
+    )
+    p_rec.add_argument("--twin", default=None, help="Second artifact for cross-compare.")
+    p_rec.add_argument("--query", default=None, help="Cite this string if present. Do not invent.")
+    p_rec.add_argument(
+        "--production-dir",
+        default=None,
+        help="Directory of sibling/production files.",
+    )
+    p_rec.add_argument(
+        "--set",
+        dest="production",
+        action="append",
+        default=[],
+        help="Other files in the same production. Repeatable.",
+    )
+    p_rec.add_argument("--recursive", action="store_true", help="Walk --production-dir recursively.")
+    p_rec.add_argument("--all-metadata", action="store_true", help="Include metadata sweep.")
+    p_rec.add_argument("--scan-orphans", action="store_true", help="Surface orphans / carved leftovers.")
+    p_rec.add_argument("--extract-embedded", action="store_true", help="Prefer embedded/attachment copies.")
+    p_rec.add_argument("--cross-compare", action="store_true", help="Compare twin / second file.")
+    p_rec.add_argument("--deep", action="store_true", help="Deep recover (all present representations).")
+    p_rec.add_argument("--json", action="store_true", dest="as_json", help="Print recover JSON.")
+
     return parser
 
 
@@ -357,6 +401,24 @@ def _run_doctor() -> int:
         lines.append("unredact doctor: fail")
         debug(f"doctor unredact error={type(exc).__name__}")
 
+    try:
+        from spectrallock.recover import analyze_recover, list_recover
+
+        card = list_recover()
+        tomb = analyze_recover(b'{"_deleted":{"name":"ALICE"}}', op="locate", filename="t.json")
+        if not card.get("no_lie") or card.get("guessed_letters") or "7z" not in (card.get("slot_kinds") or []):
+            ok = False
+            lines.append("recover card: fail")
+        elif not any(r.get("kind") == "json-tombstone" for r in tomb.get("recovered") or []):
+            ok = False
+            lines.append("recover json tombstone: fail")
+        else:
+            lines.append("recover family: ok")
+    except Exception as exc:  # noqa: BLE001
+        ok = False
+        lines.append("recover doctor: fail")
+        debug(f"doctor recover error={type(exc).__name__}")
+
     lines.append("telemetry: none")
     lines.append("ok" if ok else "fail")
     print("\n".join(lines))
@@ -405,6 +467,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "lenses": list_lenses(),
                 "targets": list_targets(),
                 "unredact": list_unredact(),
+                "recover": list_recover(),
             }, indent=2))
         else:
             print(LIMITATION)
@@ -413,6 +476,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 print(f"{row['id']:10} {row['paper']:10} {row['status']:8} {row['summary']}")
             print("targets: ink (writing) · page (parchment)")
             print("unredact family: locate · lift · recover · refuse (not a lens; leftover bytes only)")
+            print("recover family: locate · deep-recover · revision-graph · cross-compare · extract-embedded · scan-orphans · scan-metadata · scan-sidecars · scan-history · refuse")
         return 0
 
     if args.cmd == "overlay":
@@ -564,6 +628,76 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"note: {finding.get('note')}")
             print(UNREDACT_NOTE)
         if finding.get("refuse_code") == REFUSE_OPAQUE and op in {"lift", "recover", "refuse"}:
+            return 2
+        return 0
+
+    if args.cmd == "recover":
+        from spectrallock.recover import (
+            RECOVER_NOTE,
+            analyze_recover_path,
+            parse_recover_op,
+        )
+
+        token = str(args.op_or_src)
+        known = {
+            "locate", "deep", "deep-recover", "revision-graph", "compare",
+            "cross-compare", "extract-embedded", "scan-orphans", "scan-metadata",
+            "scan-sidecars", "scan-history", "refuse", "production", "redactions",
+        }
+        twin = args.twin
+        src = args.src_opt
+        if token.lower() in known:
+            op = token
+            if not src:
+                print("recover: missing input file", file=sys.stderr)
+                return 2
+            if args.src_opt2 and op in {"compare", "cross-compare"}:
+                twin = twin or args.src_opt2
+        else:
+            op = "locate"
+            src = token
+            if args.src_opt and not twin:
+                # recover compare old new (op omitted)
+                try:
+                    parse_recover_op("compare")
+                    op = "cross-compare"
+                    twin = args.src_opt
+                except ValueError:
+                    pass
+        try:
+            parse_recover_op(op)
+            finding = analyze_recover_path(
+                src,
+                op=op,
+                twin=twin,
+                query=args.query,
+                production_dir=args.production_dir,
+                production=args.production or None,
+                recursive=args.recursive,
+                all_metadata=args.all_metadata,
+                scan_orphans=args.scan_orphans,
+                extract_embedded=args.extract_embedded,
+                cross_compare=args.cross_compare or op in {"compare", "cross-compare"},
+                deep=args.deep or op in {"deep", "deep-recover", "redactions"},
+            )
+        except FileNotFoundError:
+            print(f"input not found: {src}", file=sys.stderr)
+            return 2
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        if args.as_json:
+            print(json.dumps(finding, indent=2, ensure_ascii=False))
+        else:
+            print(f"op: {finding.get('op')}")
+            print(f"type: {finding.get('type')}")
+            print(f"format_status: {finding.get('format_status')}")
+            print(f"recovered_count: {finding.get('recovered_count')}")
+            print(f"refuse_code: {finding.get('refuse_code') or 'none'}")
+            print(f"secret_material_present: {finding.get('secret_material_present')}")
+            print(f"no_lie: {finding.get('no_lie')}")
+            print(RECOVER_NOTE)
+        if finding.get("refuse_code") and finding.get("stop") and op == "refuse":
             return 2
         return 0
 
