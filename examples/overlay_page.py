@@ -15,7 +15,7 @@ def main() -> None:
     save_rgb(page, str(out / "page.png"))
     for mode in LIVE_MODES:
         for target in ("ink", "page"):
-            result = analyze(page, mode, target=target)
+            result = analyze(page, mode, target=target, inject=True)
             dest = out / f"{mode}-{target}.png"
             save_rgb(result.rgb, str(dest))
             print(f"{mode:8} {target:4} {result.paper:10} -> {dest.name}")

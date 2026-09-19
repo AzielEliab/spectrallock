@@ -44,6 +44,7 @@ dev = ["pytest>=7.4"]
 
 [project.scripts]
 spectrallock = "spectrallock.cli:main"
+spectrallock-inject = "spectrallock.inject:main"
 
 [project.urls]
 Homepage = "https://github.com/AzielEliab/spectrallock"

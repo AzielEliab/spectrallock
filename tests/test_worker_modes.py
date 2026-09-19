@@ -74,3 +74,28 @@ process.stdout.write(JSON.stringify({{ ok: true, live: LIVE, aliases: ALIASES }}
     assert body["ok"] is True
     assert body["live"] == LIVE
     assert body["aliases"] == ALIASES
+
+
+def test_overlay_js_inject_and_inband_in_node() -> None:
+    node = shutil.which("node")
+    assert node, "node is required to execute overlay inject helpers"
+    script = f"""
+import {{ parseInject, inbandPct, gateInband, INJECT_NOTE, LIMITATION }} from {json.dumps(str(OVERLAY))};
+if (parseInject(false) !== false) throw new Error("inject false");
+if (parseInject(true) !== true) throw new Error("inject true");
+if (parseInject("no-inject") !== false) throw new Error("no-inject");
+const buf = new Float32Array(12);
+buf.set([0.10, 0.72, 0.62, 0.78, 0.08, 0.42, 0.93, 0.88, 0.76, 0.12, 0.09, 0.06]);
+const band = gateInband(buf);
+if (typeof band.tazel_inband_pct !== "number") throw new Error("tazel field");
+if (typeof band.vyrn_inband_pct !== "number") throw new Error("vyrn field");
+if (!INJECT_NOTE.includes("not recovered pigment")) throw new Error("note");
+if (!LIMITATION.includes("not recovered pigment")) throw new Error("limitation");
+if (inbandPct(new Float32Array([0.93, 0.88, 0.76]), 170, 24) !== 0) throw new Error("empty gate");
+process.stdout.write(JSON.stringify({{ ok: true, band }}));
+"""
+    raw = subprocess.check_output([node, "--input-type=module", "-e", script], text=True)
+    body = json.loads(raw)
+    assert body["ok"] is True
+    assert "tazel_inband_pct" in body["band"]
+    assert "vyrn_inband_pct" in body["band"]

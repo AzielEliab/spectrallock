@@ -40,12 +40,15 @@ const viewSide = document.getElementById("view-side");
 const viewOverlay = document.getElementById("view-overlay");
 const targetInk = document.getElementById("target-ink");
 const targetPage = document.getElementById("target-page");
+const injectOn = document.getElementById("inject-on");
+const injectOff = document.getElementById("inject-off");
 
 let sourceFile = null;
 let overlayBlob = null;
 let lastReceipt = null;
 let selected = new Set(["rosetta"]);
 let target = "ink";
+let inject = true;
 let simple = true;
 let objectUrls = [];
 let modeMeta = {};
@@ -198,6 +201,9 @@ function receiptText(rec) {
     "target: " + (rec.target || "ink"),
     "mode: " + rec.mode,
     "paper: " + rec.paper,
+    "inject: " + rec.inject,
+    "tazel_inband_pct: " + rec.tazel_inband_pct,
+    "vyrn_inband_pct: " + rec.vyrn_inband_pct,
     "sha256_in: " + rec.sha256_in,
     "sha256_out: " + rec.sha256_out,
     "size_in: " + rec.size_in,
@@ -236,6 +242,20 @@ targetPage.addEventListener("click", () => {
   targetInk.classList.remove("active");
   run();
 });
+if (injectOn && injectOff) {
+  injectOn.addEventListener("click", () => {
+    inject = true;
+    injectOn.classList.add("active");
+    injectOff.classList.remove("active");
+    run();
+  });
+  injectOff.addEventListener("click", () => {
+    inject = false;
+    injectOff.classList.add("active");
+    injectOn.classList.remove("active");
+    run();
+  });
+}
 viewSide.addEventListener("click", () => {
   compare.classList.remove("overlay-only");
   viewSide.classList.add("active");
@@ -259,6 +279,7 @@ async function run() {
   try {
     const fd = new FormData();
     fd.append("target", target);
+    fd.append("inject", inject ? "true" : "false");
     lenses.forEach((id) => fd.append("lens", id));
     fd.append("file", sourceFile, sourceFile.name || "page.png");
     const res = await fetch("/api/overlay", { method: "POST", body: fd });
@@ -280,6 +301,9 @@ async function run() {
       lenses: (res.headers.get("X-SpectralLock-Lenses") || lenses.join(",")).split(","),
       target: res.headers.get("X-SpectralLock-Target") || target,
       paper: res.headers.get("X-SpectralLock-Paper") || "",
+      inject: res.headers.get("X-SpectralLock-Inject") || (inject ? "true" : "false"),
+      tazel_inband_pct: res.headers.get("X-SpectralLock-Tazel-Inband") || "",
+      vyrn_inband_pct: res.headers.get("X-SpectralLock-Vyrn-Inband") || "",
       sha256_in: res.headers.get("X-SpectralLock-Sha256-In") || "",
       sha256_out: res.headers.get("X-SpectralLock-Sha256-Out") || "",
       size_in: res.headers.get("X-SpectralLock-Size-In") || "",

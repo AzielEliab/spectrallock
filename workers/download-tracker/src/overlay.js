@@ -12,9 +12,21 @@ export const LIMITATION =
   "Candlelight is a warm flame-side look from an ordinary photo. " +
   "Indent is an image-enhancement heuristic for surface relief, not electrostatic detection. " +
   "Lemon enhances heat-/acid-style browning already in the pixels; it never invents marks. " +
-  "Balance never invents marks. Lamb Lens: Service → Clarity → Peace. " +
+  "Balance never invents marks. " +
+  "Inject ON is false-color membership tint (paint), not recovered pigment. " +
+  "OFF is luminance of the same gate. Zero ignores the switch. " +
+  "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. " +
+  "Lamb Lens: Service → Clarity → Peace. " +
   "Hosted overlay is a simplified preview (max 256 px); the full pipeline is the Python package. " +
-  "The human still reads the page. Author Aziel Eliab.";
+  "Does not claim pigment recovery. The human still reads the page. Author Aziel Eliab.";
+
+export const INJECT_NOTE =
+  "ON paints membership (false color). OFF is the same gate as gray. " +
+  "ON is not recovered pigment. Zero ignores the switch. " +
+  "Synthetic UV is not a lamp. Balance does not invent marks. " +
+  "Report tazel_inband_pct and vyrn_inband_pct before claiming a hit. " +
+  "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. " +
+  "Hosted /v1/overlay is a 256 px preview; prefer spectrallock_inject.py locally.";
 
 export const VERSION = "0.3.0";
 export const MAX_SIDE = 256;
@@ -61,6 +73,28 @@ const ROSETTA_W = { zero: 0.4, tazel: 0.35, vyrn: 0.25 };
 const ZEN_W = { zero: 0.25, tazel: 0.25, uv: 0.25, vyrn: 0.25 };
 const CHAOS_W = { uv: 0.4, vyrn: 0.35, tazel: 0.2, zero: 0.05 };
 const EPS = 1e-6;
+const TAZEL_RGB = [0x1e / 255, 0xc9 / 255, 0xa5 / 255];
+const VYRN_RGB = [0xc0 / 255, 0x00 / 255, 0x66 / 255];
+const ZERO_RGB = [0x6f / 255, 0x64 / 255, 0x85 / 255];
+const UV_RGB = [0.55, 0.45, 0.85];
+const CHAOS_RGB = [0.55, 0.22, 0.38];
+const CANDLE_RGB = [1.0, 0.62, 0.22];
+const INDENT_RGB = [0.72, 0.68, 0.58];
+const LEMON_RGB = [0.62, 0.38, 0.14];
+const TAZEL_INBAND_SIGMA = 24;
+const VYRN_INBAND_SIGMA = 28;
+const INBAND_SAT_MIN = 0.12;
+const INBAND_VAL_MIN = 0.08;
+const ROSETTA_RGB = [
+  0.40 * ZERO_RGB[0] + 0.35 * TAZEL_RGB[0] + 0.25 * VYRN_RGB[0],
+  0.40 * ZERO_RGB[1] + 0.35 * TAZEL_RGB[1] + 0.25 * VYRN_RGB[1],
+  0.40 * ZERO_RGB[2] + 0.35 * TAZEL_RGB[2] + 0.25 * VYRN_RGB[2],
+];
+const ZEN_RGB = [
+  (ZERO_RGB[0] + TAZEL_RGB[0] + VYRN_RGB[0] + UV_RGB[0]) / 4,
+  (ZERO_RGB[1] + TAZEL_RGB[1] + VYRN_RGB[1] + UV_RGB[1]) / 4,
+  (ZERO_RGB[2] + TAZEL_RGB[2] + VYRN_RGB[2] + UV_RGB[2]) / 4,
+];
 
 function luma(r, g, b) {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
@@ -146,6 +180,51 @@ function grayToRgb(gray) {
     out[p] = v; out[p + 1] = v; out[p + 2] = v;
   }
   return out;
+}
+
+export function parseInject(value, fallback = true) {
+  if (value === undefined || value === null) return fallback;
+  if (value === false || value === 0) return false;
+  if (value === true || value === 1) return true;
+  const key = String(value).trim().toLowerCase();
+  if (["0", "false", "off", "no", "no-inject", "n"].includes(key)) return false;
+  if (["1", "true", "on", "yes", "inject", "y"].includes(key)) return true;
+  return fallback;
+}
+
+export function inbandPct(buf, hue, sigma) {
+  let hit = 0;
+  const n = buf.length / 3;
+  if (!n) return 0;
+  for (let p = 0; p < buf.length; p += 3) {
+    const [h, s, v] = rgbToHsv(buf[p], buf[p + 1], buf[p + 2]);
+    if (hueDist(h, hue) <= sigma && s >= INBAND_SAT_MIN && v >= INBAND_VAL_MIN) hit += 1;
+  }
+  return Math.round((10000 * hit) / n) / 100;
+}
+
+export function gateInband(buf) {
+  return {
+    tazel_inband_pct: inbandPct(buf, 170, TAZEL_INBAND_SIGMA),
+    vyrn_inband_pct: inbandPct(buf, 350, VYRN_INBAND_SIGMA),
+  };
+}
+
+function tintGray(gray, color, amount = 0.28) {
+  const out = new Float32Array(gray.length * 3);
+  for (let i = 0; i < gray.length; i++) {
+    const g = gray[i];
+    const p = i * 3;
+    out[p] = clamp01(g * ((1 - amount) + amount * color[0] * 1.6));
+    out[p + 1] = clamp01(g * ((1 - amount) + amount * color[1] * 1.6));
+    out[p + 2] = clamp01(g * ((1 - amount) + amount * color[2] * 1.6));
+  }
+  return out;
+}
+
+function maybeGray(buf, w, h, inject, mode) {
+  if (mode === "zero" || !inject) return grayToRgb(toLuma(buf, w, h));
+  return buf;
 }
 
 function modeZero(buf) {
@@ -358,33 +437,58 @@ function applyTarget(buf, w, h, target) {
   return out;
 }
 
-function composeLenses(buf, w, h, lenses) {
-  if (lenses.length === 1) return applyMode(buf, w, h, lenses[0]);
+function composeLenses(buf, w, h, lenses, inject = true) {
+  if (lenses.length === 1) return applyMode(buf, w, h, lenses[0], inject);
   const channels = {};
   for (const name of lenses) {
-    channels[name] = norm01(toLuma(applyMode(buf, w, h, name), w, h));
+    channels[name] = norm01(toLuma(applyMode(buf, w, h, name, inject), w, h));
   }
   const weights = {};
   const wgt = 1 / lenses.length;
   for (const name of lenses) weights[name] = wgt;
-  return grayToRgb(mixLuma(channels, weights));
+  const mix = mixLuma(channels, weights);
+  const paint = inject && lenses.some((name) => name !== "zero");
+  if (!paint) return grayToRgb(mix);
+  const palette = {
+    zero: ZERO_RGB, tazel: TAZEL_RGB, vyrn: VYRN_RGB, uv: UV_RGB,
+    rosetta: ROSETTA_RGB, zen: ZEN_RGB, chaos: CHAOS_RGB, balance: ZEN_RGB,
+    candle: CANDLE_RGB, indent: INDENT_RGB, lemon: LEMON_RGB,
+  };
+  const acc = [0, 0, 0];
+  for (const name of lenses) {
+    const c = palette[name] || [0.7, 0.7, 0.7];
+    acc[0] += c[0]; acc[1] += c[1]; acc[2] += c[2];
+  }
+  return tintGray(mix, [acc[0] / lenses.length, acc[1] / lenses.length, acc[2] / lenses.length]);
 }
 
-function applyMode(buf, w, h, mode) {
+function applyMode(buf, w, h, mode, inject = true) {
+  const paint = mode !== "zero" && inject;
   if (mode === "zero") return modeZero(buf);
-  if (mode === "tazel") return modeTazel(buf);
-  if (mode === "vyrn") return modeVyrn(buf);
-  if (mode === "uv") return modeUv(buf);
-  if (mode === "candle") return modeCandle(buf, w, h);
-  if (mode === "indent") return modeIndent(buf, w, h);
-  if (mode === "lemon") return modeLemon(buf);
+  if (mode === "tazel") return maybeGray(modeTazel(buf), w, h, paint, mode);
+  if (mode === "vyrn") return maybeGray(modeVyrn(buf), w, h, paint, mode);
+  if (mode === "uv") return maybeGray(modeUv(buf), w, h, paint, mode);
+  if (mode === "candle") return maybeGray(modeCandle(buf, w, h), w, h, paint, mode);
+  if (mode === "indent") return maybeGray(modeIndent(buf, w, h), w, h, paint, mode);
+  if (mode === "lemon") return maybeGray(modeLemon(buf), w, h, paint, mode);
   const ch = baseChannels(buf, w, h);
-  if (mode === "rosetta") return grayToRgb(mixLuma(ch, ROSETTA_W));
-  if (mode === "zen") return grayToRgb(mixLuma(ch, ZEN_W));
-  if (mode === "chaos") return grayToRgb(mixLuma(ch, CHAOS_W));
+  if (mode === "rosetta") {
+    const mix = mixLuma(ch, ROSETTA_W);
+    return paint ? tintGray(mix, ROSETTA_RGB) : grayToRgb(mix);
+  }
+  if (mode === "zen") {
+    const mix = mixLuma(ch, ZEN_W);
+    return paint ? tintGray(mix, ZEN_RGB) : grayToRgb(mix);
+  }
+  if (mode === "chaos") {
+    const mix = mixLuma(ch, CHAOS_W);
+    return paint ? tintGray(mix, CHAOS_RGB) : grayToRgb(mix);
+  }
   if (mode === "balance") {
-    const zen = grayToRgb(mixLuma(ch, ZEN_W));
-    const chaos = grayToRgb(mixLuma(ch, CHAOS_W));
+    const zenMix = mixLuma(ch, ZEN_W);
+    const chaosMix = mixLuma(ch, CHAOS_W);
+    const zen = paint ? tintGray(zenMix, ZEN_RGB) : grayToRgb(zenMix);
+    const chaos = paint ? tintGray(chaosMix, CHAOS_RGB) : grayToRgb(chaosMix);
     const zn = norm01(toLuma(zen, w, h));
     const cn = norm01(toLuma(chaos, w, h));
     const out = new Float32Array(buf.length);
@@ -395,7 +499,7 @@ function applyMode(buf, w, h, mode) {
       out[p + 1] = a * zen[p + 1] + (1 - a) * chaos[p + 1];
       out[p + 2] = a * zen[p + 2] + (1 - a) * chaos[p + 2];
     }
-    return out;
+    return paint ? out : grayToRgb(toLuma(out, w, h));
   }
   throw new Error("unknown mode");
 }
@@ -602,6 +706,11 @@ export async function overlayFromB64(b64, mode, extras = {}) {
   }
   const lenses = parsed.lenses;
   const dest = normalizeTarget(extras.target || extras.polarity);
+  let inject = true;
+  if (extras.inject !== undefined) inject = parseInject(extras.inject);
+  else if (extras.no_inject !== undefined) inject = !parseInject(extras.no_inject, false);
+  else if (extras.tint !== undefined) inject = parseInject(extras.tint);
+  const injectApplied = inject && lenses.some((name) => name !== "zero");
   let decoded;
   try {
     decoded = await decodePng(b64ToBytes(b64));
@@ -609,7 +718,8 @@ export async function overlayFromB64(b64, mode, extras = {}) {
     return { error: "PNG decode failed (hosted preview is PNG only): " + String(err.message || err), advisory: LIMITATION };
   }
   const capped = capSide(decoded.buf, decoded.w, decoded.h);
-  const mixed = composeLenses(capped.buf, capped.w, capped.h, lenses);
+  const inband = gateInband(capped.buf);
+  const mixed = composeLenses(capped.buf, capped.w, capped.h, lenses, inject);
   const out = applyTarget(mixed, capped.w, capped.h, dest);
   const png = await encodePng(out, capped.w, capped.h);
   const com = centerOfMass(out, capped.w, capped.h);
@@ -621,12 +731,21 @@ export async function overlayFromB64(b64, mode, extras = {}) {
     lenses,
     target: dest,
     paper,
+    inject,
+    inject_applied: injectApplied,
+    inject_ignored: inject && !injectApplied,
+    tazel_inband_pct: inband.tazel_inband_pct,
+    vyrn_inband_pct: inband.vyrn_inband_pct,
+    pigment_recovery: false,
+    empty_gate_not_broken_lens: true,
+    inject_note: INJECT_NOTE,
     width: capped.w,
     height: capped.h,
     com,
     png_b64: bytesToB64(png),
     simplified: true,
     max_side: MAX_SIDE,
+    hosted_preview_honesty: "256px preview; inject is paint not pigment; prefer local spectrallock_inject.py",
     product: "spectrallock",
     version: VERSION,
     rosetta_spectral_analysis: true,

@@ -6,6 +6,7 @@ include install.sh
 include pyproject.toml
 include .gitignore
 include scripts/build_tarball.sh
+include spectrallock_inject.py
 graft docs
 graft examples
 graft tests

@@ -136,6 +136,33 @@ large-scale page texture. Matches Corpus OCR page mode.
 Several lenses may be selected (Corpus OCR checkbox family). They are
 mixed equally, then the target is applied.
 
+## Color inject switch
+
+Operator lock 19 Sep 2026. Each named mode has `--inject` / `--no-inject`
+(Python `inject=True|False`, Worker payload `inject`).
+
+- **ON** paints membership (false color). Not recovered pigment.
+- **OFF** is luminance of the same gate (gray).
+- **`zero`** ignores the switch (stays gray).
+- tazel: 170° `#1EC9A5` teal heat on in-band pixels.
+- vyrn: 350° `#C00066` magenta heat on in-band pixels.
+- uv: synthetic 365–400 look (violet parchment / residual) — not a lamp.
+- rosetta / zen / chaos / balance: composite tint when ON; gray gate when OFF.
+  Balance does not invent marks.
+- candle / indent / lemon: honest ON tint vs OFF gray of the same gate.
+
+`tazel_inband_pct` and `vyrn_inband_pct` are reported on overlay/verify JSON
+from the **source** photograph (hue within σ of 170° / 350° and enough
+chroma). Empty gate ≠ broken lens. Copy-of-copy only works if the hue is
+still in-band.
+
+```bash
+python3 spectrallock_inject.py page.jpg --mode vyrn --inject -o vyrn_on.jpg
+```
+
+Hosted `/v1/overlay` may accept `inject` without claiming pigment recovery.
+256 px preview honesty stays. Prefer the local package.
+
 ## Hosted preview vs package
 
 The Cloudflare Worker `/v1/overlay` is a simplified JavaScript port
@@ -153,8 +180,9 @@ remains Rosetta spectral analysis.
 
 `spectrallock ui` binds **127.0.0.1:8861** only. Dark gold. Add file or
 Sample page, SpectralLock lens grid (multi-select), Ink/Page target,
-Simple/Advanced labels, overlay-only or side-by-side, Export PNG + JSON
-sidecar, Verify receipt (lenses, target, paper, SHA-256 in/out, size).
+inject ON (paint) / OFF (gray), Simple/Advanced labels, overlay-only or
+side-by-side, Export PNG + JSON sidecar, Verify receipt (lenses, target,
+paper, inject, in-band percents, SHA-256 in/out, size).
 `spectrallock doctor` checks all live lenses × both targets, no NaN,
 loopback, no telemetry.
 

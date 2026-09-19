@@ -40,6 +40,9 @@ def test_ui_modes_and_overlay(tmp_path) -> None:
         assert out["mode"] == "rosetta"
         assert out["target"] == "ink"
         assert out["lenses"] == ["rosetta"]
+        assert "tazel_inband_pct" in out
+        assert "vyrn_inband_pct" in out
+        assert out["pigment_recovery"] is False
         assert out["width"] == 24
         png = __import__("base64").b64decode(out["png_b64"])
         assert png[:8] == b"\x89PNG\r\n\x1a\n"
@@ -51,6 +54,7 @@ def test_ui_modes_and_overlay(tmp_path) -> None:
         assert "export" in html.lower()
         assert "127.0.0.1:8861" in html
         assert "ink" in html.lower() and "page" in html.lower()
+        assert "inject" in html.lower()
     finally:
         httpd.shutdown()
         httpd.server_close()

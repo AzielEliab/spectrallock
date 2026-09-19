@@ -132,6 +132,39 @@ Reweights existing pixels only.
 Several lenses may be selected (Corpus OCR checkbox family). They are mixed
 equally, then the target is applied.
 
+## Color inject switch (19 Sep 2026)
+
+Each named mode accepts `--inject` / `--no-inject` (CLI, Python `inject=`,
+Worker `POST /v1/overlay` `{inject: true|false}`).
+
+| switch | meaning |
+|--------|---------|
+| **ON** (`--inject`) | False-color membership tint (paint). **Not** recovered pigment. |
+| **OFF** (`--no-inject`) | Luminance of the **same gate** (gray). |
+| `zero` | Ignores the switch (stays gray either way). |
+
+- `tazel`: 170° `#1EC9A5` teal heat on in-band pixels when ON.
+- `vyrn`: 350° `#C00066` magenta heat on in-band pixels when ON.
+- `uv`: synthetic 365–400 look (violet parchment / residual) — still not a lamp.
+- `rosetta` / `zen` / `chaos` / `balance`: composite tint when ON; gray gate when OFF. Balance does not invent marks.
+- `candle` / `indent` / `lemon`: honest ON tint vs OFF gray of the same gate.
+
+Overlay and verify JSON report **`tazel_inband_pct`** and **`vyrn_inband_pct`**
+before any hit claim. Empty gate ≠ broken lens. Copy-of-copy only works if
+the hue is still in-band.
+
+```bash
+python3 spectrallock_inject.py page.jpg --mode vyrn --inject -o vyrn_on.jpg
+python3 spectrallock_inject.py page.jpg --mode vyrn --no-inject -o vyrn_off.jpg
+python3 spectrallock_inject.py page.jpg --all --inject --outdir out/
+python3 spectrallock_inject.py page.jpg --all --no-inject --outdir out_plain/
+python3 spectrallock_inject.py page.jpg --mode zero --target ink --no-inject
+```
+
+Hosted `/v1/overlay` may accept `inject` on a 256 px PNG preview. Prefer the
+local package (`spectrallock_inject.py`) for the full pipeline. The Worker
+does not claim pigment recovery.
+
 ## Install
 
 Python 3.10+. Pillow + numpy. No OpenCV.
@@ -150,9 +183,10 @@ spectrallock version
 spectrallock doctor
 spectrallock modes
 spectrallock lenses
-spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon --target ink|page IN.png OUT.png
-spectrallock overlay --lens tazel --target page page.jpg out.png --json
+spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon --target ink|page --inject|--no-inject IN.png OUT.png
+spectrallock overlay --lens tazel --target page --no-inject page.jpg out.png --json
 spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
+spectrallock inject page.jpg --mode vyrn --inject -o vyrn_on.jpg
 spectrallock ui          # 127.0.0.1:8861
 spectrallock serve       # alias for ui
 ```
@@ -180,7 +214,7 @@ flutter run
 - Health: `GET /v1/health`
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
-- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target}` — PNG, max 256 px longest side. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
+- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px longest side. `inject` true\|false is paint, not pigment. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
 - Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy; not a Softwares-tab product)
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`; catalog `mesh_*` + FragGate `slug=mesh`)

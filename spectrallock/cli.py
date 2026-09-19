@@ -5,8 +5,9 @@
     spectrallock lenses
     spectrallock doctor
     spectrallock overlay --mode|--lens zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon
-                         --target ink|page IN.png OUT.png
+                         --target ink|page --inject|--no-inject IN.png OUT.png
     spectrallock overlay --verify --sidecar
+    spectrallock inject  # operator-card CLI (also spectrallock_inject.py)
     spectrallock ui
 """
 
@@ -93,11 +94,31 @@ def _build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Write a JSON sidecar next to OUT (mode, hashes, limitation).",
     )
+    inj = p_ov.add_mutually_exclusive_group()
+    inj.add_argument(
+        "--inject",
+        dest="inject",
+        action="store_true",
+        help="False-color membership tint (paint). Not recovered pigment. Default.",
+    )
+    inj.add_argument(
+        "--no-inject",
+        dest="inject",
+        action="store_false",
+        help="Luminance of the same gate (gray). Zero ignores the switch.",
+    )
+    p_ov.set_defaults(inject=None)
     p_ov.add_argument(
         "--no-tint",
         action="store_true",
-        help="Composites as grayscale (exact formula). Default tints mildly.",
+        help="Alias for --no-inject. Composites and all modes as gray of the same gate.",
     )
+
+    p_inj = sub.add_parser(
+        "inject",
+        help="Color inject switch (operator card). Same as spectrallock_inject.py.",
+    )
+    p_inj.add_argument("rest", nargs=argparse.REMAINDER, help="Arguments for spectrallock_inject.py")
 
     p_ui = sub.add_parser("ui", help="Serve the local overlay UI on 127.0.0.1.")
     p_ui.add_argument("--host", default="127.0.0.1", help="Loopback host (default 127.0.0.1).")
@@ -132,6 +153,8 @@ def _run_doctor() -> int:
     from spectrallock.ui import LOOPBACK
 
     page = synthetic_page(32, 32)
+    from spectrallock.engine import is_achromatic
+
     for mode in LIVE_MODES:
         for target in ("ink", "page"):
             try:
@@ -147,6 +170,29 @@ def _run_doctor() -> int:
                 ok = False
                 lines.append(f"lens {mode} {target}: fail")
                 debug(f"doctor lens={mode} target={target} error={type(exc).__name__}")
+        try:
+            on = analyze(page, mode, target="ink", inject=True)
+            off = analyze(page, mode, target="ink", inject=False)
+            if "tazel_inband_pct" not in on.to_meta() or "vyrn_inband_pct" not in on.to_meta():
+                ok = False
+                lines.append(f"inject {mode}: fail (inband)")
+            elif mode == "zero":
+                same = bool(np.allclose(on.rgb, off.rgb, atol=1e-5))
+                gray = is_achromatic(on.rgb) and is_achromatic(off.rgb)
+                if not same or not gray or on.inject_applied or off.inject_applied:
+                    ok = False
+                    lines.append("inject zero ignore: fail")
+                else:
+                    lines.append("inject zero ignore: ok")
+            elif not is_achromatic(off.rgb):
+                ok = False
+                lines.append(f"inject {mode} off: fail (not gray)")
+            else:
+                lines.append(f"inject {mode} on/off: ok")
+        except Exception as exc:  # noqa: BLE001
+            ok = False
+            lines.append(f"inject {mode}: fail")
+            debug(f"doctor inject mode={mode} error={type(exc).__name__}")
 
     if "127.0.0.1" not in LOOPBACK:
         ok = False
@@ -165,6 +211,10 @@ def _print_receipt(rec: dict) -> None:
     print(f"lenses: {','.join(rec.get('lenses') or [rec['mode']])}")
     print(f"target: {rec.get('target', 'ink')}")
     print(f"paper: {rec['paper']}")
+    print(f"inject: {str(rec.get('inject', True)).lower()}")
+    print(f"inject_applied: {str(rec.get('inject_applied', rec.get('inject', True))).lower()}")
+    print(f"tazel_inband_pct: {float(rec.get('tazel_inband_pct', 0.0)):.2f}")
+    print(f"vyrn_inband_pct: {float(rec.get('vyrn_inband_pct', 0.0)):.2f}")
     print(f"sha256_in: {rec['sha256_in']}")
     print(f"sha256_out: {rec['sha256_out']}")
     print(f"size_in: {rec['size_in']}")
@@ -225,8 +275,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             debug(f"overlay decode type={type(exc).__name__}")
             print(PLAIN_NOT_IMAGE, file=sys.stderr)
             return 2
+        inject = False if args.no_tint else (True if args.inject is None else bool(args.inject))
         try:
-            result = analyze(rgb, args.mode, target=args.target, tint=not args.no_tint)
+            result = analyze(rgb, args.mode, target=args.target, inject=inject)
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
             return 2
@@ -243,6 +294,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             height=result.height,
             target=result.target,
             lenses=result.lenses,
+            inject=inject,
+            inject_applied=result.inject_applied,
+            tazel_inband_pct=result.tazel_inband_pct,
+            vyrn_inband_pct=result.vyrn_inband_pct,
         )
         debug(
             f"overlay mode={result.mode} target={result.target} paper={result.paper} "
@@ -268,6 +323,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             print(LIMITATION)
         return 0
+
+    if args.cmd == "inject":
+        from spectrallock.inject import main as inject_main
+
+        rest = list(args.rest or [])
+        if rest and rest[0] == "--":
+            rest = rest[1:]
+        return inject_main(rest)
 
     if args.cmd in {"ui", "serve"}:
         from spectrallock.ui import serve
