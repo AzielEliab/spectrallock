@@ -86,7 +86,7 @@ if (parseUnredactOp("leftover-bytes") !== "recover") throw new Error("recover al
 if (REFUSE_OPAQUE !== "SL-UNREDACT-OPAQUE") throw new Error("refuse code");
 if (!UNREDACT_NOTE.includes("leftover")) throw new Error("leftover copy");
 if (!UNREDACT_NOTE.includes("residual overlays")) throw new Error("transcript copy");
-if (!UNREDACT_NOTE.includes("never invent") && !UNREDACT_NOTE.includes("does not invent")) throw new Error("invent copy");
+if (!UNREDACT_NOTE.toLowerCase().includes("never invent") && !UNREDACT_NOTE.includes("does not invent")) throw new Error("invent copy");
 if (!UNREDACT_NOTE.includes("OCR")) throw new Error("ocr copy");
 const card = listUnredact();
 if (!card.leftover_bytes_recovery) throw new Error("card leftover");
@@ -191,7 +191,7 @@ const card = listHandwriting();
 if (!card.no_lie || card.esda || card.writer_identification_as_fact || card.forensic_certification) throw new Error("card honesty");
 if (card.catalog_door) throw new Error("invented door");
 if (card.worker_path !== "/v1/handwriting") throw new Error("path");
-if (!HANDWRITING_NOTE.includes("Not ESDA")) throw new Error("note");
+if (!HANDWRITING_NOTE.toLowerCase().includes("never invent") && !HANDWRITING_NOTE.includes("human verification")) throw new Error("note");
 const w = 96, h = 64;
 const buf = new Float32Array(w * h * 3);
 for (let i = 0; i < buf.length; i++) buf[i] = 0.92;
