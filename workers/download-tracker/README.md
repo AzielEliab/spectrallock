@@ -30,3 +30,15 @@ Banner: Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Libr
 CORS `*` on API routes.
 
 KV id in wrangler.toml: `0b998ba1bbec4eedadcf19e23f9995ce`. Binding name MUST stay `DOWNLOADS` (not `SPECTRALLOCK_DOWNLOADS` — that is the Cloudflare namespace title).
+
+## Human / bot schema (`/stats` and `/count`)
+
+Additive dual-count (Whitestone canary). Classification lives in `src/classify.js`
+and response shaping in `src/stats-shape.js`.
+
+Invariant: `views === views_human + views_bot` and
+`downloads === downloads_human + downloads_bot`.
+
+Legacy strategy (b): existing KV totals are never reset. Pre-split remainder
+is shown as bot on read (`views_bot = views - views_human`). Author: Aziel Eliab only.
+
