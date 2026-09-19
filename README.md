@@ -102,6 +102,10 @@ capped at 256 px, PNG in/out). The full pipeline is this Python package.
 It does not invent letters. Opaque replace with no leftover container
 bytes refuses (`SL-UNREDACT-OPAQUE`). A heatmap is not a transcript.
 
+**Handwriting** is synthetic image analysis of a scan or photo of ink
+on paper. Indicators are heuristics. Not ESDA, not chemical dating,
+not writer identity, not a court finding.
+
 ## Lenses (all live in 0.3.0)
 
 Same names as the Corpus OCR SpectralLock lens checkboxes, plus candle /
@@ -130,16 +134,38 @@ Ops: `locate`, `lift`, `recover`, `refuse`.
 
 | op | honesty |
 |----|---------|
-| `locate` | Report text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes. Do not invent letters. |
+| `locate` | Report text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes, and historical page revisions (stale `/Page` graphs, prior streams, xref/ObjStm, after-EOF, incremental `startxref`/`Prev` revision graph + per-revision tip-cut copies). Do not invent letters. |
 | `lift` | Non-opaque cover only. Contrast / residual with `--no-inject` (gray of the same gate). Heatmap ≠ transcript. |
-| `recover` | If the producer left old bytes in the container (incremental update, unused objects, prior streams, attachments), extract them with object id / offset / stream provenance. That is reading present bytes — not guessing a black box. |
-| `refuse` | Opaque replace / flattened screenshot and no leftover bytes → `SL-UNREDACT-OPAQUE`. |
+| `recover` | If leftover / historical bytes remain (incremental update, unused/orphan objects, prior streams, stale pages, attachments, after-EOF), extract them with character provenance. That is reading present bytes — not guessing a black box. |
+| `refuse` | Opaque sanitized rewrite / flattened screenshot and no leftover bytes → `SL-UNREDACT-OPAQUE`. |
 
-Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`, `refuse_code`. Never claim pigment recovery, ESDA, chemical, lab, or forensic certification.
+Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`, `page_revisions`, `revision_compare`, `revision_graph` (revisions + edges + tip-cut `copy` / embeds; hosted may cite sha256+offsets when `b64` is capped), `operator_text`, `classifications`, `recovered_characters` (page, object_id, generation, xref_revision, stream_offset, operator, font, decoded_bytes, source_revision, sha256), `ocr` (after structural only; `covered_letters_from_context` is always false), `refuse_code`. OCR never reconstructs covered letters from context. Never claim pigment recovery, ESDA, chemical, lab, or forensic certification.
+
+## Handwriting / ink-on-paper (operator lock — NO-LIE)
+
+Not a spectral lens and not a lab instrument. Family: `handwriting` / `handwrite` / `ink-hand` / `forgery-scan`.
+Ops: `analyze`, `compare`, `side-by-side`, `graph`, `forgery-indicators`, `refuse`.
+
+Synthetic image analysis of a user-supplied scan or photo of physical ink on paper. Looks at present pixels only: stroke-weight variation (pressure proxy), speed cues (taper / tremor — heuristic), ink density, bleed / feathering, baseline / slant / size shifts, erasures, tracing evidence, and forgery indicators (tremor-copy, unnatural lifts, retouch, dual-ink, clone-stamp, compression paste-up, ductus, style-shift). Side-by-side questioned vs known. Stroke/feature graph flags anomalous edges. Density / bleed / erasure heatmaps are **not** transcripts and **not** court findings.
+
+| honesty | meaning |
+|---------|---------|
+| LIVE | pixel heuristics listed in `docs/audit/HANDWRITING-FORGERY-AUDIT.md` |
+| SLOT | ESDA, chemical ink dating, force in newtons, speed in mm/s, writer identity as fact, court examiner opinion |
+| refuse | `SL-HANDWRITING-NO-INK` · `SL-HANDWRITING-UNSUPPORTED` · `SL-HANDWRITING-LIMIT` |
+
+Phrasing: **indicator / heuristic / candidate — human verification required.** Confidence is signal quality from pixels, not “this is forged.” Spectral helpers (`uv`, `candle`, `indent`, `lemon`) may be cited with inject OFF. Balance / lemon never invent marks.
 
 ```bash
 spectrallock unredact locate page.pdf --json
 spectrallock unredact recover page.pdf --json
+spectrallock recover locate page.pdf --json
+spectrallock recover deep file.docx --all-metadata --scan-orphans --json
+spectrallock recover compare old.json new.json --json
+spectrallock recover revision-graph page.pdf --json
+spectrallock handwriting analyze ink_scan.png --json
+spectrallock handwriting compare questioned.png --twin known.png --json
+spectrallock forgery-scan ink_scan.png --json
 spectrallock lift cover.png --no-inject -o residual.png --json
 spectrallock redact-locate page.pdf --twin page_less.pdf --query "Alice"
 ```
@@ -214,6 +240,10 @@ spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
 spectrallock inject page.jpg --mode vyrn --inject -o vyrn_on.jpg
 spectrallock unredact locate page.pdf --json
 spectrallock unredact recover page.pdf --json
+spectrallock recover locate page.pdf --json
+spectrallock recover production ./case_folder --recursive --json
+spectrallock handwriting analyze ink_scan.png --json
+spectrallock handwriting compare questioned.png known.png --json
 spectrallock lift cover.png --no-inject -o residual.png --json
 spectrallock redact-locate page.pdf --twin other.pdf --query Alice
 spectrallock ui          # 127.0.0.1:8861
@@ -244,7 +274,9 @@ flutter run
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
 - Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px longest side. `inject` true\|false is paint, not pigment. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
-- Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query}` locate / leftover recover / residual lift. Opaque + no leftover → `SL-UNREDACT-OPAQUE`. Aliases `POST /v1/lift`, `POST /v1/redact-locate`. Never invents letters.
+- Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query, twin_b64?}` locate / leftover-historical recover / residual lift. Returns `revision_graph` (startxref/Prev edges + per-revision tip-cut copies). Opaque rewrite + no leftover → `SL-UNREDACT-OPAQUE`. Aliases `POST /v1/lift`, `POST /v1/redact-locate`. Hosted preview may cap size / copy `b64` (sha256+offset cites, no invented bytes) and has no OCR engine — it does not lie about that. Never invents letters.
+- Recover: `GET /v1/recover` ops + LIVE vs SLOT matrix; `POST /v1/recover` `{b64, op, filename, twin_b64?}` universal artifact recovery. Present bytes only. Secrets suppressed. SLOT is not LIVE. Audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`.
+- Handwriting: `GET /v1/handwriting` ops + LIVE vs SLOT features; `POST /v1/handwriting` `{b64, op, filename, twin_b64?}` synthetic ink-on-paper scan heuristics. Hosted 256 px PNG preview. Not ESDA / chemical dating / writer identity / court finding. Audit: `docs/audit/HANDWRITING-FORGERY-AUDIT.md`.
 - Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy; not a Softwares-tab product)
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`; catalog `mesh_*` + FragGate `slug=mesh`)

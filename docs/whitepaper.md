@@ -169,21 +169,100 @@ Not a lens. Does not invent letters. Does not claim ESDA, chemical, lab,
 or forensic certification.
 
 - **Locate** reports text still in a PDF under a visual box, metadata,
-  attachments, twin-page residual, and leftover container bytes.
+  attachments, twin-page residual, leftover container bytes, and
+  historical page revisions (stale `/Page` objects with recursive
+  `/Contents` `/Resources` `/XObject` `/Font` `/ToUnicode` `/Annots`
+  `/Metadata` `/PieceInfo` `/StructParents` `/AcroForm` / embedded-file
+  follow; xref streams and object streams; bytes after logical EOF;
+  explicit incremental-update revision graph from `startxref` / `/Prev`
+  / trailer / classic xref + XRef streams).
 - **Lift** is non-opaque residual enhancement with inject OFF. A heatmap
   is not a transcript. Flattened screenshots of a box are treated as replace.
-- **Recover** is allowed only when the producer left old bytes in the
-  container (incremental update, unused objects, prior streams,
-  attachments, un-garbage-collected objects). Fields:
-  `leftover_bytes`, `recovered_from` (`pdf-object` / `attachment` /
-  `prior-stream` / `unused-object` / `incremental-revision` / `png-chunk`),
-  plus object id / offset / stream. That is reading present bytes.
-- **Refuse** `SL-UNREDACT-OPAQUE` when the cover is clipped solid black
-  (or a flattened box) **and** leftover bytes are gone.
+- **Recover** is allowed only when leftover / historical bytes remain
+  (incremental update, unused/orphan objects, prior streams, stale pages,
+  attachments, after-EOF). Fields include `leftover_bytes`,
+  `recovered_from`, `page_revisions`, `revision_compare` (bytes / text
+  operators / strings / glyph sequences / XObject refs only in old;
+  object IDs replaced), `operator_text`, `classifications`
+  (`text_under_vector_overlay` / `text_converted_to_outlines` /
+  `text_rasterized_into_image` / `old_revision_survives` /
+  `object_deleted_bytes_remain` / `sanitized_rewrite`), and
+  `recovered_characters` with page / object_id / generation /
+  xref_revision / stream_offset / operator / font / decoded_bytes /
+  source_revision / sha256, and `revision_graph` (`revisions[]` nodes
+  with `startxref`, `trailer_offset`, `page_ids`, `sha256_tip`, and a
+  reconstructable tip-cut `copy` plus surviving embeds from that
+  revision's object set; `edges[]` report objects added / replaced /
+  deleted / freed, pages whose `/Contents` `/Resources` `/XObject`
+  `/Annots` `/Metadata` changed, and `redaction_ops` classified
+  `replaced` | `overlaid` | `detached` | `sanitized rewrite` with
+  object ids, generations, stream offsets, and sha256 of before/after
+  streams). Copies are leftover bytes carved at each `%%EOF`, not
+  invented. Hosted preview may omit large `b64` and cite sha256 +
+  offsets. That is reading present bytes.
+- **OCR** runs only after structural recovery. It may read unredacted
+  surrounding text and historical raster differences. It never
+  reconstructs covered letters from context. Context guesses are not
+  recovery. Heatmap ≠ transcript.
+- **Refuse** `SL-UNREDACT-OPAQUE` when the cover is an opaque sanitized
+  rewrite (or a flattened box) **and** leftover bytes are gone.
+
+Hosted `/v1/unredact` may keep preview limits (payload cap, revision-copy
+cap, no OCR engine) but must not invent bytes or lie about capabilities.
+
+## Universal recover (operator lock — NO-LIE)
+
+Unredact is the PDF-focused leftover-bytes / visual path. `spectrallock recover`
+and `GET|POST /v1/recover` are the universal family: locate, deep-recover,
+revision-graph, cross-compare, extract-embedded, scan-orphans, scan-metadata,
+scan-sidecars, scan-history, refuse.
+
+Black rectangles may be visually unrecoverable while the value still exists
+in old streams, tracked changes, thumbnails, JSON/XML tombstones, metadata,
+attachments, siblings, SQLite freelist pages, supplied Git objects, shared
+strings, comments, hidden sheets, or archive members. Search every
+**physically present** representation before declaring gone. Confidence is
+provenance quality (1.00 exact bytes … 0.85 strong sibling). Linguistic
+reconstruction is not recovery.
+
+Format coverage is an honest LIVE vs SLOT matrix
+(`docs/audit/UNIVERSAL-RECOVER-AUDIT.md`). SLOT parsers (7z, HEIC, YAML AST
+without PyYAML) are never advertised as LIVE. Secrets are cited
+`secret_material_present` with path/offset; values are suppressed.
+
+Runtime rehash after merge
+still copies `overlay.js` only — follow-on aziel-runtime sync after this
+product PR (GitBaby CLEARs). Do not invent a digest.
 
 Runtime rehash after merge still copies `overlay.js` only, then
 `node scripts/hash-engines.mjs --write`. GitBaby CLEARs `spectrallock`
 then bumps aziel-runtime. Do not invent a digest.
+
+## Handwriting / ink-on-paper (operator lock — NO-LIE)
+
+`spectrallock handwriting` and `GET|POST /v1/handwriting` analyze
+user-supplied scans or photos of physical ink on paper. This is
+**synthetic image analysis**, not a lab instrument.
+
+LIVE pixel heuristics: stroke-weight variation (width / darkness as a
+pressure *proxy*), speed *cues* (taper, tremor frequency, ballistic vs
+controlled shape), ink density, bleed / feathering, baseline / slant /
+size shifts, erasure candidates (abrasion brightening, residual ghosts),
+tracing (doubled-edge / unnatural uniformity), and a non-exhaustive
+forgery-indicator list (tremor-copy, unnatural lifts, retouch, dual-ink,
+clone-stamp, compression discontinuities, ductus, style-shift). Side-by-side
+questioned vs known. Stroke/feature graph. Density / bleed / erasure
+heatmaps. Spectral helpers (`uv`, `candle`, `indent`, `lemon`) may be
+cited with inject OFF when they strengthen a present-pixel signal.
+
+SLOT and never claimed: ESDA, chemical ink dating, force in newtons,
+speed in mm/s, court-qualified examiner opinion, writer identification
+as identity fact. Confidence is pixel signal quality, not “this is
+forged.” Phrasing is always indicator / heuristic / candidate — human
+verification required. Empty gate ≠ broken lens. Balance / lemon never
+invent marks. Hosted preview is size-capped PNG; the full pipeline is
+the Python package. Audit: `docs/audit/HANDWRITING-FORGERY-AUDIT.md`.
+Do not invent a FragGate `handwriting` door.
 
 ## Hosted preview vs package
 

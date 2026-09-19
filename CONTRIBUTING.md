@@ -42,15 +42,21 @@ No network.
    pipeline is this Python package (`spectrallock_inject.py` for the color
    inject switch). Inject ON is paint, not recovered pigment. Zero ignores
    the switch. Report in-band percents before any hit claim.
-10. Unredact / lift-overlay never invents letters. Opaque replace with no
-    leftover container bytes refuses (`SL-UNREDACT-OPAQUE`). Leftover-bytes
-    recovery is a container read (object id / offset / stream), not a guess
-    from a black box. Heatmaps are not transcripts.
+10. Unredact / lift-overlay never invents letters. Opaque sanitized rewrite
+    with no leftover container bytes refuses (`SL-UNREDACT-OPAQUE`). Leftover
+    / historical bytes recovery is a container read (including stale `/Page`
+    graphs, xref/ObjStm, after-EOF), not a guess from a black box. OCR only
+    after structural recovery; never reconstruct covered letters from
+    context. Heatmaps are not transcripts.
 
 ## Where to change things
 
 - Engines / formulas: `spectrallock/engine.py`
 - Unredact / leftover-bytes: `spectrallock/unredact.py`
+- Deep historical PDF recovery + incremental revision graph / tip-cut copies: `spectrallock/pdfhist.py`
+- Universal recover family: `spectrallock/recover/` (CLI `spectrallock recover`, Worker `/v1/recover`)
+- Handwriting / ink-on-paper heuristics: `spectrallock/handwriting.py` (CLI `spectrallock handwriting`, Worker `/v1/handwriting`)
+- Honesty audit: `docs/audit/UNIVERSAL-RECOVER-AUDIT.md`, `docs/audit/HANDWRITING-FORGERY-AUDIT.md`
 - CLI: `spectrallock/cli.py`, inject card: `spectrallock/inject.py`, `spectrallock_inject.py`
 - Local UI: `spectrallock/ui.py`, `spectrallock/web/`
 - Papers: `docs/source/`, spec: `docs/whitepaper.md`, runtime sync: `docs/runtime-sync.md`

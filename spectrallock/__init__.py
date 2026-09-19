@@ -42,6 +42,28 @@ from spectrallock.engine import (
     sha256_hex,
     write_sidecar,
 )
+from spectrallock.pdfhist import DEEP_CAPABILITIES, recover_pdf_history
+from spectrallock.recover import (
+    RECOVER_NOTE,
+    RECOVER_OPS,
+    analyze_recover,
+    analyze_recover_path,
+    format_matrix,
+    list_recover,
+    parse_recover_op,
+)
+from spectrallock.handwriting import (
+    HANDWRITING_FAMILY,
+    HANDWRITING_NOTE,
+    HANDWRITING_OPS,
+    REFUSE_LIMIT,
+    REFUSE_NO_INK,
+    REFUSE_UNSUPPORTED,
+    analyze_handwriting,
+    analyze_handwriting_path,
+    list_handwriting,
+    parse_handwriting_op,
+)
 from spectrallock.unredact import (
     REFUSE_OPAQUE,
     UNREDACT_FAMILY,
@@ -99,5 +121,24 @@ __all__ = [
     "list_unredact",
     "locate_pdf",
     "parse_unredact_op",
+    "DEEP_CAPABILITIES",
+    "recover_pdf_history",
+    "RECOVER_NOTE",
+    "RECOVER_OPS",
+    "analyze_recover",
+    "analyze_recover_path",
+    "format_matrix",
+    "list_recover",
+    "parse_recover_op",
+    "HANDWRITING_NOTE",
+    "HANDWRITING_OPS",
+    "HANDWRITING_FAMILY",
+    "REFUSE_NO_INK",
+    "REFUSE_UNSUPPORTED",
+    "REFUSE_LIMIT",
+    "analyze_handwriting",
+    "analyze_handwriting_path",
+    "list_handwriting",
+    "parse_handwriting_op",
     "__version__",
 ]
