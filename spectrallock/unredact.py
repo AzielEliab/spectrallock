@@ -38,6 +38,12 @@ from spectrallock.engine import (
     png_bytes,
     unsharp,
 )
+from spectrallock.pdfhist import (
+    DEEP_CAPABILITIES,
+    merge_history_into_locate,
+    recover_pdf_history,
+    twin_compare_pdfs,
+)
 
 UNREDACT_FAMILY = ("unredact", "lift", "redact-locate")
 UNREDACT_OPS = ("locate", "lift", "recover", "refuse")
@@ -46,7 +52,8 @@ REFUSE_OPAQUE = "SL-UNREDACT-OPAQUE"
 UNREDACT_NOTE = (
     "Unredact / lift-overlay is locate + leftover-bytes + residual only. "
     "Locate reports text still in the file, metadata, attachments, "
-    "twin-page residual, and leftover container bytes. "
+    "twin-page residual, leftover container bytes, and historical page "
+    "revisions (stale /Page, prior streams, xref/ObjStm, after-EOF). "
     "It does not invent letters. "
     "Opaque replace (clipped solid black / true rewrite) with no leftover "
     "bytes refuses (" + REFUSE_OPAQUE + "). "
@@ -56,10 +63,12 @@ UNREDACT_NOTE = (
     "A heatmap of ghosts is not a transcript. "
     "A flattened screenshot of a box is treated as replace. "
     "Leftover-bytes recovery reads prior objects / unused streams / "
-    "attachments / incremental revisions that are still in the container. "
-    "That is not guessing letters from a black box. "
+    "attachments / incremental revisions / stale page graphs that are still "
+    "in the container. That is not guessing letters from a black box. "
     "If the container was rewritten and old bytes are gone, leftover_bytes "
     "is false and recovery is refused. "
+    "OCR runs only after structural recovery and never reconstructs covered "
+    "letters from context. Context guesses are not recovery. "
     "Never claim pigment recovery, ESDA, chemical, lab, or forensic "
     "certification. Empty gate ≠ broken lens. "
     "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE."
@@ -123,6 +132,10 @@ def list_unredact() -> dict[str, Any]:
         "ops": list(UNREDACT_OPS),
         "refuse_code": REFUSE_OPAQUE,
         "leftover_bytes_recovery": True,
+        "deep_history": True,
+        "capabilities": list(DEEP_CAPABILITIES),
+        "ocr_after_structural_only": True,
+        "covered_letters_from_context": False,
         "pigment_recovery": False,
         "guessed_letters": False,
         "heatmap_is_transcript": False,
@@ -174,6 +187,30 @@ def _base_finding(*, op: str) -> dict[str, Any]:
         "rosetta_spectral_analysis": True,
         "lamb_lens": "Service → Clarity → Peace",
         "identity": "Aziel Eliab",
+        "capabilities": list(DEEP_CAPABILITIES),
+        "deep_history": True,
+        "page_revisions": [],
+        "revision_compare": [],
+        "operator_text": [],
+        "font_resolutions": [],
+        "drawing_order": [],
+        "classifications": [],
+        "orphans": {},
+        "xref_streams": False,
+        "objstms": [],
+        "after_eof": {},
+        "image_layers": [],
+        "producer_artifacts": [],
+        "identifiers": [],
+        "ocr": {
+            "ocr_ran": False,
+            "ocr_after_structural_only": True,
+            "covered_letters_from_context": False,
+            "invented": False,
+        },
+        "recovered_characters": [],
+        "page_geometry": [],
+        "object_ids_replaced": [],
     }
 
 
@@ -532,7 +569,7 @@ def locate_pdf(data: bytes) -> dict[str, Any]:
         f"locate_pdf objects={len(objects)} leftover={leftover_bytes} "
         f"text_layer={len(text_layer)} eof={eof_count}"
     )
-    return {
+    scanned = {
         "is_pdf": True,
         "object_count": len(objects),
         "incremental_updates": max(0, eof_count - 1),
@@ -545,6 +582,7 @@ def locate_pdf(data: bytes) -> dict[str, Any]:
         "recovered_from": recovered_from,
         "locations": locations,
     }
+    return merge_history_into_locate(scanned, recover_pdf_history(data))
 
 
 def locate_png_chunks(data: bytes) -> dict[str, Any]:
@@ -731,6 +769,30 @@ def _cite_names(query: str, haystacks: list[tuple[str, str]]) -> list[dict[str, 
     return hits
 
 
+_HISTORY_KEYS = (
+    "capabilities",
+    "page_revisions",
+    "revision_compare",
+    "operator_text",
+    "font_resolutions",
+    "drawing_order",
+    "classifications",
+    "orphans",
+    "xref_streams",
+    "objstms",
+    "after_eof",
+    "image_layers",
+    "producer_artifacts",
+    "identifiers",
+    "ocr",
+    "recovered_characters",
+    "page_geometry",
+    "object_ids_replaced",
+    "extra_catalog_follow",
+    "deep_history",
+)
+
+
 def _merge_container(find: dict[str, Any], scanned: dict[str, Any]) -> None:
     find["text_layer"].extend(scanned.get("text_layer") or [])
     find["metadata_hits"].extend(scanned.get("metadata_hits") or [])
@@ -746,6 +808,10 @@ def _merge_container(find: dict[str, Any], scanned: dict[str, Any]) -> None:
         find["container"] = "pdf"
         find["incremental_updates"] = scanned.get("incremental_updates", 0)
         find["pdf_object_count"] = scanned.get("object_count", 0)
+        find["deep_history"] = True
+        for key in _HISTORY_KEYS:
+            if key in scanned and scanned[key] is not None:
+                find[key] = scanned[key]
     elif scanned.get("is_png"):
         find["container"] = find.get("container") or "png"
 
@@ -806,18 +872,11 @@ def analyze_unredact(
         elif twin.startswith(b"%PDF") and is_pdf:
             a = locate_pdf(raw)
             b = locate_pdf(twin)
+            find["twin_diff"] = twin_compare_pdfs(a, b, raw, twin)
             a_set = {s for loc in a["text_layer"] for s in loc.get("strings") or []}
             b_set = {s for loc in b["text_layer"] for s in loc.get("strings") or []}
-            only_a = sorted(a_set - b_set)
-            only_b = sorted(b_set - a_set)
-            find["twin_diff"] = {
-                "comparable": True,
-                "only_in_first": only_a,
-                "only_in_second": only_b,
-                "heatmap_is_transcript": False,
-                "invented": False,
-                "note": "String-set residual of two PDFs. Cited from bytes present. Not guessed.",
-            }
+            find["twin_diff"].setdefault("only_in_first", sorted(a_set - b_set))
+            find["twin_diff"].setdefault("only_in_second", sorted(b_set - a_set))
 
     hay: list[tuple[str, str]] = []
     for hit in find["metadata_hits"]:

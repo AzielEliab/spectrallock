@@ -130,12 +130,12 @@ Ops: `locate`, `lift`, `recover`, `refuse`.
 
 | op | honesty |
 |----|---------|
-| `locate` | Report text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes. Do not invent letters. |
+| `locate` | Report text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes, and historical page revisions (stale `/Page` graphs, prior streams, xref/ObjStm, after-EOF). Do not invent letters. |
 | `lift` | Non-opaque cover only. Contrast / residual with `--no-inject` (gray of the same gate). Heatmap ≠ transcript. |
-| `recover` | If the producer left old bytes in the container (incremental update, unused objects, prior streams, attachments), extract them with object id / offset / stream provenance. That is reading present bytes — not guessing a black box. |
-| `refuse` | Opaque replace / flattened screenshot and no leftover bytes → `SL-UNREDACT-OPAQUE`. |
+| `recover` | If leftover / historical bytes remain (incremental update, unused/orphan objects, prior streams, stale pages, attachments, after-EOF), extract them with character provenance. That is reading present bytes — not guessing a black box. |
+| `refuse` | Opaque sanitized rewrite / flattened screenshot and no leftover bytes → `SL-UNREDACT-OPAQUE`. |
 
-Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`, `refuse_code`. Never claim pigment recovery, ESDA, chemical, lab, or forensic certification.
+Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`, `page_revisions`, `revision_compare`, `operator_text`, `classifications`, `recovered_characters` (page, object_id, generation, xref_revision, stream_offset, operator, font, decoded_bytes, source_revision, sha256), `ocr` (after structural only; `covered_letters_from_context` is always false), `refuse_code`. OCR never reconstructs covered letters from context. Never claim pigment recovery, ESDA, chemical, lab, or forensic certification.
 
 ```bash
 spectrallock unredact locate page.pdf --json
@@ -244,7 +244,7 @@ flutter run
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
 - Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px longest side. `inject` true\|false is paint, not pigment. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
-- Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query}` locate / leftover recover / residual lift. Opaque + no leftover → `SL-UNREDACT-OPAQUE`. Aliases `POST /v1/lift`, `POST /v1/redact-locate`. Never invents letters.
+- Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query, twin_b64?}` locate / leftover-historical recover / residual lift. Opaque rewrite + no leftover → `SL-UNREDACT-OPAQUE`. Aliases `POST /v1/lift`, `POST /v1/redact-locate`. Hosted preview may cap size and has no OCR engine — it does not lie about that. Never invents letters.
 - Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy; not a Softwares-tab product)
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`; catalog `mesh_*` + FragGate `slug=mesh`)

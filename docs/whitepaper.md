@@ -169,17 +169,36 @@ Not a lens. Does not invent letters. Does not claim ESDA, chemical, lab,
 or forensic certification.
 
 - **Locate** reports text still in a PDF under a visual box, metadata,
-  attachments, twin-page residual, and leftover container bytes.
+  attachments, twin-page residual, leftover container bytes, and
+  historical page revisions (stale `/Page` objects with recursive
+  `/Contents` `/Resources` `/XObject` `/Font` `/ToUnicode` `/Annots`
+  `/Metadata` `/PieceInfo` `/StructParents` `/AcroForm` / embedded-file
+  follow; xref streams and object streams; bytes after logical EOF).
 - **Lift** is non-opaque residual enhancement with inject OFF. A heatmap
   is not a transcript. Flattened screenshots of a box are treated as replace.
-- **Recover** is allowed only when the producer left old bytes in the
-  container (incremental update, unused objects, prior streams,
-  attachments, un-garbage-collected objects). Fields:
-  `leftover_bytes`, `recovered_from` (`pdf-object` / `attachment` /
-  `prior-stream` / `unused-object` / `incremental-revision` / `png-chunk`),
-  plus object id / offset / stream. That is reading present bytes.
-- **Refuse** `SL-UNREDACT-OPAQUE` when the cover is clipped solid black
-  (or a flattened box) **and** leftover bytes are gone.
+- **Recover** is allowed only when leftover / historical bytes remain
+  (incremental update, unused/orphan objects, prior streams, stale pages,
+  attachments, after-EOF). Fields include `leftover_bytes`,
+  `recovered_from`, `page_revisions`, `revision_compare` (bytes / text
+  operators / strings / glyph sequences / XObject refs only in old;
+  object IDs replaced), `operator_text`, `classifications`
+  (`text_under_vector_overlay` / `text_converted_to_outlines` /
+  `text_rasterized_into_image` / `old_revision_survives` /
+  `object_deleted_bytes_remain` / `sanitized_rewrite`), and
+  `recovered_characters` with page / object_id / generation /
+  xref_revision / stream_offset / operator / font / decoded_bytes /
+  source_revision / sha256. That is reading present bytes.
+- **OCR** runs only after structural recovery. It may read unredacted
+  surrounding text and historical raster differences. It never
+  reconstructs covered letters from context. Context guesses are not
+  recovery. Heatmap ≠ transcript.
+- **Refuse** `SL-UNREDACT-OPAQUE` when the cover is an opaque sanitized
+  rewrite (or a flattened box) **and** leftover bytes are gone.
+
+Hosted `/v1/unredact` may keep preview limits (payload cap, no OCR
+engine) but must not lie about capabilities. Runtime rehash after merge
+still copies `overlay.js` only — follow-on aziel-runtime sync after this
+product PR (GitBaby CLEARs). Do not invent a digest.
 
 Runtime rehash after merge still copies `overlay.js` only, then
 `node scripts/hash-engines.mjs --write`. GitBaby CLEARs `spectrallock`

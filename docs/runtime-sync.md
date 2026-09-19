@@ -61,14 +61,23 @@ concatenated with `path\\n` + bytes + `\\n`). Recompute only from disk.
    any hit claim. Lamb Lens remains Service → Clarity → Peace (no invented
    marks; inject ON is paint, not pigment).
    `overlay.js` now also carries the honest unredact / leftover-bytes
-   family (`locate`, `lift`, `recover`, `refuse`). Product Worker
+   family (`locate`, `lift`, `recover`, `refuse`) plus deep historical
+   PDF revision recovery (operator lock 2026-09-19). Product Worker
    `GET|POST /v1/unredact` (aliases `/v1/lift`, `/v1/redact-locate`) must
-   refuse opaque replace with no leftover bytes (`SL-UNREDACT-OPAQUE`)
-   and must never invent letters. Leftover recovery reads present
-   container bytes only (object id / offset / stream). Catalog door ops
-   stay the list above until GitBaby adds `unredact` to LIVE_OPS — do not
-   invent a door op. Rehash still uses `ENGINE_ARTIFACTS.spectrallock =
-   ["spectrallock/overlay.js"]` only.
+   refuse opaque sanitized rewrite with no leftover bytes (`SL-UNREDACT-OPAQUE`)
+   and must never invent letters. Recover/locate return `page_revisions`,
+   `revision_compare`, `operator_text`, `classifications`,
+   `recovered_characters` (page / object_id / generation / xref_revision /
+   stream_offset / operator / font / decoded_bytes / source_revision /
+   sha256), `ocr` (after structural only; hosted OCR unbound), and
+   optional `twin_b64` compare. Leftover / historical bytes = recover;
+   leftover_bytes is false when the container was rewritten and old
+   bytes are gone. Catalog door ops stay the list above until GitBaby
+   adds `unredact` to LIVE_OPS — do not invent a door op. Rehash still
+   uses `ENGINE_ARTIFACTS.spectrallock = ["spectrallock/overlay.js"]`
+   only. **This product PR does not bump the runtime digest.** After
+   merge, GitBaby CLEARs `spectrallock` then rehashes. Do not invent
+   `3427dbcf…` forward.
 
 6. **Bump runtime** (GitBaby bump) and deploy
    `aziel-runtime.vibelock.workers.dev`.

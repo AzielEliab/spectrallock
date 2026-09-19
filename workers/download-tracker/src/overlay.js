@@ -16,9 +16,9 @@ export const LIMITATION =
   "Inject ON is false-color membership tint (paint), not recovered pigment. " +
   "OFF is luminance of the same gate. Zero ignores the switch. " +
   "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. " +
-  "Unredact / lift-overlay locates leftover bytes and residual only — never invents letters. " +
+  "Unredact / lift-overlay locates leftover bytes, historical page revisions, and residual only — never invents letters. " +
   "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). " +
-  "Heatmaps are not transcripts. " +
+  "Heatmaps are not transcripts. OCR only after structural recovery; never reconstructs covered letters from context. " +
   "Lamb Lens: Service → Clarity → Peace. " +
   "Hosted overlay is a simplified preview (max 256 px); the full pipeline is the Python package. " +
   "Does not claim pigment recovery. The human still reads the page. Author Aziel Eliab.";
@@ -761,18 +761,38 @@ export async function overlayFromB64(b64, mode, extras = {}) {
 export const REFUSE_OPAQUE = "SL-UNREDACT-OPAQUE";
 export const UNREDACT_OPS = ["locate", "lift", "recover", "refuse"];
 export const UNREDACT_FAMILY = ["unredact", "lift", "redact-locate"];
+export const DEEP_CAPABILITIES = [
+  "historical_page_dereference",
+  "revision_stream_compare",
+  "operator_text_recovery",
+  "font_encoding_resolve",
+  "drawing_order_overlay",
+  "redaction_classification",
+  "orphan_object_scan",
+  "xref_objstm",
+  "after_eof_scan",
+  "image_layer_recovery",
+  "twin_page_compare",
+  "producer_artifact_search",
+  "ocr_after_structural",
+  "character_provenance",
+];
+
 export const UNREDACT_NOTE =
   "Unredact / lift-overlay is locate + leftover-bytes + residual only. " +
   "Locate reports text still in the file, metadata, attachments, twin-page residual, " +
-  "and leftover container bytes. It does not invent letters. " +
+  "leftover container bytes, and historical page revisions (stale /Page, prior streams, " +
+  "xref/ObjStm, after-EOF). It does not invent letters. " +
   "Opaque replace (clipped solid black / true rewrite) with no leftover bytes refuses (" +
   REFUSE_OPAQUE +
   "). That is the only honest switch for visual unredact. " +
   "Non-opaque cover may use contrast / residual with inject OFF. No guessed letters. " +
   "A heatmap of ghosts is not a transcript. A flattened screenshot of a box is replace. " +
   "Leftover-bytes recovery reads prior objects / unused streams / attachments / incremental " +
-  "revisions still in the container — not guessing letters from a black box. " +
+  "revisions / stale page graphs still in the container — not guessing letters from a black box. " +
   "If the container was rewritten and old bytes are gone, leftover_bytes is false. " +
+  "OCR runs only after structural recovery and never reconstructs covered letters from context. " +
+  "Context guesses are not recovery. " +
   "Never claim pigment recovery, ESDA, chemical, lab, or forensic certification. " +
   "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE.";
 
@@ -782,6 +802,10 @@ export function listUnredact() {
     ops: UNREDACT_OPS.slice(),
     refuse_code: REFUSE_OPAQUE,
     leftover_bytes_recovery: true,
+    deep_history: true,
+    capabilities: DEEP_CAPABILITIES.slice(),
+    ocr_after_structural_only: true,
+    covered_letters_from_context: false,
     pigment_recovery: false,
     guessed_letters: false,
     heatmap_is_transcript: false,
@@ -1101,9 +1125,17 @@ export function unredactFromBytes(u8, extras = {}) {
     unredact_note: UNREDACT_NOTE,
     advisory: UNREDACT_NOTE,
     limitation: LIMITATION,
-    hosted_preview_honesty: "256px residual preview when lifted; leftover-bytes recovery reads present container bytes only",
+    hosted_preview_honesty: "256px residual preview when lifted; structural PDF history is live; OCR engine unbound on hosted preview",
     lamb_lens: "Service → Clarity → Peace",
     identity: "Aziel Eliab",
+    capabilities: DEEP_CAPABILITIES.slice(),
+    deep_history: true,
+    page_revisions: [],
+    revision_compare: [],
+    operator_text: [],
+    classifications: [],
+    recovered_characters: [],
+    ocr: { ocr_ran: false, ocr_after_structural_only: true, covered_letters_from_context: false, ocr_status: "unbound-hosted-preview", invented: false },
   };
   const latinHead = bytesToLatin(u8.subarray(0, 5));
   if (latinHead === "%PDF-") {
@@ -1141,6 +1173,45 @@ export async function unredactFromB64(b64, extras = {}) {
   const base = unredactFromBytes(u8, { op }).finding;
   base.op = op;
   const isPdf = bytesToLatin(u8.subarray(0, 5)) === "%PDF-";
+  if (isPdf) {
+    const hist = await locatePdfHistory(u8);
+    base.text_layer = hist.text_layer;
+    base.metadata_hits = hist.metadata_hits;
+    base.attachments = hist.attachments;
+    base.recovered = hist.recovered;
+    base.locations = hist.locations;
+    base.recovered_from = hist.recovered_from;
+    base.leftover_bytes = hist.leftover_bytes;
+    base.container = "pdf";
+    base.incremental_updates = hist.incremental_updates;
+    base.pdf_object_count = hist.object_count;
+    base.capabilities = hist.capabilities;
+    base.deep_history = true;
+    base.page_revisions = hist.page_revisions;
+    base.revision_compare = hist.revision_compare;
+    base.operator_text = hist.operator_text;
+    base.classifications = hist.classifications;
+    base.drawing_order = hist.drawing_order;
+    base.xref_streams = hist.xref_streams;
+    base.objstms = hist.objstms;
+    base.after_eof = hist.after_eof;
+    base.image_layers = hist.image_layers;
+    base.producer_artifacts = hist.producer_artifacts;
+    base.identifiers = hist.identifiers;
+    base.ocr = hist.ocr;
+    base.recovered_characters = hist.recovered_characters;
+    base.orphans = hist.orphans;
+    const twinB64 = extras.twin_b64 || extras.twin;
+    if (twinB64) {
+      try {
+        const twinU8 = typeof twinB64 === "string" ? b64ToBytes(twinB64) : twinB64;
+        const twinHist = await locatePdfHistory(twinU8);
+        base.twin_diff = twinCompareHistory(hist, twinHist);
+      } catch (err) {
+        base.twin_diff = { comparable: false, invented: false, note: "Twin decode failed. Not guessed." };
+      }
+    }
+  }
   if (!isPdf) {
     try {
       const decoded = await decodePng(u8);
@@ -1226,5 +1297,578 @@ export async function unredactFromB64(b64, extras = {}) {
   return base;
 }
 
+async function inflateBytes(u8) {
+  if (typeof DecompressionStream !== "function") return null;
+  for (const enc of ["deflate", "deflate-raw"]) {
+    try {
+      const ds = new DecompressionStream(enc);
+      const ab = await new Response(new Blob([u8]).stream().pipeThrough(ds)).arrayBuffer();
+      return new Uint8Array(ab);
+    } catch {
+      /* try next */
+    }
+  }
+  return null;
+}
+
+async function sha256HexBytes(u8) {
+  if (!globalThis.crypto || !crypto.subtle) return null;
+  const buf = await crypto.subtle.digest("SHA-256", u8);
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function u8slice(u8, start, end) {
+  return u8.subarray(start, end == null ? u8.length : end);
+}
+
+function indexOfBytes(u8, needle, from = 0) {
+  const n = typeof needle === "string" ? new TextEncoder().encode(needle) : needle;
+  outer: for (let i = from; i <= u8.length - n.length; i++) {
+    for (let j = 0; j < n.length; j++) if (u8[i + j] !== n[j]) continue outer;
+    return i;
+  }
+  return -1;
+}
+
+function parseTounicodeJs(text) {
+  const map = {};
+  const block = /beginbfchar([\s\S]*?)endbfchar/g;
+  let m;
+  while ((m = block.exec(text))) {
+    const pair = /<([0-9A-Fa-f]+)>\s*<([0-9A-Fa-f]+)>/g;
+    let p;
+    while ((p = pair.exec(m[1]))) {
+      const src = parseInt(p[1], 16);
+      const dest = p[2].replace(/\s+/g, "");
+      let out = "";
+      for (let i = 0; i + 3 < dest.length || i + 1 < dest.length; i += 4) {
+        if (i + 3 < dest.length) out += String.fromCharCode(parseInt(dest.slice(i, i + 4), 16));
+        else out += String.fromCharCode(parseInt(dest.slice(i, i + 2), 16));
+      }
+      map[src] = out;
+    }
+  }
+  return map;
+}
+
+function decodeCodesJs(bytes, font) {
+  const touni = font.tounicode || {};
+  const keys = Object.keys(touni).map(Number);
+  const two = keys.length ? Math.max(...keys) > 255 : !!(font.cid || font.identity);
+  let text = "";
+  const chars = [];
+  for (let i = 0; i < bytes.length; ) {
+    let code;
+    let raw;
+    if (two && i + 1 < bytes.length) {
+      code = (bytes.charCodeAt(i) << 8) | bytes.charCodeAt(i + 1);
+      raw = bytes.slice(i, i + 2);
+      i += 2;
+    } else {
+      code = bytes.charCodeAt(i);
+      raw = bytes.slice(i, i + 1);
+      i += 1;
+    }
+    let ch = touni[code];
+    if (!ch && !two && code >= 32 && code < 127) ch = String.fromCharCode(code);
+    if (ch) {
+      text += ch;
+      chars.push({ char: ch, decoded_bytes: [...raw].map((c) => c.charCodeAt(0).toString(16).padStart(2, "0")).join(""), invented: false });
+    }
+  }
+  return { text, chars };
+}
+
+function extractOpsJs(streamText, fontResolver) {
+  const spans = [];
+  const chars = [];
+  const xobjects = [];
+  const overlays = [];
+  const under = [];
+  let fontName = null;
+  let font = { tounicode: {} };
+  let fill = 0;
+  const reRect = [];
+  const show = (raw, operator, offset, hexed) => {
+    let payload = raw;
+    if (hexed) {
+      const h = raw.replace(/\s+/g, "");
+      payload = "";
+      for (let i = 0; i + 1 < h.length; i += 2) payload += String.fromCharCode(parseInt(h.slice(i, i + 2), 16));
+    } else {
+      payload = unescapePdfLiteral("(" + raw + ")");
+    }
+    const dec = decodeCodesJs(payload, font);
+    const preview = latinPreview(dec.text || (!hexed && looksLikeText(payload) ? payload : ""));
+    spans.push({ operator, stream_offset: offset, font: fontName, text: preview, invented: false });
+    for (const ch of dec.chars) chars.push({ ...ch, stream_offset: offset, operator, font: fontName });
+    if (preview) under.push({ text: preview, offset, operator, font: fontName });
+  };
+  const tf = /\/([A-Za-z0-9._+-]+)\s+[\d.]+\s+Tf/g;
+  let m;
+  while ((m = tf.exec(streamText))) {
+    fontName = "/" + m[1];
+    font = fontResolver(m[1]) || font;
+  }
+  const tj = /\((?:\\.|[^\\)])*\)\s*T[j']|<([0-9A-Fa-f \t\r\n]+)>\s*Tj|\[((?:[^\[\]]|\((?:\\.|[^\\)])*\))*)\]\s*TJ/g;
+  while ((m = tj.exec(streamText))) {
+    if (m[0].includes("TJ")) {
+      const inner = m[2] || "";
+      const bits = inner.match(/\((?:\\.|[^\\)])*\)|<[^>]+>/g) || [];
+      for (const b of bits) {
+        if (b.startsWith("<")) show(b.slice(1, -1), "TJ", m.index, true);
+        else show(b.slice(1, -1), "TJ", m.index, false);
+      }
+    } else if (m[1]) show(m[1], "Tj", m.index, true);
+    else show(m[0].replace(/\s*T[j']$/, "").slice(1, -1), "Tj", m.index, false);
+  }
+  const doOp = /\/([A-Za-z0-9._+-]+)\s+Do/g;
+  while ((m = doOp.exec(streamText))) xobjects.push("/" + m[1]);
+  const rec = /([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+([\d.\-]+)\s+re/g;
+  while ((m = rec.exec(streamText))) reRect.push({ x: +m[1], y: +m[2], w: +m[3], h: +m[4], offset: m.index });
+  const rg = /([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+rg/g;
+  while ((m = rg.exec(streamText))) fill = Math.max(+m[1], +m[2], +m[3]);
+  const gop = /([\d.]+)\s+g/g;
+  while ((m = gop.exec(streamText))) fill = +m[1];
+  const paint = /\bf\b/g;
+  const paints = [];
+  while ((m = paint.exec(streamText))) paints.push(m.index);
+  const pathOps = (streamText.match(/\b[mlcvyh]\b/g) || []).length;
+  const textUnder = [];
+  if (fill <= 0.08 && reRect.length && paints.length) {
+    for (const ov of reRect) {
+      overlays.push({ ...ov, operator: "f", invented: false });
+      for (const box of under) {
+        if (box.offset < (paints[0] || ov.offset + 1)) {
+          textUnder.push({
+            text: box.text,
+            object_stream_offset: box.offset,
+            operator: box.operator,
+            font: box.font,
+            overlay: { ...ov, operator: "f", invented: false },
+            invented: false,
+            note: "Text operators appear before an opaque vector rectangle in the same stream.",
+          });
+        }
+      }
+    }
+  }
+  return {
+    spans,
+    characters: chars,
+    xobjects,
+    overlays,
+    text_under_overlay: textUnder,
+    path_ops: pathOps,
+    has_text_ops: spans.length > 0,
+    has_image_ops: xobjects.length > 0,
+    glyphs: spans.map((s) => s.text).filter(Boolean),
+  };
+}
+
+export async function locatePdfHistory(u8) {
+  const head = bytesToLatin(u8.subarray(0, 5));
+  const empty = {
+    is_pdf: false,
+    leftover_bytes: false,
+    recovered: [],
+    recovered_from: [],
+    text_layer: [],
+    metadata_hits: [],
+    attachments: [],
+    locations: [],
+    capabilities: DEEP_CAPABILITIES.slice(),
+    page_revisions: [],
+    revision_compare: [],
+    operator_text: [],
+    classifications: [],
+    recovered_characters: [],
+    ocr: { ocr_ran: false, covered_letters_from_context: false, ocr_status: "unbound-hosted-preview", invented: false },
+  };
+  if (head !== "%PDF-") return empty;
+  const text = bytesToLatin(u8);
+  const base = locatePdfBytes(u8);
+  const eofAt = text.lastIndexOf("%%EOF");
+  const after = text.slice(eofAt >= 0 ? eofAt + 5 : text.length);
+  const afterHits = [];
+  if (after.trim()) {
+    if (/obj/.test(after)) afterHits.push({ kind: "trailing-objects", invented: false });
+    if (after.includes("%PDF")) afterHits.push({ kind: "appended-revision", invented: false });
+    afterHits.push({ kind: "raw-tail", preview: latinPreview(after.slice(0, 400)), invented: false });
+  }
+  const after_eof = { bytes_after_eof: after.length, hits: afterHits, leftover: afterHits.length > 0 };
+
+  const objects = [];
+  const objRe = /(?:^|[^0-9])(\d+)\s+(\d+)\s+obj/g;
+  let m;
+  while ((m = objRe.exec(text))) {
+    const id = Number(m[1]);
+    const gen = Number(m[2]);
+    const start = m.index + m[0].length;
+    const endRel = text.indexOf("endobj", start);
+    if (endRel < 0) continue;
+    const body = text.slice(start, endRel);
+    let stream = null;
+    let filt = null;
+    const sm = body.match(/stream\r?\n([\s\S]*?)endstream/);
+    const fm = body.match(/\/Filter\s*\/([A-Za-z0-9]+)/);
+    if (fm) filt = fm[1];
+    if (sm) {
+      const raw = new TextEncoder().encode(sm[1].replace(/\r?\n$/, ""));
+      if (filt === "FlateDecode" || filt === "Fl") {
+        const inf = await inflateBytes(raw);
+        stream = inf ? bytesToLatin(inf) : sm[1];
+      } else stream = sm[1];
+    }
+    objects.push({ id, gen, offset: m.index, body, stream, filter: filt, has_stream: !!sm, type: /\/Type\s*\/Page\b/.test(body) ? "Page" : (/\/Type\s*\/Catalog\b/.test(body) ? "Catalog" : null) });
+  }
+
+  const objstms = [];
+  for (const obj of objects) {
+    if (!/\/Type\s*\/ObjStm/.test(obj.body) || !obj.stream) continue;
+    const n = Number((obj.body.match(/\/N\s+(\d+)/) || [])[1] || 0);
+    const first = Number((obj.body.match(/\/First\s+(\d+)/) || [])[1] || 0);
+    const header = obj.stream.slice(0, first);
+    const nums = header.trim().split(/\s+/).map(Number);
+    for (let i = 0; i + 1 < nums.length && objstms.length < n + 8; i += 2) {
+      const oid = nums[i];
+      const off = nums[i + 1];
+      const next = i + 3 < nums.length ? first + nums[i + 3] : obj.stream.length;
+      const mem = obj.stream.slice(first + off, next);
+      objstms.push({ id: oid, gen: 0, offset: obj.offset, body: mem, stream: null, from_objstm: true, objstm_id: obj.id });
+      objects.push({ id: oid, gen: 0, offset: obj.offset, body: mem, stream: null, filter: null, has_stream: false, from_objstm: true, objstm_id: obj.id });
+    }
+  }
+  const xrefStreams = objects.some((o) => /\/Type\s*\/XRef/.test(o.body));
+
+  const catalogs = objects.filter((o) => o.type === "Catalog");
+  const tree = new Set();
+  const walkKids = (body, depth = 0) => {
+    if (!body || depth > 24) return;
+    const kids = body.match(/\/Kids\s*\[([^\]]*)\]/);
+    if (!kids) return;
+    const refs = [...kids[1].matchAll(/(\d+)\s+(\d+)\s+R/g)];
+    for (const r of refs) {
+      const id = Number(r[1]);
+      tree.add(id);
+      const child = objects.filter((o) => o.id === id).slice(-1)[0];
+      if (child) walkKids(child.body, depth + 1);
+    }
+  };
+  for (const cat of catalogs) {
+    const pages = cat.body.match(/\/Pages\s+(\d+)\s+(\d+)\s+R/);
+    if (pages) {
+      const node = objects.filter((o) => o.id === Number(pages[1])).slice(-1)[0];
+      if (node) walkKids(node.body);
+    }
+  }
+
+  const pages = objects.filter((o) => o.type === "Page");
+  const page_revisions = [];
+  const operator_text = [];
+  const recovered_characters = [];
+  const classifications = [];
+  const revision_compare = [];
+  const drawing_order = [];
+  const image_layers = [];
+  const extraFollow = [];
+
+  const fontsFor = (pageBody) => {
+    const map = {};
+    const fontBlk = pageBody.match(/\/Font\s*<<([^>]*)>>/);
+    if (!fontBlk) return map;
+    const refs = [...fontBlk[1].matchAll(/\/([A-Za-z0-9._+-]+)\s+(\d+)\s+(\d+)\s+R/g)];
+    for (const r of refs) {
+      const fobj = objects.filter((o) => o.id === Number(r[2])).slice(-1)[0];
+      let tounicode = {};
+      if (fobj) {
+        const tu = fobj.body.match(/\/ToUnicode\s+(\d+)\s+(\d+)\s+R/);
+        if (tu) {
+          const cmap = objects.filter((o) => o.id === Number(tu[1])).slice(-1)[0];
+          if (cmap && cmap.stream) tounicode = parseTounicodeJs(cmap.stream);
+        }
+      }
+      map[r[1]] = {
+        tounicode,
+        cid: fobj ? /\/Type0|\/Identity-H|\/CIDFont/.test(fobj.body) : false,
+        identity: fobj ? /\/Identity-H/.test(fobj.body) : false,
+      };
+    }
+    return map;
+  };
+
+  const followKeys = ["Contents", "Resources", "XObject", "Font", "ToUnicode", "Annots", "Metadata", "PieceInfo", "StructParents", "AcroForm"];
+  for (const page of pages) {
+    const inTree = tree.size === 0 || tree.has(page.id);
+    const leftoverPage = !inTree;
+    const graph = {};
+    for (const k of followKeys) graph[k] = [];
+    const followed = [];
+    const seen = new Set();
+    const walk = (obj, via) => {
+      if (!obj) return;
+      const key = obj.id + ":" + obj.offset + ":" + via;
+      if (seen.has(key)) return;
+      seen.add(key);
+      followed.push({ via, object_id: `${obj.id} ${obj.gen}`, offset: obj.offset, invented: false });
+      if (graph[via] && !graph[via].includes(`${obj.id} ${obj.gen}`)) graph[via].push(`${obj.id} ${obj.gen}`);
+      for (const k of followKeys) {
+        const rx = new RegExp("/" + k + "\\s+(\\d+)\\s+(\\d+)\\s+R", "g");
+        let rm;
+        while ((rm = rx.exec(obj.body))) {
+          const childs = objects.filter((o) => o.id === Number(rm[1]));
+          for (const child of childs) walk(child, k);
+        }
+        const nest = obj.body.match(new RegExp("/" + k + "\\s*<<([^>]*)>>"));
+        if (nest) {
+          const refs = [...nest[1].matchAll(/(\d+)\s+(\d+)\s+R/g)];
+          for (const r of refs) {
+            for (const child of objects.filter((o) => o.id === Number(r[1]))) walk(child, k);
+          }
+        }
+      }
+    };
+    walk(page, "Page");
+    const fonts = fontsFor(page.body);
+    const resolver = (name) => fonts[name] || { tounicode: {} };
+    const contentIds = [...page.body.matchAll(/\/Contents\s+(\d+)\s+(\d+)\s+R/g)].map((x) => Number(x[1]));
+    const underAll = [];
+    let hasText = false;
+    let pathOps = 0;
+    const pageImages = [];
+    for (const cid of contentIds) {
+      for (const streamObj of objects.filter((o) => o.id === cid)) {
+        const payload = streamObj.stream || streamObj.body;
+        const parsed = extractOpsJs(payload, resolver);
+        hasText = hasText || parsed.has_text_ops;
+        pathOps += parsed.path_ops;
+        underAll.push(...parsed.text_under_overlay);
+        const source = leftoverPage ? "prior" : "current";
+        for (const span of parsed.spans) {
+          operator_text.push({
+            ...span,
+            page: `${page.id} ${page.gen}`,
+            object_id: streamObj.id,
+            generation: streamObj.gen,
+            source_revision: source,
+            invented: false,
+          });
+          if (source === "prior" || parsed.text_under_overlay.length) {
+            for (const ch of parsed.characters) {
+              recovered_characters.push({
+                char: ch.char,
+                page: `${page.id} ${page.gen}`,
+                object_id: streamObj.id,
+                generation: streamObj.gen,
+                stream_offset: ch.stream_offset,
+                operator: ch.operator,
+                font: ch.font,
+                decoded_bytes: ch.decoded_bytes,
+                source_revision: source === "prior" ? "prior" : "under-vector",
+                sha256: null,
+                invented: false,
+              });
+            }
+          }
+        }
+      }
+    }
+    const xo = [...page.body.matchAll(/\/XObject[\s\S]*?\/[A-Za-z0-9._+-]+\s+(\d+)\s+(\d+)\s+R/g)];
+    for (const r of xo) {
+      const img = objects.filter((o) => o.id === Number(r[1])).slice(-1)[0];
+      if (img && /\/Subtype\s*\/Image/.test(img.body)) {
+        const w = Number((img.body.match(/\/Width\s+(\d+)/) || [])[1] || 0);
+        const h = Number((img.body.match(/\/Height\s+(\d+)/) || [])[1] || 0);
+        const rec = { object_id: `${img.id} ${img.gen}`, width: w, height: h, smask: /\/SMask/.test(img.body), invented: false, page: `${page.id} ${page.gen}` };
+        pageImages.push(rec);
+        image_layers.push(rec);
+      }
+    }
+    let cls = "sanitized_rewrite";
+    if (underAll.length) cls = "text_under_vector_overlay";
+    else if (leftoverPage) cls = "old_revision_survives";
+    else if (!hasText && pathOps >= 8) cls = "text_converted_to_outlines";
+    else if (!hasText && pageImages.length) cls = "text_rasterized_into_image";
+    classifications.push({ page: `${page.id} ${page.gen}`, class: cls, live: inTree, leftover: leftoverPage, invented: false });
+    page_revisions.push({
+      page_object: `${page.id} ${page.gen}`,
+      offset: page.offset,
+      live: inTree,
+      leftover: leftoverPage,
+      graph,
+      followed,
+      classification: cls,
+      invented: false,
+    });
+    drawing_order.push({ page: `${page.id} ${page.gen}`, text_under_overlay: underAll, invented: false });
+  }
+
+  const byId = {};
+  for (const obj of objects) (byId[obj.id] || (byId[obj.id] = [])).push(obj);
+  for (const id of Object.keys(byId)) {
+    const vers = byId[id].filter((o) => o.stream != null);
+    if (vers.length >= 2) {
+      const oldS = extractOpsJs(vers[0].stream, () => ({ tounicode: {} }));
+      const newS = extractOpsJs(vers[vers.length - 1].stream, () => ({ tounicode: {} }));
+      const oldSet = new Set(oldS.glyphs);
+      const newSet = new Set(newS.glyphs);
+      revision_compare.push({
+        old_object: `${vers[0].id} ${vers[0].gen}`,
+        new_object: `${vers[vers.length - 1].id} ${vers[vers.length - 1].gen}`,
+        bytes_only_in_old: vers[0].stream !== vers[vers.length - 1].stream,
+        strings_only_in_old: [...oldSet].filter((s) => !newSet.has(s)),
+        glyph_sequences_only_in_old: [...oldSet].filter((s) => !newSet.has(s)),
+        xobject_refs_only_in_old: oldS.xobjects.filter((x) => !newS.xobjects.includes(x)),
+        invented: false,
+      });
+    }
+  }
+
+  const recovered = [...(base.recovered || [])];
+  const recovered_from = [...(base.recovered_from || [])];
+  for (const span of operator_text) {
+    if (span.source_revision === "prior" && span.text) {
+      recovered.push({
+        object_id: `${span.object_id} ${span.generation}`,
+        recovered_from: "old-revision",
+        preview: span.text,
+        operator: span.operator,
+        source_revision: "prior",
+        invented: false,
+      });
+      if (!recovered_from.includes("old-revision")) recovered_from.push("old-revision");
+    }
+  }
+  for (const d of drawing_order) {
+    for (const item of d.text_under_overlay || []) {
+      recovered.push({
+        object_id: d.page,
+        recovered_from: "text-under-vector",
+        preview: item.text,
+        operator: item.operator,
+        invented: false,
+      });
+      if (!recovered_from.includes("text-under-vector")) recovered_from.push("text-under-vector");
+    }
+  }
+  if (after_eof.leftover) {
+    recovered_from.push("after-eof");
+    recovered.push({ object_id: "after-eof", recovered_from: "after-eof", preview: latinPreview(after.slice(0, 120)), invented: false });
+  }
+  for (const mem of objstms) {
+    const strings = extractPdfStrings(mem.body);
+    if (strings.length) {
+      recovered.push({ object_id: `${mem.id} 0`, recovered_from: "unused-objstm-member", preview: strings.join(" | "), invented: false });
+      if (!recovered_from.includes("unused-objstm-member")) recovered_from.push("unused-objstm-member");
+    }
+  }
+
+  const producer_artifacts = [];
+  const needles = [
+    ["Acrobat", "acrobat"],
+    ["Distiller", "acrobat-distiller"],
+    ["Microsoft Word", "microsoft-word"],
+    ["Tesseract", "tesseract-ocr"],
+    ["/OCG", "ocg-layer"],
+    ["/StructTreeRoot", "structure-tree"],
+    ["/PieceInfo", "pieceinfo"],
+    ["/LastModified", "revision-id"],
+  ];
+  for (const [needle, kind] of needles) {
+    let at = 0;
+    while ((at = text.indexOf(needle, at)) >= 0) {
+      producer_artifacts.push({ kind, offset: at, excerpt: latinPreview(text.slice(Math.max(0, at - 16), at + 40), 80), invented: false });
+      at += needle.length;
+      if (producer_artifacts.length > 48) break;
+    }
+  }
+  const identifiers = [];
+  const idRe = [ [/EFTA[A-Z0-9-]{4,}/g, "fbi-doc-id"], [/[A-Z]{2,10}[-_ ]?\d{5,}/g, "bates"], [/D:\d{8,14}/g, "pdf-date"] ];
+  for (const [re, kind] of idRe) {
+    re.lastIndex = 0;
+    let im;
+    while ((im = re.exec(text))) {
+      identifiers.push({ kind, value: im[0], offset: im.index, invented: false });
+      if (identifiers.length > 40) break;
+    }
+  }
+
+  const leftover_bytes = recovered.length > 0 || after_eof.leftover || page_revisions.some((p) => p.leftover);
+  const structural = leftover_bytes || operator_text.some((s) => s.source_revision === "prior" && s.text);
+  const ocr = {
+    ocr_ran: false,
+    ocr_after_structural_only: true,
+    covered_letters_from_context: false,
+    context_guess: false,
+    heatmap_is_transcript: false,
+    invented: false,
+    ocr_engine: null,
+    ocr_status: structural ? undefined : "unbound-hosted-preview",
+    ocr_deferred: structural || undefined,
+    reason: structural ? "structural leftover / operator / revision bytes recovered first" : undefined,
+    note: "OCR only after structural recovery. Hosted preview has no OCR engine bound. Covered letters are never reconstructed from context. Context guesses are not recovery.",
+  };
+
+  for (const cat of catalogs) {
+    const acro = cat.body.match(/\/AcroForm\s+(\d+)\s+(\d+)\s+R/);
+    if (acro) extraFollow.push({ via: "AcroForm", object_id: `${acro[1]} ${acro[2]}`, invented: false });
+  }
+
+  return {
+    ...base,
+    is_pdf: true,
+    leftover_bytes,
+    recovered,
+    recovered_from,
+    capabilities: DEEP_CAPABILITIES.slice(),
+    deep_history: true,
+    page_revisions,
+    revision_compare,
+    operator_text,
+    font_resolutions: [],
+    drawing_order,
+    classifications,
+    orphans: { invented: false },
+    xref_streams: xrefStreams,
+    objstms: objstms.map((m) => ({ object_id: `${m.id} 0`, objstm_id: m.objstm_id, invented: false })),
+    after_eof,
+    image_layers,
+    producer_artifacts,
+    identifiers,
+    ocr,
+    recovered_characters,
+    page_geometry: page_revisions.map((p) => ({ page_object: p.page_object, invented: false })),
+    object_ids_replaced: revision_compare.map((c) => ({ old: c.old_object, new: c.new_object })),
+    extra_catalog_follow: extraFollow,
+    guessed_letters: false,
+    heatmap_is_transcript: false,
+    forensic_certification: false,
+  };
+}
+
+export function twinCompareHistory(a, b) {
+  const as = new Set((a.operator_text || []).map((s) => s.text).filter(Boolean));
+  const bs = new Set((b.operator_text || []).map((s) => s.text).filter(Boolean));
+  for (const loc of a.text_layer || []) for (const s of loc.strings || []) as.add(s);
+  for (const loc of b.text_layer || []) for (const s of loc.strings || []) bs.add(s);
+  const bvals = new Set((b.identifiers || []).map((i) => i.kind + ":" + i.value));
+  const shared = (a.identifiers || []).filter((i) => bvals.has(i.kind + ":" + i.value));
+  return {
+    comparable: true,
+    only_in_first: [...as].filter((s) => !bs.has(s)).sort(),
+    only_in_second: [...bs].filter((s) => !as.has(s)).sort(),
+    shared_identifiers: shared,
+    identifiers_first: a.identifiers || [],
+    identifiers_second: b.identifiers || [],
+    heatmap_is_transcript: false,
+    invented: false,
+    note: "Twin / neighboring-document compare of operator text and identifiers. Cited from bytes present. Not guessed.",
+  };
+}
+
 void pixelsFromRgb;
 void copyBuf;
+void inflateBytes;
+void sha256HexBytes;
+void u8slice;
+void indexOfBytes;

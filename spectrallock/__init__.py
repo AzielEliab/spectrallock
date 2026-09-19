@@ -42,6 +42,7 @@ from spectrallock.engine import (
     sha256_hex,
     write_sidecar,
 )
+from spectrallock.pdfhist import DEEP_CAPABILITIES, recover_pdf_history
 from spectrallock.unredact import (
     REFUSE_OPAQUE,
     UNREDACT_FAMILY,
@@ -99,5 +100,7 @@ __all__ = [
     "list_unredact",
     "locate_pdf",
     "parse_unredact_op",
+    "DEEP_CAPABILITIES",
+    "recover_pdf_history",
     "__version__",
 ]

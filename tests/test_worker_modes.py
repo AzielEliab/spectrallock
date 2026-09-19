@@ -80,21 +80,40 @@ def test_overlay_js_unredact_honesty_in_node() -> None:
     node = shutil.which("node")
     assert node, "node is required to execute overlay unredact helpers"
     script = f"""
-import {{ REFUSE_OPAQUE, UNREDACT_NOTE, parseUnredactOp, locatePdfBytes, classifyCoverBuf, listUnredact }} from {json.dumps(str(OVERLAY))};
+import {{ REFUSE_OPAQUE, UNREDACT_NOTE, parseUnredactOp, locatePdfBytes, locatePdfHistory, classifyCoverBuf, listUnredact, DEEP_CAPABILITIES, unredactFromB64 }} from {json.dumps(str(OVERLAY))};
 if (parseUnredactOp("redact-locate") !== "locate") throw new Error("locate alias");
 if (parseUnredactOp("leftover-bytes") !== "recover") throw new Error("recover alias");
 if (REFUSE_OPAQUE !== "SL-UNREDACT-OPAQUE") throw new Error("refuse code");
 if (!UNREDACT_NOTE.includes("leftover")) throw new Error("leftover copy");
 if (!UNREDACT_NOTE.includes("not a transcript")) throw new Error("transcript copy");
 if (!UNREDACT_NOTE.includes("never invent") && !UNREDACT_NOTE.includes("does not invent")) throw new Error("invent copy");
+if (!UNREDACT_NOTE.includes("OCR")) throw new Error("ocr copy");
 const card = listUnredact();
 if (!card.leftover_bytes_recovery) throw new Error("card leftover");
+if (!card.deep_history) throw new Error("card deep");
+if (card.capabilities.length !== 14) throw new Error("14 caps");
+if (DEEP_CAPABILITIES.length !== 14) throw new Error("DEEP 14");
 const enc = new TextEncoder();
 const pdf = enc.encode("%PDF-1.4\\n1 0 obj << /Title (Docket) >> endobj\\n4 0 obj << /Length 20 >> stream\\nBT (ALICE SMITH) Tj ET\\nendstream\\nendobj\\n4 0 obj << /Length 8 >> stream\\n0 0 0 rg\\nendstream\\nendobj\\n%%EOF\\n%%EOF\\n");
 const loc = locatePdfBytes(pdf);
 if (!loc.leftover_bytes) throw new Error("expected leftover");
 const previews = (loc.recovered || []).map((r) => r.preview || "").join(" ");
 if (!previews.toUpperCase().includes("ALICE")) throw new Error("leftover text missing");
+const efta = enc.encode("%PDF-1.4\\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\\n2 0 obj << /Type /Pages /Kids [10 0 R] /Count 1 >> endobj\\n10 0 obj << /Type /Page /Contents 90 0 R >> endobj\\n90 0 obj << /Length 8 >> stream\\n0 0 0 rg f\\nendstream\\nendobj\\n23 0 obj << /Length 22 >> stream\\nBT (STALE-STREAM-23) Tj ET\\nendstream\\nendobj\\n77 0 obj << /Type /Page /Contents 23 0 R >> endobj\\n%%EOF\\n");
+const hist = await locatePdfHistory(efta);
+if (!hist.leftover_bytes) throw new Error("efta leftover");
+const stale = (hist.page_revisions || []).find((p) => p.page_object.startsWith("77"));
+if (!stale || !stale.leftover) throw new Error("stale page 77");
+const texts = (hist.operator_text || []).map((s) => s.text || "").join(" ");
+if (!texts.includes("STALE-STREAM-23")) throw new Error("stale stream follow");
+if (hist.ocr.covered_letters_from_context) throw new Error("ocr context");
+const opaque = enc.encode("%PDF-1.4\\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\\n3 0 obj << /Type /Page /Contents 4 0 R >> endobj\\n4 0 obj << /Length 8 >> stream\\n0 0 0 rg f\\nendstream\\nendobj\\n%%EOF\\n");
+const toB64 = (u8) => Buffer.from(u8).toString("base64");
+const refused = await unredactFromB64(toB64(opaque), {{ op: "recover" }});
+if (refused.leftover_bytes) throw new Error("opaque leftover");
+if (refused.refuse_code !== "SL-UNREDACT-OPAQUE") throw new Error("opaque refuse");
+const twin = await unredactFromB64(toB64(efta), {{ op: "locate", twin_b64: toB64(opaque) }});
+if (!twin.twin_diff || twin.twin_diff.invented) throw new Error("twin");
 const buf = new Float32Array(32 * 48 * 3);
 for (let i = 0; i < buf.length; i++) buf[i] = 0.93;
 for (let y = 8; y < 24; y++) for (let x = 6; x < 42; x++) {{
@@ -102,13 +121,14 @@ for (let y = 8; y < 24; y++) for (let x = 6; x < 42; x++) {{
 }}
 const cover = classifyCoverBuf(buf, 48, 32);
 if (!cover.opaque_replace) throw new Error("opaque box");
-process.stdout.write(JSON.stringify({{ ok: true, leftover: loc.leftover_bytes, refuse: REFUSE_OPAQUE }}));
+process.stdout.write(JSON.stringify({{ ok: true, leftover: loc.leftover_bytes, refuse: REFUSE_OPAQUE, stale: true }}));
 """
     raw = subprocess.check_output([node, "--input-type=module", "-e", script], text=True)
     body = json.loads(raw)
     assert body["ok"] is True
     assert body["leftover"] is True
     assert body["refuse"] == "SL-UNREDACT-OPAQUE"
+    assert body["stale"] is True
 
 
 def test_overlay_js_inject_and_inband_in_node() -> None:
