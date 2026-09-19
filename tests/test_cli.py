@@ -55,6 +55,10 @@ def test_cli_modes_json(capsys) -> None:
     assert "rosetta" in payload["advisory"].lower()
     assert payload["targets"]
     assert payload["lenses"]
+    assert payload["handwriting"]["family"] == "handwriting"
+    assert payload["handwriting"]["no_lie"] is True
+    assert payload["handwriting"]["esda"] is False
+    assert payload["handwriting"]["writer_identification_as_fact"] is False
 
 
 def test_cli_overlay_png_and_json(tmp_path: Path, capsys) -> None:

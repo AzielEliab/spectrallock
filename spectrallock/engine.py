@@ -101,6 +101,8 @@ LIMITATION = (
     "Unredact / lift-overlay locates leftover bytes and residual only — never invents letters. "
     "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). "
     "Heatmaps are not transcripts. "
+    "Handwriting analysis is synthetic scan heuristics of ink-on-paper photos — "
+    "not ESDA, not chemical dating, not a court finding, not writer identity. "
     "Lamb Lens: Service → Clarity → Peace. "
     "The human still reads the page. Author Aziel Eliab."
 )

@@ -10,6 +10,7 @@
     spectrallock inject  # operator-card CLI (also spectrallock_inject.py)
     spectrallock unredact locate|lift|recover FILE
     spectrallock recover locate|deep|compare|revision-graph FILE
+    spectrallock handwriting analyze|compare|graph FILE
     spectrallock lift FILE          # alias: non-opaque residual, leftover recover
     spectrallock redact-locate FILE # alias: locate
     spectrallock ui
@@ -31,6 +32,7 @@ from spectrallock import (
     list_targets,
     list_unredact,
 )
+from spectrallock.handwriting import list_handwriting
 from spectrallock.recover import list_recover
 from spectrallock.debug import debug
 from spectrallock.engine import (
@@ -294,6 +296,25 @@ def _build_parser() -> argparse.ArgumentParser:
     p_rec.add_argument("--deep", action="store_true", help="Deep recover (all present representations).")
     p_rec.add_argument("--json", action="store_true", dest="as_json", help="Print recover JSON.")
 
+    def _add_hand_args(p: argparse.ArgumentParser) -> None:
+        p.add_argument(
+            "op_or_src",
+            help="Op (analyze|compare|side-by-side|graph|forgery-indicators|refuse) or the scan.",
+        )
+        p.add_argument("src_opt", nargs="?", default=None, help="Scan when the first token is an op.")
+        p.add_argument("src_opt2", nargs="?", default=None, help="Known sample for compare.")
+        p.add_argument("--twin", default=None, help="Known / second scan for compare or side-by-side.")
+        p.add_argument("--json", action="store_true", dest="as_json", help="Print handwriting JSON.")
+
+    for alias, help_txt in (
+        ("handwriting", "Handwriting / ink-on-paper scan heuristics. Not a lab. Not a court finding."),
+        ("handwrite", "Alias for handwriting."),
+        ("ink-hand", "Alias for handwriting."),
+        ("forgery-scan", "Alias for handwriting forgery-indicators."),
+    ):
+        ph = sub.add_parser(alias, help=help_txt)
+        _add_hand_args(ph)
+
     return parser
 
 
@@ -419,6 +440,35 @@ def _run_doctor() -> int:
         lines.append("recover doctor: fail")
         debug(f"doctor recover error={type(exc).__name__}")
 
+    try:
+        from spectrallock.handwriting import REFUSE_NO_INK, analyze_handwriting, list_handwriting
+
+        card = list_handwriting()
+        ink_page = np.ones((32, 48, 3), dtype=np.float32) * 0.92
+        ink_page[12:20, 6:40] = 0.08
+        inked = analyze_handwriting(png_bytes(ink_page), op="analyze", filename="doc.png")
+        blank = analyze_handwriting(png_bytes(np.ones((24, 24, 3), dtype=np.float32) * 0.92), op="analyze")
+        if (
+            not card.get("no_lie")
+            or card.get("esda")
+            or card.get("writer_identification_as_fact")
+            or card.get("forensic_certification")
+        ):
+            ok = False
+            lines.append("handwriting card: fail")
+        elif inked.get("refuse_code") == REFUSE_NO_INK or not (inked.get("features") or {}).get("weight"):
+            ok = False
+            lines.append("handwriting ink: fail")
+        elif blank.get("refuse_code") != REFUSE_NO_INK:
+            ok = False
+            lines.append("handwriting no-ink: fail")
+        else:
+            lines.append("handwriting family: ok")
+    except Exception as exc:  # noqa: BLE001
+        ok = False
+        lines.append("handwriting doctor: fail")
+        debug(f"doctor handwriting error={type(exc).__name__}")
+
     lines.append("telemetry: none")
     lines.append("ok" if ok else "fail")
     print("\n".join(lines))
@@ -468,6 +518,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "targets": list_targets(),
                 "unredact": list_unredact(),
                 "recover": list_recover(),
+                "handwriting": list_handwriting(),
             }, indent=2))
         else:
             print(LIMITATION)
@@ -477,6 +528,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print("targets: ink (writing) · page (parchment)")
             print("unredact family: locate · lift · recover · refuse (not a lens; leftover bytes only)")
             print("recover family: locate · deep-recover · revision-graph · cross-compare · extract-embedded · scan-orphans · scan-metadata · scan-sidecars · scan-history · refuse")
+            print("handwriting family: analyze · compare · side-by-side · graph · forgery-indicators · refuse (synthetic scan heuristics; not a lab)")
         return 0
 
     if args.cmd == "overlay":
@@ -698,6 +750,59 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"no_lie: {finding.get('no_lie')}")
             print(RECOVER_NOTE)
         if finding.get("refuse_code") and finding.get("stop") and op == "refuse":
+            return 2
+        return 0
+
+    if args.cmd in {"handwriting", "handwrite", "ink-hand", "forgery-scan"}:
+        from spectrallock.handwriting import (
+            HANDWRITING_NOTE,
+            REFUSE_NO_INK,
+            REFUSE_UNSUPPORTED,
+            analyze_handwriting_path,
+            parse_handwriting_op,
+        )
+
+        token = str(args.op_or_src)
+        known = {
+            "analyze", "compare", "side-by-side", "sidebyside", "graph",
+            "forgery-indicators", "forgery", "refuse", "handwriting",
+            "handwrite", "ink-hand", "forgery-scan",
+        }
+        twin = args.twin
+        src = args.src_opt
+        key = token.lower().replace("_", "-")
+        if key in known:
+            op = token
+            if not src:
+                print("handwriting: missing input scan", file=sys.stderr)
+                return 2
+            if args.src_opt2 and parse_handwriting_op(op) in {"compare", "side-by-side"}:
+                twin = twin or args.src_opt2
+        else:
+            op = "forgery-indicators" if args.cmd == "forgery-scan" else "analyze"
+            src = token
+            if args.src_opt and not twin:
+                op = "compare"
+                twin = args.src_opt
+        try:
+            parse_handwriting_op(op)
+            finding = analyze_handwriting_path(src, op=op, twin=twin)
+        except FileNotFoundError:
+            print(f"input not found: {src}", file=sys.stderr)
+            return 2
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        if args.as_json:
+            print(json.dumps(finding, indent=2, ensure_ascii=False))
+        else:
+            print(f"op: {finding.get('op')}")
+            print(f"refuse_code: {finding.get('refuse_code') or 'none'}")
+            print(f"strokes: {len(finding.get('strokes') or [])}")
+            print(f"forgery_indicators: {len(finding.get('forgery_indicators') or [])}")
+            print(f"no_lie: {finding.get('no_lie')}")
+            print(HANDWRITING_NOTE)
+        if finding.get("refuse_code") in {REFUSE_NO_INK, REFUSE_UNSUPPORTED} and op == "refuse":
             return 2
         return 0
 

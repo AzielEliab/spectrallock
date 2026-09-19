@@ -19,6 +19,7 @@ export const LIMITATION =
   "Unredact / lift-overlay locates leftover bytes, historical page revisions, and residual only — never invents letters. " +
   "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). " +
   "Heatmaps are not transcripts. OCR only after structural recovery; never reconstructs covered letters from context. " +
+  "Handwriting analysis is synthetic scan heuristics of ink-on-paper photos — not ESDA, not chemical dating, not a court finding, not writer identity. " +
   "Lamb Lens: Service → Clarity → Peace. " +
   "Hosted overlay is a simplified preview (max 256 px); the full pipeline is the Python package. " +
   "Does not claim pigment recovery. The human still reads the page. Author Aziel Eliab.";
@@ -2459,6 +2460,753 @@ export async function recoverFromB64(b64, extras = {}) {
   if (!env.recovered_count && !env.carved.length && det.status !== "slot" && op !== "refuse") {
     env.refuse_code = env.refuse_code || "SL-RECOVER-NO-BYTES";
     env.refused.push({ code: "SL-RECOVER-NO-BYTES", invented: false });
+  }
+  return env;
+}
+
+export const HANDWRITING_OPS = [
+  "analyze", "compare", "side-by-side", "graph", "forgery-indicators", "refuse",
+];
+export const HANDWRITING_FAMILY = ["handwriting", "handwrite", "ink-hand", "forgery-scan"];
+export const REFUSE_NO_INK = "SL-HANDWRITING-NO-INK";
+export const REFUSE_UNSUPPORTED = "SL-HANDWRITING-UNSUPPORTED";
+export const REFUSE_LIMIT = "SL-HANDWRITING-LIMIT";
+export const HANDWRITING_NOTE =
+  "Handwriting analysis is synthetic image analysis of a user-supplied " +
+  "scan or photo of paper. Stroke weight, speed cues, bleed, erasures, " +
+  "tracing, and forgery indicators are heuristics from present pixels. " +
+  "They are candidates — human verification required. " +
+  "Not ESDA, not chemical ink dating, not a court-qualified examiner " +
+  "opinion, and not writer identification as an identity fact. " +
+  "Heatmaps are not transcripts and not court findings. " +
+  "Hosted /v1/handwriting is a 256 px PNG preview; the full pipeline is the Python package. " +
+  "Empty gate ≠ broken lens. Balance/lemon never invent marks. " +
+  "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE.";
+
+const HANDWRITING_FEATURES = {
+  stroke_weight: { status: "live", note: "width from ink mask + 4-dir radius (hosted); chamfer in package" },
+  speed_cues: { status: "live", note: "taper / tremor / ballistic vs controlled — heuristic only" },
+  ink_density: { status: "live", note: "darkness of ink-mask pixels" },
+  bleed_feathering: { status: "live", note: "edge gradient width / capillary-spread proxy" },
+  handwriting_shifts: { status: "live", note: "baseline drift, slant, size change" },
+  erasures: { status: "live", note: "abrasion brightening + mid-gray ghosts" },
+  tracing: { status: "live", note: "width uniformity, lift clustering" },
+  tremor_copy: { status: "live", note: "high-frequency wobble + slow uniform width" },
+  pen_lifts: { status: "live", note: "connected-component breaks" },
+  retouch_overwrite: { status: "live", note: "dark-on-dark cores" },
+  dual_ink: { status: "live", note: "hue clusters in stroke pixels" },
+  baseline_misalign: { status: "live", note: "row centroid drift" },
+  indent_helper: { status: "live", note: "indent mode inject-OFF; not ESDA" },
+  clone_stamp: { status: "live", note: "repeated 8×8 luminance hashes far apart" },
+  compression_paste: { status: "live", note: "8×8 block energy discontinuities" },
+  ductus: { status: "live", note: "gradient-direction consistency" },
+  style_shift: { status: "live", note: "component aspect-ratio regime change — heuristic flag only" },
+  jpeg_decode: { status: "slot", note: "hosted preview is PNG only; local package accepts JPEG" },
+  pressure_newtons: { status: "slot", note: "no force sensor; width/darkness is a proxy only" },
+  speed_mm_s: { status: "slot", note: "no temporal capture; taper/tremor are shape cues" },
+  writer_identity: { status: "slot", note: "never claimed as identity fact" },
+  esda: { status: "slot", note: "not electrostatic detection" },
+  chemical_ink_dating: { status: "slot", note: "not a lab assay" },
+  court_examiner_opinion: { status: "slot", note: "not a qualified examiner finding" },
+};
+
+export function parseHandwritingOp(value, fallback = "analyze") {
+  const key = String(value || fallback).trim().toLowerCase().replaceAll("_", "-");
+  const aliases = {
+    analyze: "analyze",
+    handwriting: "analyze",
+    handwrite: "analyze",
+    "ink-hand": "analyze",
+    "forgery-scan": "forgery-indicators",
+    compare: "compare",
+    "side-by-side": "side-by-side",
+    sidebyside: "side-by-side",
+    graph: "graph",
+    "forgery-indicators": "forgery-indicators",
+    forgery: "forgery-indicators",
+    refuse: "refuse",
+  };
+  return aliases[key] || null;
+}
+
+export function listHandwriting() {
+  const live = Object.keys(HANDWRITING_FEATURES).filter((k) => HANDWRITING_FEATURES[k].status === "live").sort();
+  const slot = Object.keys(HANDWRITING_FEATURES).filter((k) => HANDWRITING_FEATURES[k].status === "slot").sort();
+  return {
+    family: "handwriting",
+    aliases: HANDWRITING_FAMILY.slice(),
+    ops: HANDWRITING_OPS.slice(),
+    refuse_codes: [REFUSE_NO_INK, REFUSE_UNSUPPORTED, REFUSE_LIMIT],
+    feature_matrix: { ...HANDWRITING_FEATURES },
+    live_signals: live,
+    slot_signals: slot,
+    no_lie: true,
+    guessed_letters: false,
+    forensic_certification: false,
+    esda: false,
+    chemical_ink_dating: false,
+    writer_identification_as_fact: false,
+    heatmap_is_transcript: false,
+    heatmap_is_court_finding: false,
+    catalog_door: false,
+    worker_path: "/v1/handwriting",
+    hosted_preview: true,
+    max_side: MAX_SIDE,
+    jpeg: false,
+    note: HANDWRITING_NOTE,
+    author: "Aziel Eliab",
+    status: "live",
+  };
+}
+
+function handwritingIndicator(kind, note, confidence, extra) {
+  return {
+    kind,
+    note,
+    phrasing: "indicator / heuristic / candidate — human verification required",
+    confidence: Math.max(0, Math.min(1, Number(confidence.toFixed(3)))),
+    confidence_means: "pixel signal quality, not a finding that this is forged",
+    invented: false,
+    ...(extra || {}),
+  };
+}
+
+function inkMaskFromLuma(L, n) {
+  const sorted = Array.from(L).sort((a, b) => a - b);
+  const paper = sorted[Math.min(n - 1, Math.floor(n * 0.88))] || 0.92;
+  const thresh = Math.max(0.08, paper - 0.16);
+  const ink = new Uint8Array(n);
+  let count = 0;
+  for (let i = 0; i < n; i++) {
+    if (L[i] < thresh) { ink[i] = 1; count += 1; }
+  }
+  return { ink, frac: n ? count / n : 0, paper };
+}
+
+function radiusWidth(ink, w, h) {
+  const widths = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (!ink[i]) continue;
+      let best = 8;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        let d = 1;
+        while (d < best) {
+          const nx = x + dx * d, ny = y + dy * d;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h || !ink[ny * w + nx]) { best = d; break; }
+          d += 1;
+        }
+      }
+      widths.push(best * 2);
+    }
+  }
+  if (!widths.length) return { mean: 0, std: 0, cv: 0, min: 0, max: 0 };
+  const mean = widths.reduce((a, b) => a + b, 0) / widths.length;
+  const var_ = widths.reduce((a, b) => a + (b - mean) * (b - mean), 0) / widths.length;
+  const std = Math.sqrt(var_);
+  return { mean, std, cv: std / Math.max(mean, 1e-3), min: Math.min(...widths), max: Math.max(...widths) };
+}
+
+function sobelMag(L, w, h) {
+  const mag = new Float32Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const gx =
+        -L[i - w - 1] + L[i - w + 1] +
+        -2 * L[i - 1] + 2 * L[i + 1] +
+        -L[i + w - 1] + L[i + w + 1];
+      const gy =
+        -L[i - w - 1] - 2 * L[i - w] - L[i - w + 1] +
+        L[i + w - 1] + 2 * L[i + w] + L[i + w + 1];
+      mag[i] = Math.hypot(gx, gy);
+    }
+  }
+  return mag;
+}
+
+function labelInk(ink, w, h, limit = 48) {
+  const seen = new Uint8Array(w * h);
+  const comps = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const start = y * w + x;
+      if (!ink[start] || seen[start]) continue;
+      const stack = [start];
+      seen[start] = 1;
+      let xs = 0, ys = 0, n = 0;
+      let x0 = x, x1 = x, y0 = y, y1 = y;
+      while (stack.length && n < 80000) {
+        const i = stack.pop();
+        const cy = Math.floor(i / w), cx = i - cy * w;
+        xs += cx; ys += cy; n += 1;
+        if (cx < x0) x0 = cx; if (cx > x1) x1 = cx;
+        if (cy < y0) y0 = cy; if (cy > y1) y1 = cy;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = cx + dx, ny = cy + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            const ni = ny * w + nx;
+            if (ink[ni] && !seen[ni]) { seen[ni] = 1; stack.push(ni); }
+          }
+        }
+      }
+      if (n < 8) continue;
+      comps.push({
+        id: "s" + comps.length,
+        bbox: [x0, y0, x1, y1],
+        area: n,
+        cx: xs / n,
+        cy: ys / n,
+        width: x1 - x0 + 1,
+        height: y1 - y0 + 1,
+        aspect: (x1 - x0 + 1) / Math.max(1, y1 - y0 + 1),
+      });
+      if (comps.length >= limit) return comps;
+    }
+  }
+  comps.sort((a, b) => a.cx - b.cx || a.cy - b.cy);
+  comps.forEach((c, i) => { c.id = "s" + i; });
+  return comps;
+}
+
+function clonePairs(L, w, h) {
+  const size = 8;
+  const seen = new Map();
+  for (let y = 0; y <= h - size; y += size) {
+    for (let x = 0; x <= w - size; x += size) {
+      let hash = 2166136261;
+      for (let dy = 0; dy < size; dy++) {
+        for (let dx = 0; dx < size; dx++) {
+          const q = Math.min(15, Math.max(0, Math.floor(L[(y + dy) * w + (x + dx)] * 15)));
+          hash ^= q;
+          hash = Math.imul(hash, 16777619);
+        }
+      }
+      hash >>>= 0;
+      if (!seen.has(hash)) seen.set(hash, []);
+      seen.get(hash).push([x, y]);
+    }
+  }
+  const clones = [];
+  for (const pts of seen.values()) {
+    if (pts.length < 2) continue;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        if (Math.abs(pts[i][0] - pts[j][0]) + Math.abs(pts[i][1] - pts[j][1]) >= 16) {
+          clones.push([pts[i][0], pts[i][1], pts[j][0], pts[j][1]]);
+          if (clones.length >= 6) return clones;
+        }
+      }
+    }
+  }
+  return clones;
+}
+
+async function sha256HexU8(u8) {
+  const digest = await crypto.subtle.digest("SHA-256", u8);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function heatmapOverlay(arr, w, h, kind) {
+  const rgb = grayToRgb(norm01(arr));
+  const png = await encodePng(rgb, w, h);
+  return {
+    kind,
+    note: "heatmap ≠ transcript",
+    media_type: "image/png",
+    b64: bytesToB64(png),
+    sha256: await sha256HexU8(png),
+    heatmap_is_transcript: false,
+    heatmap_is_court_finding: false,
+    invented: false,
+  };
+}
+
+async function analyzeHandwritingBuf(buf, w, h, filename, srcW, srcH, limited) {
+  const n = w * h;
+  const L = toLuma(buf, w, h);
+  const { ink, frac, paper } = inkMaskFromLuma(L, n);
+  const rgbBytes = new Uint8Array(buf.length);
+  for (let i = 0; i < buf.length; i++) rgbBytes[i] = Math.max(0, Math.min(255, Math.round(buf[i] * 255)));
+  const env = {
+    product: "spectrallock",
+    author: "Aziel Eliab",
+    family: "handwriting",
+    op: "analyze",
+    artifact: {
+      filename,
+      width: srcW,
+      height: srcH,
+      analyze_width: w,
+      analyze_height: h,
+      scale: limited ? MAX_SIDE / Math.max(srcW, srcH) : 1,
+      sha256: await sha256HexU8(rgbBytes),
+      invented: false,
+    },
+    strokes: [],
+    features: { weight: [], speed_cues: [], density: [], bleed: [], shifts: [], erasures: [], tracing: [] },
+    forgery_indicators: [],
+    side_by_side: [],
+    graph: { nodes: [], edges: [], invented: false },
+    overlays: [],
+    provenance: [],
+    refused: [],
+    warnings: [
+      "synthetic_image_analysis_not_lab",
+      "not_forensic_certification",
+      "heatmap_is_not_transcript",
+      "heatmap_is_not_court_finding",
+      "human_verification_required",
+      "hosted_preview_256px_png",
+    ],
+    helper_modes: [],
+    no_lie: true,
+    guessed_letters: false,
+    esda: false,
+    chemical_ink_dating: false,
+    writer_identification_as_fact: false,
+    forensic_certification: false,
+    hosted_preview: true,
+    lamb_lens: "Service → Clarity → Peace",
+    identity: "Aziel Eliab",
+    note: HANDWRITING_NOTE,
+    inject_note: INJECT_NOTE,
+    limitation: LIMITATION,
+    invented: false,
+  };
+  if (limited) {
+    env.warnings.push(REFUSE_LIMIT);
+    env.hosted_cap = MAX_SIDE;
+  }
+  if (frac < 0.004) {
+    env.refuse_code = REFUSE_NO_INK;
+    env.refused.push({
+      code: REFUSE_NO_INK,
+      note: "No writable ink-like strokes found in the supplied pixels.",
+      invented: false,
+    });
+    env.stop = true;
+    return env;
+  }
+
+  const wt = radiusWidth(ink, w, h);
+  env.features.weight.push({
+    mean_px: Number(wt.mean.toFixed(3)),
+    std_px: Number(wt.std.toFixed(3)),
+    cv: Number(wt.cv.toFixed(3)),
+    note: "pressure proxy from stroke width. Not a force measurement. Hosted uses 4-dir radius.",
+    invented: false,
+  });
+
+  let densSum = 0, densN = 0, tremorSum = 0;
+  const density = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    density[i] = 1 - L[i];
+    if (ink[i]) { densSum += density[i]; densN += 1; }
+  }
+  const inkDensity = densN ? densSum / densN : 0;
+  env.features.density.push({
+    mean: Number(inkDensity.toFixed(4)),
+    note: "darkness of ink-mask pixels. Not pigment mass.",
+    invented: false,
+  });
+
+  const mag = sobelMag(L, w, h);
+  const ring = new Uint8Array(n);
+  let bleedSum = 0, bleedN = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      if (ink[i]) continue;
+      if (ink[i - 1] || ink[i + 1] || ink[i - w] || ink[i + w]) {
+        ring[i] = 1;
+        bleedSum += mag[i];
+        bleedN += 1;
+      }
+    }
+  }
+  env.features.bleed.push({
+    edge_grad_mean: Number((bleedN ? bleedSum / bleedN : 0).toFixed(4)),
+    note: "capillary-spread / feathering proxy from edge gradient. Not a paper assay.",
+    invented: false,
+  });
+
+  const blur = new Float32Array(n);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let s = 0, c = 0;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          s += L[ny * w + nx]; c += 1;
+        }
+      }
+      blur[y * w + x] = s / c;
+    }
+  }
+  for (let i = 0; i < n; i++) if (ink[i]) tremorSum += Math.abs(L[i] - blur[i]);
+  const tremor = densN ? tremorSum / densN : 0;
+  env.features.speed_cues.push({
+    tremor: Number(tremor.toFixed(4)),
+    taper_px: Number((wt.max - wt.min).toFixed(3)),
+    ballistic_vs_controlled: tremor > 0.035 && wt.std < 0.6 ? "controlled-candidate" : "fluent-or-unclear",
+    note: "shape cues only. Speed in mm/s is SLOT.",
+    invented: false,
+  });
+
+  const rowCents = new Map();
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (!ink[y * w + x]) continue;
+      const k = Math.floor(y / 4);
+      if (!rowCents.has(k)) rowCents.set(k, []);
+      rowCents.get(k).push(y);
+    }
+  }
+  const cents = [...rowCents.entries()].filter(([, v]) => v.length > 6).map(([, v]) => v.reduce((a, b) => a + b, 0) / v.length);
+  const shifts = [];
+  if (cents.length >= 3) {
+    const meanC = cents.reduce((a, b) => a + b, 0) / cents.length;
+    const drift = Math.sqrt(cents.reduce((a, b) => a + (b - meanC) * (b - meanC), 0) / cents.length);
+    env.features.shifts.push({
+      baseline_drift_px: Number(drift.toFixed(3)),
+      note: "row-centroid drift. Not proof of a second writer.",
+      invented: false,
+    });
+    shifts.push(drift);
+  }
+
+  const bright = new Float32Array(n);
+  const ghost = new Float32Array(n);
+  let brightOn = false, ghostOn = false, bx0 = w, by0 = h, bx1 = 0, by1 = 0, gx0 = w, gy0 = h, gx1 = 0, gy1 = 0;
+  let ghostN = 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (ink[i]) continue;
+      if (L[i] > Math.min(0.97, paper + 0.04)) {
+        bright[i] = 1; brightOn = true;
+        if (x < bx0) bx0 = x; if (y < by0) by0 = y; if (x > bx1) bx1 = x; if (y > by1) by1 = y;
+      }
+      if (L[i] > 0.55 && L[i] < 0.78 && mag[i] > 0.08) {
+        ghost[i] = 1; ghostN += 1;
+        if (x < gx0) gx0 = x; if (y < gy0) gy0 = y; if (x > gx1) gx1 = x; if (y > gy1) gy1 = y;
+      }
+    }
+  }
+  if (brightOn) {
+    env.features.erasures.push({
+      kind: "abrasion-brightening",
+      frac: Number((bright.reduce((a, b) => a + b, 0) / n).toFixed(4)),
+      bbox: [bx0, by0, bx1, by1],
+      note: "candidate white-out / abrasion. Human verification required.",
+      invented: false,
+    });
+  }
+  if (ghostN / n > 0.002) {
+    ghostOn = true;
+    env.features.erasures.push({
+      kind: "residual-ghost",
+      frac: Number((ghostN / n).toFixed(4)),
+      bbox: [gx0, gy0, gx1, gy1],
+      note: "mid-gray residual near strokes. Not recovered letters.",
+      invented: false,
+    });
+  }
+
+  const comps = labelInk(ink, w, h);
+  env.strokes = comps.map((c) => ({
+    id: c.id, bbox: c.bbox, area: c.area,
+    center: [Number(c.cx.toFixed(1)), Number(c.cy.toFixed(1))],
+    aspect: Number(c.aspect.toFixed(3)), invented: false,
+  }));
+  const nodes = comps.map((c) => ({ id: c.id, kind: "stroke-segment", bbox: c.bbox, area: c.area, invented: false }));
+  const edges = [];
+  for (let i = 0; i < comps.length - 1; i++) {
+    const a = comps[i], b = comps[i + 1];
+    const dist = Math.hypot(a.cx - b.cx, a.cy - b.cy);
+    const anomalous = dist > Math.max(w, h) * 0.35 || Math.abs(a.aspect - b.aspect) > 2.2;
+    edges.push({
+      from: a.id, to: b.id, kind: "sequence",
+      distance_px: Number(dist.toFixed(2)),
+      anomalous,
+      note: anomalous ? "anomalous edge is a heuristic flag, not a forgery finding" : "sequence",
+      invented: false,
+    });
+  }
+  env.graph = { nodes, edges, invented: false };
+
+  if (wt.mean > 0 && wt.cv < 0.18 && comps.length >= 4) {
+    env.features.tracing.push({
+      kind: "unnatural-width-uniformity",
+      cv: Number(wt.cv.toFixed(3)),
+      note: "candidate careful tracing / guide. Heuristic only.",
+      invented: false,
+    });
+  }
+
+  const indicators = [];
+  if (tremor > 0.04 && wt.std < 0.85) {
+    indicators.push(handwritingIndicator(
+      "tremor-slow-copy",
+      "High-frequency wobble with relatively uniform width — careful-copy candidate.",
+      Math.min(0.85, 0.35 + tremor * 8),
+    ));
+  }
+  if (comps.length >= 8) {
+    indicators.push(handwritingIndicator(
+      "pen-lifts",
+      comps.length + " disconnected ink components — lifts or fragmentation. Unnatural only in context.",
+      Math.min(0.7, 0.25 + comps.length * 0.03),
+    ));
+  }
+  let darkFrac = 0;
+  for (let i = 0; i < n; i++) if (L[i] < 0.12) darkFrac += 1;
+  darkFrac /= n;
+  if (darkFrac > 0.01 && inkDensity > 0.55) {
+    indicators.push(handwritingIndicator(
+      "retouch-overwrite",
+      "Very dark cores inside the ink mask — retouch / patching candidate.",
+      0.55,
+    ));
+  }
+  let hueSum = 0, hueN = 0, satSum = 0;
+  const hues = [];
+  for (let i = 0, p = 0; i < n; i++, p += 3) {
+    if (!ink[i]) continue;
+    const hsv = rgbToHsv(buf[p], buf[p + 1], buf[p + 2]);
+    hues.push(hsv[0]);
+    satSum += hsv[1];
+    hueN += 1;
+  }
+  if (hueN && satSum / hueN > 0.08) {
+    const hm = hues.reduce((a, b) => a + b, 0) / hues.length;
+    const hueStd = Math.sqrt(hues.reduce((a, b) => a + (b - hm) * (b - hm), 0) / hues.length);
+    if (hueStd > 28) {
+      indicators.push(handwritingIndicator(
+        "dual-ink-patch",
+        "Stroke-pixel hue clusters differ — dual-ink / later addition candidate.",
+        Math.min(0.75, 0.3 + hueStd / 80),
+        { hue_std: Number(hueStd.toFixed(2)) },
+      ));
+    }
+  }
+  if (shifts.length && shifts[0] > 3.5) {
+    indicators.push(handwritingIndicator(
+      "baseline-misalign",
+      "Baseline centroids drift across the line — not continuous-writing proof, a pixel flag.",
+      Math.min(0.7, 0.3 + shifts[0] / 20),
+    ));
+  }
+  const clones = clonePairs(L, w, h);
+  if (clones.length) {
+    indicators.push(handwritingIndicator(
+      "clone-stamp",
+      "Repeated 8×8 luminance hashes far apart — digital copy-paste / clone-stamp candidate on the scan.",
+      Math.min(0.9, 0.5 + 0.06 * clones.length),
+      { bbox: [clones[0][0], clones[0][1], clones[0][2] + 8, clones[0][3] + 8], pair_count: clones.length },
+    ));
+  }
+  const blockStd = [];
+  for (let y = 0; y <= h - 8; y += 8) {
+    for (let x = 0; x <= w - 8; x += 8) {
+      let s = 0, c = 0;
+      for (let dy = 0; dy < 8; dy++) for (let dx = 0; dx < 8; dx++) { s += L[(y + dy) * w + x + dx]; c += 1; }
+      const m = s / c;
+      let v = 0;
+      for (let dy = 0; dy < 8; dy++) for (let dx = 0; dx < 8; dx++) {
+        const d = L[(y + dy) * w + x + dx] - m;
+        v += d * d;
+      }
+      blockStd.push(Math.sqrt(v / c));
+    }
+  }
+  if (blockStd.length) {
+    const bm = blockStd.reduce((a, b) => a + b, 0) / blockStd.length;
+    const bs = Math.sqrt(blockStd.reduce((a, b) => a + (b - bm) * (b - bm), 0) / blockStd.length);
+    if (bs > 0.045) {
+      indicators.push(handwritingIndicator(
+        "compression-paste",
+        "8×8 block-energy spread — compression / composite paste-up candidate.",
+        Math.min(0.65, 0.25 + bs * 4),
+      ));
+    }
+  }
+  const aspects = comps.map((c) => c.aspect);
+  if (aspects.length >= 6 && Math.max(...aspects) - Math.min(...aspects) > 3.5) {
+    indicators.push(handwritingIndicator(
+      "style-shift",
+      "Component aspect ratios jump (print↔cursive heuristic). Not a single-writer fact.",
+      0.4,
+    ));
+  }
+
+  try {
+    const helpers = [
+      ["indent", applyMode(buf, w, h, "indent", false), "ISA-1.0 inject OFF. Surface-relief heuristic, not ESDA."],
+      ["lemon", applyMode(buf, w, h, "lemon", false), "LISA-1.0 inject OFF. Does not invent marks."],
+      ["uv", applyMode(buf, w, h, "uv", false), "Synthetic UV look. Not a lamp."],
+      ["candle", applyMode(buf, w, h, "candle", false), "Synthetic candle look. Not a flame test."],
+    ];
+    for (const [mode, out, note] of helpers) {
+      const Hl = toLuma(out, w, h);
+      let diff = 0, dn = 0;
+      for (let i = 0; i < n; i++) {
+        if (mode === "indent" && !ink[i]) continue;
+        diff += Math.abs(Hl[i] - L[i]);
+        dn += 1;
+      }
+      const mean = dn ? diff / dn : 0;
+      env.helper_modes.push({
+        mode, inject: false, contributed: mean > 0.01, note, invented: false,
+      });
+      if (mode === "indent" && mean > 0.035) {
+        indicators.push(handwritingIndicator(
+          "indent-mismatch",
+          "Indent helper (inject OFF) differs from surface ink — indentation vs wet-ink mismatch candidate. Not ESDA.",
+          Math.min(0.6, 0.25 + mean * 4),
+          { helper_mode: "indent" },
+        ));
+      }
+    }
+    env.helper_modes.push({
+      mode: "residual-lift",
+      inject: false,
+      contributed: true,
+      note: "Residual / contrast with inject OFF. Heatmap ≠ transcript.",
+      invented: false,
+    });
+  } catch {
+    env.warnings.push("helper-modes-skipped");
+  }
+
+  env.forgery_indicators = indicators;
+  const densMap = new Float32Array(n);
+  const bleedMap = new Float32Array(n);
+  const eraseMap = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    densMap[i] = ink[i] ? density[i] : 0;
+    bleedMap[i] = ring[i] ? mag[i] : 0;
+    eraseMap[i] = bright[i] + 0.5 * ghost[i];
+  }
+  env.overlays = [
+    await heatmapOverlay(densMap, w, h, "density"),
+    await heatmapOverlay(bleedMap, w, h, "bleed"),
+    await heatmapOverlay(eraseMap, w, h, "erasure-candidates"),
+  ];
+  env.provenance.push({
+    file_path: filename,
+    recovery_method: "ink-mask-luminance",
+    ink_frac: Number(frac.toFixed(5)),
+    state: "present_current",
+    human_verification_required: true,
+    invented: false,
+  });
+  void hueSum;
+  void ghostOn;
+  return env;
+}
+
+function compareHandwritingPair(a, b) {
+  const take = (env, key, field) => {
+    const row = ((env.features || {})[key] || [])[0] || {};
+    return Number(row[field] || 0);
+  };
+  return {
+    weight_delta: Number((take(a, "weight", "mean_px") - take(b, "weight", "mean_px")).toFixed(4)),
+    density_delta: Number((take(a, "density", "mean") - take(b, "density", "mean")).toFixed(4)),
+    bleed_delta: Number((take(a, "bleed", "edge_grad_mean") - take(b, "bleed", "edge_grad_mean")).toFixed(4)),
+    indicator_kinds_a: (a.forgery_indicators || []).map((i) => i.kind),
+    indicator_kinds_b: (b.forgery_indicators || []).map((i) => i.kind),
+    note: "Pixel-feature delta only. Not a same-writer or forgery verdict.",
+    invented: false,
+  };
+}
+
+export async function handwritingFromB64(b64, extras = {}) {
+  const op = parseHandwritingOp(extras.op || extras.verb || "analyze");
+  if (!op) {
+    return { family: "handwriting", error: "unknown handwriting op", known: HANDWRITING_OPS, no_lie: true, note: HANDWRITING_NOTE };
+  }
+  let decoded;
+  try {
+    decoded = await decodePng(b64ToBytes(b64));
+  } catch {
+    return {
+      family: "handwriting",
+      op,
+      refuse_code: REFUSE_UNSUPPORTED,
+      refused: [{ code: REFUSE_UNSUPPORTED, note: "Not a readable PNG scan. Hosted preview is PNG only; local package accepts JPEG.", invented: false }],
+      warnings: ["synthetic_image_analysis_not_lab", "not_forensic_certification", "hosted_png_only"],
+      no_lie: true,
+      note: HANDWRITING_NOTE,
+      invented: false,
+    };
+  }
+  const limited = Math.max(decoded.w, decoded.h) > MAX_SIDE;
+  const capped = capSide(decoded.buf, decoded.w, decoded.h);
+  const env = await analyzeHandwritingBuf(
+    capped.buf, capped.w, capped.h,
+    extras.filename || "scan.png",
+    decoded.w, decoded.h, limited,
+  );
+  env.op = op;
+
+  if (extras.twin_b64) {
+    try {
+      const twinDec = await decodePng(b64ToBytes(extras.twin_b64));
+      const twinCap = capSide(twinDec.buf, twinDec.w, twinDec.h);
+      const twinEnv = await analyzeHandwritingBuf(
+        twinCap.buf, twinCap.w, twinCap.h,
+        extras.twin_name || "known.png",
+        twinDec.w, twinDec.h,
+        Math.max(twinDec.w, twinDec.h) > MAX_SIDE,
+      );
+      env.side_by_side = [
+        { role: "questioned", filename: extras.filename || "scan.png", artifact: env.artifact, invented: false },
+        { role: "known", filename: extras.twin_name || "known.png", artifact: twinEnv.artifact, invented: false },
+      ];
+      env.compare = compareHandwritingPair(env, twinEnv);
+      env.twin = {
+        filename: extras.twin_name || "known.png",
+        forgery_indicators: twinEnv.forgery_indicators,
+        features: twinEnv.features,
+        refuse_code: twinEnv.refuse_code,
+        invented: false,
+      };
+      if (decoded.w === twinDec.w && decoded.h === twinDec.h) {
+        const La = toLuma(decoded.buf, decoded.w, decoded.h);
+        const Lb = toLuma(twinDec.buf, twinDec.w, twinDec.h);
+        let abs = 0, changed = 0;
+        for (let i = 0; i < La.length; i++) {
+          const d = Math.abs(La[i] - Lb[i]);
+          abs += d;
+          if (d > 0.08) changed += 1;
+        }
+        env.revision_compare = {
+          mean_abs_delta: Number((abs / La.length).toFixed(5)),
+          changed_frac: Number((changed / La.length).toFixed(5)),
+          note: "Same-raster delta. Ink added later / white-out / paste candidate if changed_frac is high. Not a verdict.",
+          invented: false,
+        };
+      }
+    } catch {
+      env.warnings.push("twin-unreadable");
+    }
+  }
+
+  if (op === "refuse") {
+    if (env.refuse_code) env.stop = true;
+    else env.note = "Refuse requested but ink-like strokes are present. Reported as candidates, not invented.";
+    return env;
+  }
+  if (op === "forgery-indicators") env.recovered_view = env.forgery_indicators;
+  if (op === "graph") env.recovered_view = env.graph;
+  if ((op === "compare" || op === "side-by-side") && !extras.twin_b64) {
+    env.warnings.push("compare/side-by-side needs a second scan (twin_b64).");
   }
   return env;
 }

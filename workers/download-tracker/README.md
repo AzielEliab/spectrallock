@@ -25,6 +25,7 @@ Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic
 - Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px. `inject` true|false is paint, not pigment. LIVE: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon (aliases resolve). Rosetta preview.
 - Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query, twin_b64?}` locate / leftover-historical recover / residual lift. Returns `revision_graph` (startxref/Prev edges + per-revision tip-cut copies / embeds). Opaque rewrite + no leftover → `SL-UNREDACT-OPAQUE`. Never invents letters. Heatmaps are not transcripts. OCR only after structural recovery. Hosted may cap copy `b64` and cite sha256+offsets — no invented bytes.
 - Recover: `GET /v1/recover` ops + LIVE vs SLOT; `POST /v1/recover` `{b64, op, filename, twin_b64?}`. Present bytes only. Secrets suppressed. SLOT ≠ LIVE.
+- Handwriting: `GET /v1/handwriting` ops + LIVE vs SLOT; `POST /v1/handwriting` `{b64, op, filename, twin_b64?}`. Synthetic ink-on-paper scan heuristics. 256 px PNG preview. Not ESDA / chemical dating / writer identity / court finding.
 - Setup HTML: `GET /ai`
 
 Banner: Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.

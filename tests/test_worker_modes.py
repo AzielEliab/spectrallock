@@ -180,6 +180,65 @@ process.stdout.write(JSON.stringify({{ ok: true, leftover: loc.leftover_bytes, r
     assert body["stale"] is True
 
 
+def test_overlay_js_handwriting_in_node() -> None:
+    node = shutil.which("node")
+    assert node, "node is required to execute overlay handwriting helpers"
+    script = f"""
+import {{ listHandwriting, parseHandwritingOp, handwritingFromB64, encodePng, REFUSE_NO_INK, REFUSE_UNSUPPORTED, HANDWRITING_NOTE }} from {json.dumps(str(OVERLAY))};
+if (parseHandwritingOp("handwrite") !== "analyze") throw new Error("handwrite alias");
+if (parseHandwritingOp("forgery-scan") !== "forgery-indicators") throw new Error("forgery alias");
+const card = listHandwriting();
+if (!card.no_lie || card.esda || card.writer_identification_as_fact || card.forensic_certification) throw new Error("card honesty");
+if (card.catalog_door) throw new Error("invented door");
+if (card.worker_path !== "/v1/handwriting") throw new Error("path");
+if (!HANDWRITING_NOTE.includes("Not ESDA")) throw new Error("note");
+const w = 96, h = 64;
+const buf = new Float32Array(w * h * 3);
+for (let i = 0; i < buf.length; i++) buf[i] = 0.92;
+for (let y = 24; y <= 32; y++) for (let x = 8; x < 80; x++) {{
+  const p = (y * w + x) * 3; buf[p] = buf[p+1] = buf[p+2] = 0.08;
+}}
+const png = await encodePng(buf, w, h);
+const heavy = await handwritingFromB64(Buffer.from(png).toString("base64"), {{ op: "analyze", filename: "heavy.png" }});
+if (heavy.refuse_code === REFUSE_NO_INK) throw new Error("expected ink");
+if (!heavy.features.weight.length) throw new Error("weight");
+if (heavy.esda || heavy.forensic_certification || heavy.writer_identification_as_fact) throw new Error("honesty flags");
+if (!heavy.helper_modes.some((m) => m.mode === "indent" && String(m.note).includes("not ESDA"))) throw new Error("indent helper");
+const blank = new Float32Array(32 * 32 * 3);
+for (let i = 0; i < blank.length; i++) blank[i] = 0.92;
+const blankPng = await encodePng(blank, 32, 32);
+const noInk = await handwritingFromB64(Buffer.from(blankPng).toString("base64"), {{ op: "analyze" }});
+if (noInk.refuse_code !== REFUSE_NO_INK) throw new Error("no-ink");
+const bad = await handwritingFromB64(Buffer.from("not-png").toString("base64"), {{ op: "analyze" }});
+if (bad.refuse_code !== REFUSE_UNSUPPORTED) throw new Error("unsupported");
+const cw = 120, ch = 80;
+const cbuf = new Float32Array(cw * ch * 3);
+for (let i = 0; i < cbuf.length; i++) cbuf[i] = 0.92;
+for (let y = 18; y < 28; y++) for (let x = 8; x < 40; x++) {{
+  const p = (y * cw + x) * 3; cbuf[p] = cbuf[p+1] = cbuf[p+2] = 0.10;
+}}
+for (let y = 18; y < 28; y++) for (let x = 70; x < 102; x++) {{
+  const src = (y * cw + (x - 62)) * 3;
+  const dst = (y * cw + x) * 3;
+  cbuf[dst] = cbuf[src]; cbuf[dst+1] = cbuf[src+1]; cbuf[dst+2] = cbuf[src+2];
+}}
+for (let y = 40; y < 50; y++) for (let x = 70; x < 102; x++) {{
+  const src = ((y - 22) * cw + (x - 62)) * 3;
+  const dst = (y * cw + x) * 3;
+  cbuf[dst] = cbuf[src]; cbuf[dst+1] = cbuf[src+1]; cbuf[dst+2] = cbuf[src+2];
+}}
+const clonePng = await encodePng(cbuf, cw, ch);
+const cloned = await handwritingFromB64(Buffer.from(clonePng).toString("base64"), {{ op: "forgery-indicators", filename: "clone.png" }});
+if (!cloned.forgery_indicators.some((i) => i.kind === "clone-stamp")) throw new Error("clone-stamp");
+if (!cloned.forgery_indicators.every((i) => i.phrasing.includes("human verification required"))) throw new Error("phrasing");
+process.stdout.write(JSON.stringify({{ ok: true, weight: heavy.features.weight[0].mean_px, clones: cloned.forgery_indicators.length }}));
+"""
+    raw = subprocess.check_output([node, "--input-type=module", "-e", script], text=True)
+    body = json.loads(raw)
+    assert body["ok"] is True
+    assert body["weight"] > 0
+
+
 def test_overlay_js_inject_and_inband_in_node() -> None:
     node = shutil.which("node")
     assert node, "node is required to execute overlay inject helpers"

@@ -238,6 +238,32 @@ Runtime rehash after merge still copies `overlay.js` only, then
 `node scripts/hash-engines.mjs --write`. GitBaby CLEARs `spectrallock`
 then bumps aziel-runtime. Do not invent a digest.
 
+## Handwriting / ink-on-paper (operator lock — NO-LIE)
+
+`spectrallock handwriting` and `GET|POST /v1/handwriting` analyze
+user-supplied scans or photos of physical ink on paper. This is
+**synthetic image analysis**, not a lab instrument.
+
+LIVE pixel heuristics: stroke-weight variation (width / darkness as a
+pressure *proxy*), speed *cues* (taper, tremor frequency, ballistic vs
+controlled shape), ink density, bleed / feathering, baseline / slant /
+size shifts, erasure candidates (abrasion brightening, residual ghosts),
+tracing (doubled-edge / unnatural uniformity), and a non-exhaustive
+forgery-indicator list (tremor-copy, unnatural lifts, retouch, dual-ink,
+clone-stamp, compression discontinuities, ductus, style-shift). Side-by-side
+questioned vs known. Stroke/feature graph. Density / bleed / erasure
+heatmaps. Spectral helpers (`uv`, `candle`, `indent`, `lemon`) may be
+cited with inject OFF when they strengthen a present-pixel signal.
+
+SLOT and never claimed: ESDA, chemical ink dating, force in newtons,
+speed in mm/s, court-qualified examiner opinion, writer identification
+as identity fact. Confidence is pixel signal quality, not “this is
+forged.” Phrasing is always indicator / heuristic / candidate — human
+verification required. Empty gate ≠ broken lens. Balance / lemon never
+invent marks. Hosted preview is size-capped PNG; the full pipeline is
+the Python package. Audit: `docs/audit/HANDWRITING-FORGERY-AUDIT.md`.
+Do not invent a FragGate `handwriting` door.
+
 ## Hosted preview vs package
 
 The Cloudflare Worker `/v1/overlay` is a simplified JavaScript port
