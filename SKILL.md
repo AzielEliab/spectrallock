@@ -31,7 +31,7 @@ Ops (do **not** increment downloads or views):
 | GET | `/v1/modes` | List SpectralLock lenses (canonical ids + aliases). |
 | GET | `/v1/lenses` | Alias for `/v1/modes`. |
 | GET | `/v1/targets` | Ink and page targets. |
-| POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses` and `target` (`ink`\|`page`). |
+| POST | `/v1/overlay` | Rosetta spectral overlay on a posted PNG (base64). Accepts `mode`/`lens`/`lenses`, `target` (`ink`\|`page`), and `inject` (`true`\|`false`). ON is false-color membership tint (paint), not recovered pigment. OFF is gray of the same gate. Zero ignores the switch. Returns `tazel_inband_pct` and `vyrn_inband_pct` before any hit claim. 256 px preview; prefer local `spectrallock_inject.py`. |
 | GET | `/v1/mesh` | PROXY suite mesh status. Default OFF. QNM live|locked|isolated. QNS-CD-1.0 cross-map (photon QNS1; not a Softwares-tab product). Never enables. No public qnsd proxy. |
 | GET | `/v1/mesh/nodes` | PROXY Live Nodes roster (5-minute presence). Peers see the QNS-CD-1.0 cross-map. |
 | POST | `/v1/mesh/{enable,disable,join,heartbeat,leave,broadcast}` | PROXY. Bearer required to enable. No auto-heal. Anon-broadcast is not a publish path. |
@@ -72,6 +72,8 @@ Author: **Aziel Eliab**. Rosetta spectral analysis. 256px hosted preview; full p
 - Sample payload: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/example`
 - Suite mesh: `GET https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh` PROXY (default OFF; QNS-CD-1.0 cross-map)
 
-Local UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page. Then `spectrallock doctor`. Worker homepage Live Nodes strip polls `GET /v1/mesh` (default OFF). QNS-CD-1.0 is a hub cite / Worker mesh cross-map only — not a Softwares-tab product; no public qnsd proxy.
+Local UI: **Import JSON file** (`type=file`) and **Export JSON**. Lenses + Ink/Page + inject ON/OFF. Then `spectrallock doctor`. Worker homepage Live Nodes strip polls `GET /v1/mesh` (default OFF). QNS-CD-1.0 is a hub cite / Worker mesh cross-map only — not a Softwares-tab product; no public qnsd proxy.
+
+Color inject (operator lock 19 Sep 2026): `--inject` / `--no-inject` on every named mode. ON paints membership; OFF is luminance of the same gate; `zero` stays gray. tazel=170° `#1EC9A5`, vyrn=350° `#C00066`. UV is synthetic, not a lamp. Balance does not invent marks. Report `tazel_inband_pct` and `vyrn_inband_pct` before claiming a hit. Empty gate ≠ broken lens. Prefer `python3 spectrallock_inject.py`. Identity: Aziel Eliab. Lamb Lens: Service → Clarity → Peace. NO-LIE.
 
 Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants. Import catalog or Worker OpenAPI as a custom tool, GPT Action, HTTP tool, or MCP connector. MCP clients can use the catalog MCP endpoint. Suite mesh: `GET /v1/mesh` PROXY (default OFF). QNS-CD-1.0 cross-map (photon QNS1 packet transfer). Catalog MCP `mesh_*` + FragGate `slug=mesh`.

@@ -23,6 +23,7 @@ from spectrallock.engine import (
     make_receipt,
     normalize_lenses,
     normalize_target,
+    parse_inject,
     png_bytes,
     sha256_hex,
     synthetic_page,
@@ -145,6 +146,7 @@ class Handler(BaseHTTPRequestHandler):
         lens_values: list[str] = []
         img_bytes = raw
         as_json = False
+        inject = True
         if "application/json" in ctype:
             try:
                 payload = json.loads(raw.decode("utf-8") or "{}")
@@ -156,6 +158,12 @@ class Handler(BaseHTTPRequestHandler):
                 return
             mode = str(payload.get("mode") or payload.get("lens") or "rosetta")
             target = str(payload.get("target") or payload.get("polarity") or "ink")
+            if "inject" in payload:
+                inject = parse_inject(payload.get("inject"))
+            elif "no_inject" in payload:
+                inject = not parse_inject(payload.get("no_inject"), default=False)
+            elif "tint" in payload:
+                inject = parse_inject(payload.get("tint"))
             extra_lenses = payload.get("lenses") or payload.get("lens")
             if extra_lenses:
                 if isinstance(extra_lenses, (list, tuple)):
@@ -175,7 +183,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             as_json = True
         elif "multipart/form-data" in ctype:
-            mode, img_bytes, target, lens_values = _parse_multipart(raw, self.headers.get("Content-Type") or "")
+            mode, img_bytes, target, lens_values, inject = _parse_multipart(raw, self.headers.get("Content-Type") or "")
             if not img_bytes:
                 self._json(400, {"error": NO_PICTURE, "advisory": LIMITATION})
                 return
@@ -187,6 +195,8 @@ class Handler(BaseHTTPRequestHandler):
                 lens_values.extend(qs["lens"])
             if "target" in qs:
                 target = qs["target"][0]
+            if "inject" in qs:
+                inject = parse_inject(qs["inject"][0])
         try:
             rgb = load_rgb_bytes(img_bytes)
         except ValueError as exc:
@@ -203,7 +213,7 @@ class Handler(BaseHTTPRequestHandler):
                 lenses=lens_values or None,
             )
             dest = normalize_target(target)
-            result = analyze(rgb, lenses=selected, target=dest)
+            result = analyze(rgb, lenses=selected, target=dest, inject=inject)
         except ValueError as exc:
             self._json(400, {"error": str(exc), "advisory": LIMITATION})
             return
@@ -219,6 +229,10 @@ class Handler(BaseHTTPRequestHandler):
             height=result.height,
             target=result.target,
             lenses=result.lenses,
+            inject=inject,
+            inject_applied=result.inject_applied,
+            tazel_inband_pct=result.tazel_inband_pct,
+            vyrn_inband_pct=result.vyrn_inband_pct,
         )
         debug(
             f"ui overlay mode={rec['mode']} target={rec['target']} paper={rec['paper']} "
@@ -234,6 +248,10 @@ class Handler(BaseHTTPRequestHandler):
             "X-SpectralLock-Sha256-Out": rec["sha256_out"],
             "X-SpectralLock-Size-In": str(rec["size_in"]),
             "X-SpectralLock-Size-Out": str(rec["size_out"]),
+            "X-SpectralLock-Inject": "true" if rec.get("inject") else "false",
+            "X-SpectralLock-Inject-Applied": "true" if rec.get("inject_applied") else "false",
+            "X-SpectralLock-Tazel-Inband": str(rec.get("tazel_inband_pct", 0.0)),
+            "X-SpectralLock-Vyrn-Inband": str(rec.get("vyrn_inband_pct", 0.0)),
         }
         if as_json:
             import base64
@@ -246,11 +264,12 @@ class Handler(BaseHTTPRequestHandler):
         self._send(200, png, "image/png", extra)
 
 
-def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes, str, list[str]]:
-    """Minimal multipart parser: mode/lens/target fields + file field."""
+def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes, str, list[str], bool]:
+    """Minimal multipart parser: mode/lens/target/inject fields + file field."""
     mode = "rosetta"
     target = "ink"
     lenses: list[str] = []
+    inject = True
     img = b""
     bound = b""
     for part in content_type.split(";"):
@@ -258,7 +277,7 @@ def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes, str, li
         if part.lower().startswith("boundary="):
             bound = part.split("=", 1)[1].strip().strip('"').encode("utf-8")
     if not bound:
-        return mode, raw, target, lenses
+        return mode, raw, target, lenses, inject
     marker = b"--" + bound
     for chunk in raw.split(marker):
         chunk = chunk.strip(b"\r\n")
@@ -278,9 +297,11 @@ def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes, str, li
                 lenses.append(value)
         elif "name=\"target\"" in header or "name=\"polarity\"" in header:
             target = value
+        elif "name=\"inject\"" in header:
+            inject = parse_inject(value)
         elif "name=\"file\"" in header or "name=\"image\"" in header or "filename=" in header:
             img = body
-    return mode, img, target, lenses
+    return mode, img, target, lenses, inject
 
 
 def make_server(host: str = "127.0.0.1", port: int = 8861) -> ThreadingHTTPServer:

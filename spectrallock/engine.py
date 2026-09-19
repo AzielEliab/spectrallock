@@ -73,6 +73,17 @@ __all__ = [
     "MODE_ALIASES",
     "STUB_MODES",
     "resolve_mode",
+    "INJECT_NOTE",
+    "TAZEL_INBAND_SIGMA",
+    "VYRN_INBAND_SIGMA",
+    "resolve_inject",
+    "parse_inject",
+    "inject_applied_for",
+    "gate_gray",
+    "inband_mask",
+    "inband_pct",
+    "gate_inband",
+    "is_achromatic",
 ]
 
 LIMITATION = (
@@ -83,8 +94,20 @@ LIMITATION = (
     "Candlelight is a warm flame-side look from an ordinary photo. "
     "Indent is an image-enhancement heuristic for surface relief, not electrostatic detection. "
     "Lemon enhances heat-/acid-style browning already in the pixels; it never invents marks. "
-    "Balance never invents marks. Lamb Lens: Service → Clarity → Peace. "
+    "Balance never invents marks. "
+    "Inject ON is false-color membership tint (paint), not recovered pigment. "
+    "OFF is luminance of the same gate. Zero ignores the switch. "
+    "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. "
+    "Lamb Lens: Service → Clarity → Peace. "
     "The human still reads the page. Author Aziel Eliab."
+)
+
+INJECT_NOTE = (
+    "ON paints membership (false color). OFF is the same gate as gray. "
+    "ON is not recovered pigment. Zero ignores the switch. "
+    "Synthetic UV is not a lamp. Balance does not invent marks. "
+    "Report tazel_inband_pct and vyrn_inband_pct before claiming a hit. "
+    "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band."
 )
 
 TAZEL_HEX = "#1EC9A5"
@@ -96,6 +119,15 @@ ZERO_HUE = 260.0
 TAZEL_RGB = (0x1E / 255.0, 0xC9 / 255.0, 0xA5 / 255.0)
 VYRN_RGB = (0xC0 / 255.0, 0x00 / 255.0, 0x66 / 255.0)
 ZERO_RGB = (0x6F / 255.0, 0x64 / 255.0, 0x85 / 255.0)
+UV_RGB = (0.55, 0.45, 0.85)
+CANDLE_RGB = (1.00, 0.62, 0.22)
+INDENT_RGB = (0.72, 0.68, 0.58)
+LEMON_RGB = (0.62, 0.38, 0.14)
+CHAOS_RGB = (0.55, 0.22, 0.38)
+TAZEL_INBAND_SIGMA = 24.0
+VYRN_INBAND_SIGMA = 28.0
+INBAND_SAT_MIN = 0.12
+INBAND_VAL_MIN = 0.08
 EPS = 1e-6
 PLAIN_NOT_IMAGE = "That file is not a picture. Use a PNG or JPEG photo."
 MAX_IMAGE_PIXELS = 40_000_000
@@ -117,6 +149,10 @@ class OverlayResult:
     channels: dict[str, np.ndarray] | None = None
     target: str = "ink"
     lenses: tuple[str, ...] = ()
+    inject: bool = True
+    inject_applied: bool = True
+    tazel_inband_pct: float = 0.0
+    vyrn_inband_pct: float = 0.0
 
     def to_meta(self) -> dict:
         lenses = list(self.lenses) or [self.mode]
@@ -129,6 +165,14 @@ class OverlayResult:
             "width": self.width,
             "height": self.height,
             "paper": self.paper,
+            "inject": self.inject,
+            "inject_applied": self.inject_applied,
+            "inject_ignored": bool(self.inject) and not bool(self.inject_applied),
+            "tazel_inband_pct": float(self.tazel_inband_pct),
+            "vyrn_inband_pct": float(self.vyrn_inband_pct),
+            "pigment_recovery": False,
+            "empty_gate_not_broken_lens": True,
+            "inject_note": INJECT_NOTE,
             "product": "spectrallock",
             "version": _package_version(),
             "rosetta_spectral_analysis": True,
@@ -172,9 +216,14 @@ def make_receipt(
     height: int,
     target: str = "ink",
     lenses: list[str] | tuple[str, ...] | None = None,
+    inject: bool = True,
+    inject_applied: bool | None = None,
+    tazel_inband_pct: float | None = None,
+    vyrn_inband_pct: float | None = None,
 ) -> dict:
     lens_list = [str(x) for x in (lenses or [mode]) if str(x).strip()]
-    return {
+    applied = inject_applied_for(lens_list, inject) if inject_applied is None else bool(inject_applied)
+    rec = {
         "product": "spectrallock",
         "version": _package_version(),
         "mode": mode,
@@ -188,12 +237,21 @@ def make_receipt(
         "size_out": int(size_out),
         "width": int(width),
         "height": int(height),
+        "inject": bool(inject),
+        "inject_applied": applied,
+        "inject_ignored": bool(inject) and not applied,
+        "tazel_inband_pct": 0.0 if tazel_inband_pct is None else float(tazel_inband_pct),
+        "vyrn_inband_pct": 0.0 if vyrn_inband_pct is None else float(vyrn_inband_pct),
+        "pigment_recovery": False,
+        "empty_gate_not_broken_lens": True,
+        "inject_note": INJECT_NOTE,
         "limitation": LIMITATION,
         "advisory": LIMITATION,
         "rosetta_spectral_analysis": True,
         "corpus_ocr_aligned": True,
         "author": "Aziel Eliab",
     }
+    return rec
 
 
 def write_sidecar(png_path: str, payload: dict) -> str:
@@ -323,6 +381,83 @@ def tint_gray(gray: np.ndarray, color: tuple[float, float, float], amount: float
     return np.clip(g * ((1.0 - amount) + amount * c * 1.6), 0.0, 1.0).astype(np.float32)
 
 
+def resolve_inject(*, inject: bool | None = None, tint: bool | None = None) -> bool:
+    """Public switch is inject. tint is a back-compat alias."""
+    if inject is not None:
+        return bool(inject)
+    if tint is not None:
+        return bool(tint)
+    return True
+
+
+def parse_inject(value: object, default: bool = True) -> bool:
+    """Parse CLI / JSON / form inject flags. ON paints; OFF is gray."""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return bool(value)
+    key = str(value).strip().lower()
+    if key in {"0", "false", "off", "no", "no-inject", "n"}:
+        return False
+    if key in {"1", "true", "on", "yes", "inject", "y"}:
+        return True
+    return default
+
+
+def inject_applied_for(lenses: str | list[str] | tuple[str, ...], inject: bool) -> bool:
+    """Zero ignores the switch. Applied only when a non-zero lens is painted."""
+    if not inject:
+        return False
+    if isinstance(lenses, str):
+        keys = [part.strip().lower() for part in lenses.replace("+", ",").split(",") if part.strip()]
+    else:
+        keys = [str(part).strip().lower() for part in lenses if str(part).strip()]
+    if not keys:
+        return True
+    return any(key != "zero" for key in keys)
+
+
+def gate_gray(rgb: np.ndarray) -> np.ndarray:
+    """Luminance of the same gate — inject OFF."""
+    return gray_to_rgb(luminance(finite01(rgb)))
+
+
+def maybe_gate_paint(gate_rgb: np.ndarray, *, inject: bool, mode: str = "") -> np.ndarray:
+    if mode == "zero" or not inject:
+        return gate_gray(gate_rgb)
+    return finite01(gate_rgb)
+
+
+def inband_mask(rgb: np.ndarray, hue: float, sigma: float) -> np.ndarray:
+    """In-band membership: hue within σ and enough chroma. Empty ≠ broken."""
+    h, s, v = rgb_to_hsv(finite01(rgb))
+    return (hue_distance(h, hue) <= sigma) & (s >= INBAND_SAT_MIN) & (v >= INBAND_VAL_MIN)
+
+
+def inband_pct(rgb: np.ndarray, hue: float, sigma: float) -> float:
+    mask = inband_mask(rgb, hue, sigma)
+    return round(100.0 * float(mask.mean()), 2)
+
+
+def gate_inband(rgb: np.ndarray) -> dict[str, float]:
+    """tazel 170° / vyrn 350° in-band percents from the source photo."""
+    return {
+        "tazel_inband_pct": inband_pct(rgb, TAZEL_HUE, TAZEL_INBAND_SIGMA),
+        "vyrn_inband_pct": inband_pct(rgb, VYRN_HUE, VYRN_INBAND_SIGMA),
+    }
+
+
+def is_achromatic(rgb: np.ndarray, atol: float = 2e-3) -> bool:
+    """True when R≈G≈B (inject OFF / zero)."""
+    arr = finite01(rgb)
+    return bool(
+        np.allclose(arr[..., 0], arr[..., 1], atol=atol)
+        and np.allclose(arr[..., 1], arr[..., 2], atol=atol)
+    )
+
+
 def hue_distance(h: np.ndarray, target: float) -> np.ndarray:
     d = np.abs(h - target)
     return np.minimum(d, 360.0 - d)
@@ -390,8 +525,12 @@ def _midtone_lift(gray: np.ndarray, amount: float = 0.12) -> np.ndarray:
     return np.clip(gray + amount * mid, 0.0, 1.0).astype(np.float32)
 
 
-def zero_overlay(rgb: np.ndarray) -> np.ndarray:
-    """ZSA-1.0: grayscale, hist-eq, mild band-pass, unsharp grooves."""
+def zero_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
+    """ZSA-1.0: grayscale, hist-eq, mild band-pass, unsharp grooves.
+
+    Inject is ignored — zero stays gray either way.
+    """
+    del inject
     gray = luminance(rgb)
     gray = equalize(gray)
     # band-pass: medium-scale curvature (blur-subtract)
@@ -403,10 +542,13 @@ def zero_overlay(rgb: np.ndarray) -> np.ndarray:
     return gray_to_rgb(sharp)
 
 
-def tazel_overlay(rgb: np.ndarray) -> np.ndarray:
-    """TSA-1.0: boost hue ~170° (#1EC9A5), lift midtones, fine lines, parchment smooth."""
+def tazel_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
+    """TSA-1.0: 170° #1EC9A5 teal heat on in-band pixels when inject ON.
+
+    OFF is luminance of the same gate (gray). Not recovered pigment.
+    """
     h, s, v = rgb_to_hsv(rgb)
-    w = np.exp(-0.5 * (hue_distance(h, TAZEL_HUE) / 24.0) ** 2)
+    w = np.exp(-0.5 * (hue_distance(h, TAZEL_HUE) / TAZEL_INBAND_SIGMA) ** 2)
     s2 = np.clip(s * (1.0 + 0.65 * w) + 0.10 * w, 0.0, 1.0)
     v2 = np.clip(v * (1.0 + 0.28 * w) + 0.06 * w, 0.0, 1.0)
     v2 = _midtone_lift(v2, amount=0.16)
@@ -415,16 +557,21 @@ def tazel_overlay(rgb: np.ndarray) -> np.ndarray:
     detail = v2 - low
     v2 = np.clip(low * 0.88 + 0.06 + detail * 1.55, 0.0, 1.0)
     out = hsv_to_rgb(h, s2, v2)
-    # extra turquoise pull on weighted pixels
+    if not inject:
+        return gate_gray(out)
+    # teal heat on in-band pixels — paint, not pigment
     tint = np.asarray(TAZEL_RGB, dtype=np.float32)
     out = np.clip(out * (1.0 - 0.18 * w[..., None]) + tint * (v2 * 0.18 * w)[..., None], 0.0, 1.0)
     return out.astype(np.float32)
 
 
-def vyrn_overlay(rgb: np.ndarray) -> np.ndarray:
-    """VSA-1.0: boost hue ~350° (#C00066), suppress green/cyan, edge/pressure, wash bg."""
+def vyrn_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
+    """VSA-1.0: 350° #C00066 magenta heat on in-band pixels when inject ON.
+
+    OFF is luminance of the same gate (gray). Not recovered pigment.
+    """
     h, s, v = rgb_to_hsv(rgb)
-    w = np.exp(-0.5 * (hue_distance(h, VYRN_HUE) / 28.0) ** 2)
+    w = np.exp(-0.5 * (hue_distance(h, VYRN_HUE) / VYRN_INBAND_SIGMA) ** 2)
     cyan = np.exp(-0.5 * (hue_distance(h, 160.0) / 32.0) ** 2)
     s2 = np.clip(s * (1.0 + 0.7 * w) * (1.0 - 0.55 * cyan) + 0.08 * w, 0.0, 1.0)
     v2 = np.clip(v * (1.0 + 0.22 * w) * (1.0 - 0.18 * cyan), 0.0, 1.0)
@@ -433,6 +580,8 @@ def vyrn_overlay(rgb: np.ndarray) -> np.ndarray:
     low = blur_gray(v2, 10.0)
     v2 = np.clip((v2 - low) * 1.45 + 0.42 + 0.25 * v2, 0.0, 1.0)
     out = hsv_to_rgb(h, s2, v2)
+    if not inject:
+        return gate_gray(out)
     tint = np.asarray(VYRN_RGB, dtype=np.float32)
     out = np.clip(out * (1.0 - 0.22 * w[..., None]) + tint * (np.clip(v2, 0, 1) * 0.22 * w)[..., None], 0.0, 1.0)
     # suppress residual green
@@ -440,8 +589,11 @@ def vyrn_overlay(rgb: np.ndarray) -> np.ndarray:
     return out.astype(np.float32)
 
 
-def uv_overlay(rgb: np.ndarray) -> np.ndarray:
-    """UVSA-1.0: synthetic 365–400 nm look. Boost parchment, blue-violet, microtexture, ink darker."""
+def uv_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
+    """UVSA-1.0: synthetic 365–400 nm look. Boost parchment, blue-violet, microtexture, ink darker.
+
+    Still synthetic, not a lamp. Inject OFF is gray of the same UV gate.
+    """
     lum = luminance(rgb)
     t = normalize01(lum)
     # parchment glow (high luma), ink absorbs (low luma)
@@ -457,10 +609,11 @@ def uv_overlay(rgb: np.ndarray) -> np.ndarray:
     # ink darker
     ink = (t < 0.42).astype(np.float32)
     out = out * (1.0 - 0.35 * ink[..., None])
-    return np.clip(out, 0.0, 1.0).astype(np.float32)
+    out = np.clip(out, 0.0, 1.0).astype(np.float32)
+    return out if inject else gate_gray(out)
 
 
-def candle_overlay(rgb: np.ndarray) -> np.ndarray:
+def candle_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
     """CLSA-1.0: warm flame-side look (~1800–2700K) from an ordinary photo.
 
     Not real multispectral capture. Amber parchment glow; ink stays readable.
@@ -479,10 +632,11 @@ def candle_overlay(rgb: np.ndarray) -> np.ndarray:
     out = np.stack([r, g, b], axis=-1)
     # keep dark strokes readable from the source pixels
     out = out * (1.0 - 0.40 * ink[..., None]) + rgb * (0.28 * ink[..., None])
-    return np.clip(out, 0.0, 1.0).astype(np.float32)
+    out = np.clip(out, 0.0, 1.0).astype(np.float32)
+    return out if inject else gate_gray(out)
 
 
-def indent_overlay(rgb: np.ndarray) -> np.ndarray:
+def indent_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
     """ISA-1.0: suppress visible ink; lift fiber / pressure relief.
 
     Image-enhancement heuristic from an ordinary photo. Not ESDA / electrostatic
@@ -503,10 +657,11 @@ def indent_overlay(rgb: np.ndarray) -> np.ndarray:
     mixed = np.clip(gray * 0.58 + relief * 0.62 + hp * 0.90 + 0.16, 0.0, 1.0)
     mixed = unsharp(mixed, amount=0.78, radius=0.9)
     out = washed * 0.42 + gray_to_rgb(mixed) * 0.58
-    return np.clip(out, 0.0, 1.0).astype(np.float32)
+    out = np.clip(out, 0.0, 1.0).astype(np.float32)
+    return out if inject else gate_gray(out)
 
 
-def lemon_overlay(rgb: np.ndarray) -> np.ndarray:
+def lemon_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
     """LISA-1.0: heat-/acid-style lemon (citrus) invisible-ink cues.
 
     Reweights warm browning already in the pixels. Not a chemical test.
@@ -524,9 +679,10 @@ def lemon_overlay(rgb: np.ndarray) -> np.ndarray:
     s2 = np.clip(s * (1.0 + 0.58 * gain) + 0.04 * gain, 0.0, 1.0)
     v2 = unsharp(np.clip(v * (1.0 + 0.10 * gain) - 0.07 * gain, 0.0, 1.0), amount=0.42, radius=1.0)
     out = hsv_to_rgb(h, s2, v2)
-    tint = np.array([0.62, 0.38, 0.14], dtype=np.float32)
+    tint = np.array(LEMON_RGB, dtype=np.float32)
     out = np.clip(out * (1.0 - 0.22 * gain[..., None]) + tint * (v2 * 0.22 * gain)[..., None], 0.0, 1.0)
-    return out.astype(np.float32)
+    out = out.astype(np.float32)
+    return out if inject else gate_gray(out)
 
 
 def _channel_luma(rgb: np.ndarray, fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
@@ -551,39 +707,66 @@ def _base_channels(rgb: np.ndarray) -> dict[str, np.ndarray]:
     }
 
 
-def rosetta_overlay(rgb: np.ndarray, *, tint: bool = True) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-    """RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after per-channel normalize."""
+def _composite_paint(*, inject: bool | None = None, tint: bool | None = None) -> bool:
+    return resolve_inject(inject=inject, tint=tint)
+
+
+def rosetta_overlay(
+    rgb: np.ndarray,
+    *,
+    inject: bool | None = None,
+    tint: bool | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after per-channel normalize.
+
+    Inject ON = composite tint. OFF = gray of the same mix. Not pigment.
+    """
     ch = _base_channels(rgb)
     mix = blend_channels(ch, ROSETTA_WEIGHTS)
     color = (0.40 * np.array(ZERO_RGB) + 0.35 * np.array(TAZEL_RGB) + 0.25 * np.array(VYRN_RGB))
-    out = _composite_from_luma(mix, tuple(color) if tint else None)
+    out = _composite_from_luma(mix, tuple(color) if _composite_paint(inject=inject, tint=tint) else None)
     return out, ch
 
 
-def zen_overlay(rgb: np.ndarray, *, tint: bool = True) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+def zen_overlay(
+    rgb: np.ndarray,
+    *,
+    inject: bool | None = None,
+    tint: bool | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     """ZENA-1.0 = (Z′ + T′ + U′ + V′) / 4 after normalize."""
     ch = _base_channels(rgb)
     mix = blend_channels(ch, ZEN_WEIGHTS)
-    color = tuple((np.array(ZERO_RGB) + np.array(TAZEL_RGB) + np.array(VYRN_RGB) + np.array([0.55, 0.45, 0.85])) / 4.0)
-    out = _composite_from_luma(mix, color if tint else None)
+    color = tuple((np.array(ZERO_RGB) + np.array(TAZEL_RGB) + np.array(VYRN_RGB) + np.array(UV_RGB)) / 4.0)
+    out = _composite_from_luma(mix, color if _composite_paint(inject=inject, tint=tint) else None)
     return out, ch
 
 
-def chaos_overlay(rgb: np.ndarray, *, tint: bool = True) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+def chaos_overlay(
+    rgb: np.ndarray,
+    *,
+    inject: bool | None = None,
+    tint: bool | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     """CSA-1.0 = 0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize."""
     ch = _base_channels(rgb)
     mix = blend_channels(ch, CHAOS_WEIGHTS)
-    color = (0.55, 0.22, 0.38)
-    out = _composite_from_luma(mix, color if tint else None)
+    out = _composite_from_luma(mix, CHAOS_RGB if _composite_paint(inject=inject, tint=tint) else None)
     return out, ch
 
 
-def balance_overlay(rgb: np.ndarray, *, tint: bool = True) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-    """BSA: α·Zen + (1-α)·Chaos. Never invents marks."""
-    zen_rgb, ch = zen_overlay(rgb, tint=tint)
-    chaos_rgb, _ = chaos_overlay(rgb, tint=tint)
+def balance_overlay(
+    rgb: np.ndarray,
+    *,
+    inject: bool | None = None,
+    tint: bool | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """BSA: α·Zen + (1-α)·Chaos. Never invents marks. Inject OFF is gray of that mix."""
+    paint = _composite_paint(inject=inject, tint=tint)
+    zen_rgb, ch = zen_overlay(rgb, inject=paint)
+    chaos_rgb, _ = chaos_overlay(rgb, inject=paint)
     out, _b, _a = balance_blend(zen_rgb, chaos_rgb)
-    return out, ch
+    return out if paint else gate_gray(out), ch
 
 
 def synthetic_page(width: int = 96, height: int = 96) -> np.ndarray:
@@ -609,6 +792,23 @@ def synthetic_page(width: int = 96, height: int = 96) -> np.ndarray:
     return img
 
 
+INJECT_RGB: dict[str, tuple[float, float, float]] = {
+    "zero": ZERO_RGB,
+    "tazel": TAZEL_RGB,
+    "vyrn": VYRN_RGB,
+    "uv": UV_RGB,
+    "rosetta": tuple(
+        0.40 * np.array(ZERO_RGB) + 0.35 * np.array(TAZEL_RGB) + 0.25 * np.array(VYRN_RGB)
+    ),
+    "zen": tuple((np.array(ZERO_RGB) + np.array(TAZEL_RGB) + np.array(VYRN_RGB) + np.array(UV_RGB)) / 4.0),
+    "chaos": CHAOS_RGB,
+    "balance": tuple((np.array(UV_RGB) + np.array(CHAOS_RGB)) / 2.0),
+    "candle": CANDLE_RGB,
+    "indent": INDENT_RGB,
+    "lemon": LEMON_RGB,
+}
+
+
 def _pack(
     mode: str,
     rgb_out: np.ndarray,
@@ -618,11 +818,15 @@ def _pack(
     source: np.ndarray | None = None,
     target: str = "ink",
     lenses: list[str] | tuple[str, ...] | None = None,
+    inject: bool = True,
 ) -> OverlayResult:
     clean = finite01(rgb_out)
     h, w = clean.shape[:2]
-    lum = luminance(finite01(source) if source is not None else clean)
+    src = finite01(source) if source is not None else clean
+    lum = luminance(src)
     lens_tuple = tuple(lenses) if lenses else (mode,)
+    inband = gate_inband(src)
+    applied = inject_applied_for(lens_tuple, inject)
     return OverlayResult(
         rgb=clean,
         mode=mode,
@@ -633,6 +837,10 @@ def _pack(
         channels=channels,
         target=normalize_target(target),
         lenses=lens_tuple,
+        inject=bool(inject),
+        inject_applied=applied,
+        tazel_inband_pct=inband["tazel_inband_pct"],
+        vyrn_inband_pct=inband["vyrn_inband_pct"],
     )
 
 
@@ -697,19 +905,31 @@ def apply_target(rgb: np.ndarray, target: str = "ink") -> np.ndarray:
     return np.clip(out, 0.0, 1.0).astype(np.float32)
 
 
-def compose_lenses(rgb: np.ndarray, lenses: list[str], *, tint: bool = True) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+def compose_lenses(
+    rgb: np.ndarray,
+    lenses: list[str],
+    *,
+    inject: bool | None = None,
+    tint: bool | None = None,
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     """Equal mix of selected lens luma — same multi-lens checkbox family as Corpus OCR."""
+    paint = resolve_inject(inject=inject, tint=tint)
     rgb = finite01(rgb)
     selected = normalize_lenses(lenses=lenses)
     channels: dict[str, np.ndarray] = {}
     for name in selected:
-        result = apply_mode(rgb, name, tint=tint)
+        result = apply_mode(rgb, name, inject=paint)
         channels[name] = normalize01(luminance(result.rgb))
     if len(selected) == 1:
-        return apply_mode(rgb, selected[0], tint=tint).rgb, channels
+        return apply_mode(rgb, selected[0], inject=paint).rgb, channels
     weight = 1.0 / float(len(selected))
     mix = blend_channels(channels, {name: weight for name in selected})
-    return gray_to_rgb(np.clip(mix, 0.0, 1.0)), channels
+    mix = np.clip(mix, 0.0, 1.0)
+    if paint and inject_applied_for(selected, True):
+        colors = [np.asarray(INJECT_RGB.get(name, (0.70, 0.70, 0.70)), dtype=np.float32) for name in selected]
+        avg = tuple(float(x) for x in sum(colors) / float(len(colors)))
+        return tint_gray(mix, avg), channels
+    return gray_to_rgb(mix), channels
 
 
 def analyze(
@@ -719,58 +939,67 @@ def analyze(
     lens: str | list[str] | tuple[str, ...] | None = None,
     lenses: str | list[str] | tuple[str, ...] | None = None,
     target: str = "ink",
-    tint: bool = True,
+    inject: bool | None = None,
+    tint: bool | None = None,
 ) -> OverlayResult:
     """Rosetta spectral analysis: lens overlay(s) then ink/page target."""
     selected = normalize_lenses(mode=mode, lens=lens, lenses=lenses)
     dest = normalize_target(target)
+    paint = resolve_inject(inject=inject, tint=tint)
     rgb = finite01(rgb)
-    debug(f"analyze lenses={selected} target={dest} size={rgb.shape[1]}x{rgb.shape[0]}")
+    debug(f"analyze lenses={selected} target={dest} inject={paint} size={rgb.shape[1]}x{rgb.shape[0]}")
     if len(selected) == 1:
-        base = apply_mode(rgb, selected[0], tint=tint)
+        base = apply_mode(rgb, selected[0], inject=paint)
         out = apply_target(base.rgb, dest)
         paper = base.paper
         channels = base.channels
         key = selected[0]
     else:
-        mixed, channels = compose_lenses(rgb, selected, tint=tint)
+        mixed, channels = compose_lenses(rgb, selected, inject=paint)
         out = apply_target(mixed, dest)
         paper = "MULTI"
         key = "+".join(selected)
-    return _pack(key, out, paper, channels, source=rgb, target=dest, lenses=selected)
+    return _pack(key, out, paper, channels, source=rgb, target=dest, lenses=selected, inject=paint)
 
 
-def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResult:
+def apply_mode(
+    rgb: np.ndarray,
+    mode: str,
+    *,
+    inject: bool | None = None,
+    tint: bool | None = None,
+) -> OverlayResult:
     key = resolve_mode(mode)
+    paint = resolve_inject(inject=inject, tint=tint)
     rgb = finite01(rgb)
-    debug(f"apply_mode mode={key} size={rgb.shape[1]}x{rgb.shape[0]}")
+    debug(f"apply_mode mode={key} inject={paint} size={rgb.shape[1]}x{rgb.shape[0]}")
     info = MODES[key]
     if key == "zero":
-        return _pack(key, zero_overlay(rgb), info["paper"], source=rgb)
+        return _pack(key, zero_overlay(rgb, inject=paint), info["paper"], source=rgb, inject=paint)
     if key == "tazel":
-        return _pack(key, tazel_overlay(rgb), info["paper"], source=rgb)
+        return _pack(key, tazel_overlay(rgb, inject=paint), info["paper"], source=rgb, inject=paint)
     if key == "vyrn":
-        return _pack(key, vyrn_overlay(rgb), info["paper"], source=rgb)
+        return _pack(key, vyrn_overlay(rgb, inject=paint), info["paper"], source=rgb, inject=paint)
     if key == "uv":
-        return _pack(key, uv_overlay(rgb), info["paper"], source=rgb)
+        return _pack(key, uv_overlay(rgb, inject=paint), info["paper"], source=rgb, inject=paint)
     if key == "candle":
-        return _pack(key, candle_overlay(rgb), info["paper"], source=rgb)
+        return _pack(key, candle_overlay(rgb, inject=paint), info["paper"], source=rgb, inject=paint)
     if key == "indent":
-        return _pack(key, indent_overlay(rgb), info["paper"], source=rgb)
+        return _pack(key, indent_overlay(rgb, inject=paint), info["paper"], source=rgb, inject=paint)
     if key == "lemon":
-        return _pack(key, lemon_overlay(rgb), info["paper"], source=rgb)
+        return _pack(key, lemon_overlay(rgb, inject=paint), info["paper"], source=rgb, inject=paint)
     if key == "rosetta":
-        out, ch = rosetta_overlay(rgb, tint=tint)
-        return _pack(key, out, info["paper"], ch, source=rgb)
+        out, ch = rosetta_overlay(rgb, inject=paint)
+        return _pack(key, out, info["paper"], ch, source=rgb, inject=paint)
     if key == "zen":
-        out, ch = zen_overlay(rgb, tint=tint)
-        return _pack(key, out, info["paper"], ch, source=rgb)
+        out, ch = zen_overlay(rgb, inject=paint)
+        return _pack(key, out, info["paper"], ch, source=rgb, inject=paint)
     if key == "chaos":
-        out, ch = chaos_overlay(rgb, tint=tint)
-        return _pack(key, out, info["paper"], ch, source=rgb)
+        out, ch = chaos_overlay(rgb, inject=paint)
+        return _pack(key, out, info["paper"], ch, source=rgb, inject=paint)
     if key == "balance":
-        out, ch = balance_overlay(rgb, tint=tint)
-        return _pack(key, out, info["paper"], ch, source=rgb)
+        out, ch = balance_overlay(rgb, inject=paint)
+        return _pack(key, out, info["paper"], ch, source=rgb, inject=paint)
     raise ValueError(f"unknown mode {mode!r}")
 
 

@@ -21,7 +21,8 @@ concatenated with `path\\n` + bytes + `\\n`). Recompute only from disk.
 1. Wait until `AzielEliab/spectrallock` `main` includes the new LIVE modes
    in `workers/download-tracker/src/overlay.js`
    (`zero`, `tazel`, `vyrn`, `uv`, `rosetta`, `zen`, `chaos`, `balance`,
-   `candle`, `indent`, `lemon` plus aliases).
+   `candle`, `indent`, `lemon` plus aliases) **and** the color inject switch
+   (`inject` true\|false, `tazel_inband_pct`, `vyrn_inband_pct`, paint ≠ pigment).
 
 2. In `aziel-runtime`, **CLEAR** the previous SpectralLock vendor copy:
    - wipe `src/engines/spectrallock/` (GitBaby CLEAR of the slug)
@@ -55,8 +56,10 @@ concatenated with `path\\n` + bytes + `\\n`). Recompute only from disk.
    Stub ops stay `spectrometer`, `forensic`, `invent_mark`.
    After rehash + runtime deploy, `fraggate_call slug=spectrallock op=modes`
    (and `GET /v1/software` / Worker `GET /v1/modes`) must list the eleven
-   canonical ids above. Aliases resolve to those ids. Lamb Lens remains
-   Service → Clarity → Peace (no invented marks).
+   canonical ids above. Aliases resolve to those ids. Overlay/verify must
+   accept `inject` and report `tazel_inband_pct` / `vyrn_inband_pct` before
+   any hit claim. Lamb Lens remains Service → Clarity → Peace (no invented
+   marks; inject ON is paint, not pigment).
 
 6. **Bump runtime** (GitBaby bump) and deploy
    `aziel-runtime.vibelock.workers.dev`.

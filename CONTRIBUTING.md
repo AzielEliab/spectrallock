@@ -39,12 +39,14 @@ No network.
    no auto-heal; not anonymity.
 8. New behavior needs a test that fails without the change.
 9. Hosted `/v1/overlay` is a simplified preview (max 256 px). The full
-   pipeline is this Python package.
+   pipeline is this Python package (`spectrallock_inject.py` for the color
+   inject switch). Inject ON is paint, not recovered pigment. Zero ignores
+   the switch. Report in-band percents before any hit claim.
 
 ## Where to change things
 
 - Engines / formulas: `spectrallock/engine.py`
-- CLI: `spectrallock/cli.py`
+- CLI: `spectrallock/cli.py`, inject card: `spectrallock/inject.py`, `spectrallock_inject.py`
 - Local UI: `spectrallock/ui.py`, `spectrallock/web/`
 - Papers: `docs/source/`, spec: `docs/whitepaper.md`, runtime sync: `docs/runtime-sync.md`
 - Hosted preview: `workers/download-tracker/src/overlay.js`
