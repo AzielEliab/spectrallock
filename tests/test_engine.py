@@ -1,4 +1,4 @@
-"""Engine: synthetic page, tazel/vyrn lifts, composite pixel math, UV honesty."""
+"""Engine: synthetic page, tazel/vyrn lifts, composite pixel math, UV/candle honesty."""
 
 from __future__ import annotations
 
@@ -22,8 +22,12 @@ from spectrallock.engine import (
     chaos_overlay,
     luminance,
     normalize01,
+    MODE_ALIASES,
+    candle_overlay,
+    known_mode_tokens,
     normalize_lenses,
     normalize_target,
+    resolve_mode,
     rosetta_overlay,
     synthetic_page,
     tazel_overlay,
@@ -34,18 +38,28 @@ from spectrallock.engine import (
 )
 
 
-def test_all_eight_modes_live() -> None:
-    assert tuple(MODES) == ("zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance")
+def test_all_nine_modes_live() -> None:
+    assert tuple(MODES) == (
+        "zero", "tazel", "vyrn", "uv", "candle", "rosetta", "zen", "chaos", "balance",
+    )
     assert LIVE_MODES == tuple(MODES)
     for row in MODES.values():
         assert row["status"] == "live"
         assert row["paper"]
+    assert MODES["uv"]["aliases"] == ["ultraviolet", "uv-light", "uvsa"]
+    assert MODES["candle"]["aliases"] == ["candlelight", "candle-light"]
+    assert MODES["candle"]["paper"] == "CLSA-1.0"
+    assert "Ultraviolet light analysis (synthetic)" in MODES["uv"]["summary"]
+    assert "Candlelight" in MODES["candle"]["summary"] or "candlelight" in MODES["candle"]["summary"].lower()
 
 
 def test_limitation_is_rosetta() -> None:
     low = LIMITATION.lower()
     for word in ("rosetta spectral analysis", "ocr", "ink", "page", "aziel eliab"):
         assert word in low
+    assert "candle" in low and "candlelight" in low
+    assert "ultraviolet light analysis" in low
+    assert "1800" in LIMITATION and "2700" in LIMITATION
     assert "spectrometer" not in low
     assert LENSES == LIVE_MODES
     assert tuple(TARGETS) == ("ink", "page")
@@ -148,6 +162,43 @@ def test_uv_boosts_parchment_darkens_ink() -> None:
     assert float(u[5, 5, 2]) >= float(u[5, 5, 1]) - 0.02
     low = LIMITATION.lower()
     assert "365" in LIMITATION or "synthetic" in low
+    assert "ultraviolet light analysis" in low
+
+
+def test_candle_warms_parchment_keeps_ink_readable() -> None:
+    img = synthetic_page(96, 96)
+    c = candle_overlay(img)
+    parchment = c[2:10, 2:10]
+    ink = c[42:50, 20:70]
+    assert float(luminance(parchment).mean()) > float(luminance(ink).mean())
+    # warm amber: parchment R leads B (opposite of UV's blue-violet)
+    assert float(parchment[..., 0].mean()) > float(parchment[..., 2].mean())
+    u = uv_overlay(img)
+    assert float(parchment[..., 0].mean()) > float(u[2:10, 2:10, 0].mean())
+    assert apply_mode(img, "candle").paper == "CLSA-1.0"
+    assert apply_mode(img, "candlelight").mode == "candle"
+    assert apply_mode(img, "candle-light").mode == "candle"
+
+
+def test_mode_aliases_resolve_to_canonical() -> None:
+    assert resolve_mode("uv") == "uv"
+    assert resolve_mode("Ultraviolet") == "uv"
+    assert resolve_mode("uv-light") == "uv"
+    assert resolve_mode("uvsa") == "uv"
+    assert resolve_mode("candle") == "candle"
+    assert resolve_mode("candlelight") == "candle"
+    assert resolve_mode("candle-light") == "candle"
+    assert resolve_mode("nope") is None
+    assert MODE_ALIASES["ultraviolet"] == "uv"
+    assert MODE_ALIASES["candlelight"] == "candle"
+    assert normalize_lenses(mode="ultraviolet") == ["uv"]
+    assert normalize_lenses(mode="candlelight+uvsa") == ["candle", "uv"]
+    tokens = known_mode_tokens()
+    assert "candle" in tokens and "candlelight" in tokens
+    assert "uv" in tokens and "ultraviolet" in tokens
+    img = synthetic_page(24, 24)
+    assert apply_mode(img, "ultraviolet").mode == "uv"
+    assert apply_mode(img, "uvsa").paper == "UVSA-1.0"
 
 
 def test_apply_mode_roundtrip_all_live() -> None:

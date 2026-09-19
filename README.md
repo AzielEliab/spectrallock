@@ -14,9 +14,12 @@ overlays plus ink/page targets.
 
 RSA-2.0 is the decoding composite `0.40·Z′ + 0.35·T′ + 0.25·V′`. Ink isolates
 writing; page isolates parchment. Balance never invents marks — it only
-reweights existing readings. Synthetic UV is a 365–400 nm look from an
-ordinary photograph. Hosted `/v1/overlay` is a 256 px preview; the full
-pipeline is this Python package.
+reweights existing readings. Ultraviolet light analysis (`uv`) is a
+365–400 nm look from an ordinary photograph. Candlelight analysis
+(`candle`) is a warm 1800–2700K / flame-side look from an ordinary
+photograph. Neither is a real lamp or multispectral capture. Hosted
+`/v1/overlay` is a 256 px preview; the full pipeline is this Python
+package.
 
 **Forks are welcome and always allowed.**
 
@@ -104,7 +107,8 @@ Same names as the Corpus OCR SpectralLock lens checkboxes.
 | `zero` | ZSA-1.0 | Grayscale, hist-eq, band-pass, unsharp. Hue ~260°, `#6F6485`. |
 | `tazel` | TSA-1.0 | Boost green–gold–turquoise (~170°, `#1EC9A5`). Lift faint midtones. |
 | `vyrn` | VSA-1.0 | Boost magenta–red-violet (~350°, `#C00066`). Suppress green/cyan. |
-| `uv` | UVSA-1.0 | Synthetic 365–400 nm simulation. Parchment glow, ink darker. |
+| `uv` | UVSA-1.0 | Ultraviolet light analysis (synthetic). 365–400 nm look. Parchment glow, ink darker. Aliases: `ultraviolet`, `uv-light`, `uvsa`. |
+| `candle` | CLSA-1.0 | Candlelight spectral analysis (synthetic). Warm ambers ~1800–2700K, parchment glow, ink readable. Aliases: `candlelight`, `candle-light`. |
 | `rosetta` | RSA-2.0 | `0.40·Z′ + 0.35·T′ + 0.25·V′` after per-channel normalize. |
 | `zen` | ZENA-1.0 | `(Z′ + T′ + U′ + V′) / 4` after normalize. |
 | `chaos` | CSA-1.0 | `0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′` after normalize. |
@@ -141,7 +145,9 @@ spectrallock version
 spectrallock doctor
 spectrallock modes
 spectrallock lenses
-spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance --target ink|page IN.png OUT.png
+spectrallock overlay --mode zero|tazel|vyrn|uv|candle|rosetta|zen|chaos|balance --target ink|page IN.png OUT.png
+spectrallock overlay --mode candlelight page.jpg out.png
+spectrallock overlay --mode ultraviolet --target ink page.jpg out.png
 spectrallock overlay --lens tazel --target page page.jpg out.png --json
 spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
 spectrallock ui          # 127.0.0.1:8861
@@ -180,6 +186,13 @@ flutter run
 Isolated counter: Worker `spectrallock-download-tracker`, project `spectrallock`,
 KV `SPECTRALLOCK_DOWNLOADS`. `totalKey` `spectrallock|__total__`. `/download`
 serves gzip from Worker assets (`private, no-store`). No 302 to GitHub.
+
+After this repo merges, aziel-runtime must rehash the SpectralLock engine
+and bump the catalog. Exact files to refresh: `src/engines/spectrallock.js`,
+`src/engines/spectrallock/overlay.js`, `src/engines/spectrallock/ops.js`,
+then `src/engines/digest.js`, `src/packed-catalog.js`, `src/software-catalog.js`,
+`src/catalog-meta.js`, and `src/software-copy.js` if those still cite the
+eight-lens list. Keep `stub_ops`: spectrometer, forensic, invent_mark.
 
 ## Use with ChatGPT, Grok, Venice, Claude, Cursor, and other MCP/OpenAPI-capable assistants
 

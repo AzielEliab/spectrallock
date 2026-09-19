@@ -35,6 +35,7 @@ def test_cli_modes_lists_all_live(capsys) -> None:
     assert "TSA-1.0" in out
     assert "VSA-1.0" in out
     assert "UVSA-1.0" in out
+    assert "CLSA-1.0" in out
     assert "RSA-2.0" in out
     assert "ZENA-1.0" in out
     assert "CSA-1.0" in out
@@ -91,7 +92,7 @@ def test_ui_rejects_non_loopback() -> None:
 
 
 
-def test_cli_doctor_runs_eight_modes(capsys) -> None:
+def test_cli_doctor_runs_nine_modes(capsys) -> None:
     assert main(["doctor"]) == 0
     out = capsys.readouterr().out
     for mode in LIVE_MODES:
@@ -130,6 +131,32 @@ def test_cli_overlay_verify_prints_hashes(tmp_path: Path, capsys) -> None:
     assert "sha256_out: " + sha256_hex(dst.read_bytes()) in out
     assert "size_in: " in out
     assert "rosetta" in out.lower() or "ink" in out.lower()
+
+
+def test_cli_overlay_candlelight_alias(tmp_path: Path, capsys) -> None:
+    from spectrallock.engine import save_rgb
+
+    src = tmp_path / "page.png"
+    dst = tmp_path / "out.png"
+    save_rgb(synthetic_page(24, 24), str(src))
+    assert main(["overlay", "--mode", "candlelight", str(src), str(dst), "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "candle"
+    assert payload["paper"] == "CLSA-1.0"
+    assert payload["lenses"] == ["candle"]
+    assert dst.is_file()
+
+
+def test_cli_overlay_ultraviolet_alias(tmp_path: Path, capsys) -> None:
+    from spectrallock.engine import save_rgb
+
+    src = tmp_path / "page.png"
+    dst = tmp_path / "out.png"
+    save_rgb(synthetic_page(24, 24), str(src))
+    assert main(["overlay", "--mode", "ultraviolet", str(src), str(dst), "--verify"]) == 0
+    out = capsys.readouterr().out
+    assert "mode: uv" in out
+    assert "paper: UVSA-1.0" in out
 
 
 def test_cli_rejects_non_image_plainly(tmp_path: Path, capsys) -> None:

@@ -6,4 +6,4 @@ A. Fluorescence Simulation:   - Lighter parchment regions brighten as if fluores
 Operational Pipeline
 1. Substrate-priority luminance shift:   - Reduces ink dominance and boosts parchment brightness.2. Blue–violet channel weighting:   - Simulates UV glow regions along parchment fiber direction.3. Microtexture enhancement:   - Emphasizes scratches, fibers, speckling, and watermark outlines.4. Halo Detection:   - Reveals ink-corrosion halos and faded ring patterns.5. Damage-path Mapping:   - Highlights water flow, mold migration, and historical handling marks.
 Usage
-Commands that activate UVSA-1.0:- "Synthetic UV spectral analysis"- "Run UV on this page"- "UV-only overlay"These commands apply the UV-only channel without Zero, Tazel, Vyrn, or composite blending.
+Commands that activate UVSA-1.0:- "Ultraviolet light analysis (synthetic)"- "Synthetic UV spectral analysis"- "Run UV on this page"- "UV-only overlay"- aliases of uv: "ultraviolet", "uv-light", "uvsa"These commands apply the UV-only channel without Zero, Tazel, Vyrn, or composite blending. Canonical id is uv.

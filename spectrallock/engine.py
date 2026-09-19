@@ -33,6 +33,8 @@ __all__ = [
     "TAZEL_HUE",
     "VYRN_HUE",
     "ZERO_HUE",
+    "CANDLE_HEX",
+    "CANDLE_HUE",
     "OverlayResult",
     "apply_mode",
     "analyze",
@@ -62,18 +64,26 @@ __all__ = [
     "tazel_overlay",
     "vyrn_overlay",
     "uv_overlay",
+    "candle_overlay",
     "rosetta_overlay",
     "zen_overlay",
     "chaos_overlay",
     "balance_overlay",
     "synthetic_page",
+    "MODE_ALIASES",
+    "resolve_mode",
+    "known_mode_tokens",
 ]
 
 LIMITATION = (
     "Rosetta spectral analysis (RSA-2.0 family). SpectralLock lenses match "
     "Aziel Corpus Library OCR — overlays plus ink/page targets "
-    "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance). "
-    "Synthetic UV is a 365–400 nm look from an ordinary photograph. "
+    "(zero, tazel, vyrn, uv, candle, rosetta, zen, chaos, balance). "
+    "Ultraviolet light analysis (uv; aliases ultraviolet, uv-light, uvsa) is "
+    "synthetic — a 365–400 nm look from an ordinary photograph, not a real UV lamp. "
+    "Candlelight analysis (candle; aliases candlelight, candle-light) is "
+    "synthetic — a warm 1800–2700K / flame-side look from an ordinary photograph, "
+    "not a real multispectral capture. "
     "Balance never invents marks. The human still reads the page. "
     "Author Aziel Eliab."
 )
@@ -87,6 +97,9 @@ ZERO_HUE = 260.0
 TAZEL_RGB = (0x1E / 255.0, 0xC9 / 255.0, 0xA5 / 255.0)
 VYRN_RGB = (0xC0 / 255.0, 0x00 / 255.0, 0x66 / 255.0)
 ZERO_RGB = (0x6F / 255.0, 0x64 / 255.0, 0x85 / 255.0)
+CANDLE_HEX = "#E88B2A"
+CANDLE_HUE = 32.0
+CANDLE_RGB = (0xE8 / 255.0, 0x8B / 255.0, 0x2A / 255.0)
 EPS = 1e-6
 PLAIN_NOT_IMAGE = "That file is not a picture. Use a PNG or JPEG photo."
 MAX_IMAGE_PIXELS = 40_000_000
@@ -451,6 +464,38 @@ def uv_overlay(rgb: np.ndarray) -> np.ndarray:
     return np.clip(out, 0.0, 1.0).astype(np.float32)
 
 
+def candle_overlay(rgb: np.ndarray) -> np.ndarray:
+    """CLSA-1.0: synthetic candlelight / flame-side look from an ordinary photo.
+
+    Warm ambers ~1800–2700K, lift parchment glow, keep ink readable.
+    Not a real candle lamp and not a claim of multispectral capture.
+    """
+    lum = luminance(rgb)
+    t = normalize01(lum)
+    h, _s, _v = rgb_to_hsv(rgb)
+    amber = np.exp(-0.5 * (hue_distance(h, CANDLE_HUE) / 38.0) ** 2)
+    glow = np.clip(np.power(np.clip(t, 0.0, 1.0), 0.80) * 1.14, 0.0, 1.0)
+    glow = glow * (1.0 - 0.18 * (1.0 - t))
+    glow = _midtone_lift(glow, amount=0.10)
+    hp = lum - blur_gray(lum, 1.25)
+    glow = np.clip(glow + hp * 0.45, 0.0, 1.0)
+    # warm amber weighting (high R, mid G, low B) — 1800–2700K look
+    r = np.clip(glow * 1.20 + 0.06 + 0.12 * amber, 0.0, 1.0)
+    g = np.clip(glow * 0.72 + 0.04 + 0.05 * amber, 0.0, 1.0)
+    b = np.clip(glow * 0.32 + hp * 0.06, 0.0, 1.0)
+    out = np.stack([r, g, b], axis=-1)
+    ink = np.clip((0.48 - t) / 0.48, 0.0, 1.0)
+    out = out * (1.0 - 0.28 * ink[..., None])
+    parch = np.clip((t - 0.38) / 0.50, 0.0, 1.0)
+    warm = np.asarray(CANDLE_RGB, dtype=np.float32)
+    out = np.clip(
+        out * (1.0 - 0.16 * parch[..., None]) + warm * (glow * 0.16 * parch)[..., None],
+        0.0,
+        1.0,
+    )
+    return out.astype(np.float32)
+
+
 def _channel_luma(rgb: np.ndarray, fn: Callable[[np.ndarray], np.ndarray]) -> np.ndarray:
     return normalize01(luminance(fn(rgb)))
 
@@ -576,11 +621,12 @@ def normalize_lenses(
         key = str(item or "").strip().lower()
         if not key:
             continue
-        if key not in MODES:
-            known = ", ".join(MODES)
+        canonical = resolve_mode(key)
+        if canonical is None:
+            known = ", ".join(known_mode_tokens())
             raise ValueError(f"unknown lens {key!r}. Known: {known}")
-        if key not in out:
-            out.append(key)
+        if canonical not in out:
+            out.append(canonical)
     return out or ["rosetta"]
 
 
@@ -658,9 +704,9 @@ def analyze(
 
 
 def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResult:
-    key = (mode or "").strip().lower()
-    if key not in MODES:
-        known = ", ".join(MODES)
+    key = resolve_mode(mode)
+    if key is None:
+        known = ", ".join(known_mode_tokens())
         raise ValueError(f"unknown mode {mode!r}. Known: {known}")
     rgb = finite01(rgb)
     debug(f"apply_mode mode={key} size={rgb.shape[1]}x{rgb.shape[0]}")
@@ -673,6 +719,8 @@ def apply_mode(rgb: np.ndarray, mode: str, *, tint: bool = True) -> OverlayResul
         return _pack(key, vyrn_overlay(rgb), info["paper"], source=rgb)
     if key == "uv":
         return _pack(key, uv_overlay(rgb), info["paper"], source=rgb)
+    if key == "candle":
+        return _pack(key, candle_overlay(rgb), info["paper"], source=rgb)
     if key == "rosetta":
         out, ch = rosetta_overlay(rgb, tint=tint)
         return _pack(key, out, info["paper"], ch, source=rgb)
@@ -721,13 +769,25 @@ MODES: dict[str, dict] = {
     },
     "uv": {
         "id": "uv",
-        "kid_label": "Fake UV look",
-        "kid_hint": "A 365–400 nm look from an ordinary photo. Not a real UV lamp.",
+        "kid_label": "Ultraviolet (synthetic)",
+        "kid_hint": "Ultraviolet light analysis (synthetic). A 365–400 nm look from an ordinary photo. Not a real UV lamp.",
         "paper": "UVSA-1.0",
         "status": "live",
         "hue": None,
         "hex": None,
-        "summary": "Synthetic 365–400 nm simulation. Not a real UV lamp.",
+        "summary": "Ultraviolet light analysis (synthetic). UVSA-1.0 — 365–400 nm look from an ordinary photo. Not a real UV lamp.",
+        "aliases": ["ultraviolet", "uv-light", "uvsa"],
+    },
+    "candle": {
+        "id": "candle",
+        "kid_label": "Candlelight look",
+        "kid_hint": "A warm 1800–2700K / flame-side look from an ordinary photo. Not a real candle scan.",
+        "paper": "CLSA-1.0",
+        "status": "live",
+        "hue": CANDLE_HUE,
+        "hex": CANDLE_HEX,
+        "summary": "Candlelight spectral analysis (synthetic). Warm ambers ~1800–2700K, parchment glow, ink readable. Not multispectral capture.",
+        "aliases": ["candlelight", "candle-light"],
     },
     "rosetta": {
         "id": "rosetta",
@@ -773,6 +833,29 @@ MODES: dict[str, dict] = {
 
 LIVE_MODES = tuple(MODES.keys())
 LENSES = LIVE_MODES
+
+MODE_ALIASES: dict[str, str] = {
+    "candlelight": "candle",
+    "candle-light": "candle",
+    "ultraviolet": "uv",
+    "uv-light": "uv",
+    "uvsa": "uv",
+}
+
+
+def resolve_mode(name: str | None) -> str | None:
+    """Map a lens token (canonical id or alias) to a live mode id."""
+    key = str(name or "").strip().lower()
+    if not key:
+        return None
+    if key in MODES:
+        return key
+    return MODE_ALIASES.get(key)
+
+
+def known_mode_tokens() -> tuple[str, ...]:
+    """Canonical live ids first, then aliases — for CLI help and error copy."""
+    return tuple(list(LIVE_MODES) + sorted(MODE_ALIASES))
 
 TARGETS: dict[str, dict] = {
     "ink": {

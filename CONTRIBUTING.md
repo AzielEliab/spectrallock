@@ -25,17 +25,29 @@ No network.
    reads the page. Author Aziel Eliab only.
 2. **Do not invent marks.** Balance (BSA) reweights Zen vs Chaos. It
    must not draw symbols that were not in the photograph.
-3. **Synthetic UV is a simulation** of a 365–400 nm look from an
-   ordinary photo. Do not imply a UV lamp or fluorescence hardware.
-4. **Keep the dependency list tiny.** Pillow + numpy. No OpenCV.
-5. **UI binds loopback only** (`127.0.0.1:8861`). Do not listen on `0.0.0.0`.
-6. **Do not mix the download tracker** with any other product's Worker or KV.
-7. **Door vs local op.** `/v1/mesh/*` PROXY to aziel-runtime. Local ops are `/v1/{op}` only.
+3. **Ultraviolet light analysis is synthetic** — a 365–400 nm look from
+   an ordinary photo (`uv`; aliases `ultraviolet`, `uv-light`, `uvsa`).
+   Do not imply a UV lamp or fluorescence hardware.
+4. **Candlelight analysis is synthetic** — a warm 1800–2700K / flame-side
+   look from an ordinary photo (`candle`; aliases `candlelight`,
+   `candle-light`). Do not imply a real candle scan or multispectral capture.
+5. **Keep the dependency list tiny.** Pillow + numpy. No OpenCV.
+6. **UI binds loopback only** (`127.0.0.1:8861`). Do not listen on `0.0.0.0`.
+7. **Do not mix the download tracker** with any other product's Worker or KV.
+8. **Door vs local op.** `/v1/mesh/*` PROXY to aziel-runtime. Local ops are `/v1/{op}` only.
    Suite mesh default OFF; QNM rollup live|locked|isolated; no Node Gate;
    no auto-heal; not anonymity.
-8. New behavior needs a test that fails without the change.
-9. Hosted `/v1/overlay` is a simplified preview (max 256 px). The full
-   pipeline is this Python package.
+9. New behavior needs a test that fails without the change.
+10. Hosted `/v1/overlay` is a simplified preview (max 256 px). The full
+    pipeline is this Python package.
+11. After a lens or overlay change merges here, aziel-runtime needs an
+    engine rehash and catalog bump. Refresh
+    `src/engines/spectrallock.js`, `src/engines/spectrallock/overlay.js`,
+    `src/engines/spectrallock/ops.js`, then `src/engines/digest.js`,
+    `src/packed-catalog.js`, `src/software-catalog.js`, `src/catalog-meta.js`,
+    and `src/software-copy.js` if they still list eight lenses. Keep
+    `stub_ops`: spectrometer, forensic, invent_mark. Do not invent LIVE
+    spectrometer hardware.
 
 ## Where to change things
 

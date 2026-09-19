@@ -10,9 +10,10 @@ import 'theme.dart';
 
 const limitation =
     'Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus '
-    'Library OCR (overlays, ink/page). Synthetic UV is a look, not a lamp. '
-    'Balance never invents marks. The human still reads the page. '
-    'Author Aziel Eliab.';
+    'Library OCR (overlays, ink/page). Ultraviolet light analysis (uv) is '
+    'a look, not a lamp. Candlelight analysis (candle) is a warm look, '
+    'not a real candle scan. Balance never invents marks. The human still '
+    'reads the page. Author Aziel Eliab.';
 
 /// Color-matrix approximations of the published hues. Not the Python pipeline.
 const matrices = <String, List<double>>{
@@ -38,6 +39,12 @@ const matrices = <String, List<double>>{
     0.78, 0.05, 0.18, 0, 12,
     0.04, 0.72, 0.22, 0, 8,
     0.08, 0.12, 1.32, 0, 28,
+    0, 0, 0, 1, 0,
+  ],
+  'candle': [
+    1.28, 0.10, -0.08, 0, 18,
+    0.08, 0.82, -0.04, 0, 6,
+    -0.10, 0.04, 0.42, 0, 0,
     0, 0, 0, 1, 0,
   ],
   'rosetta': [

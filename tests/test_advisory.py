@@ -20,10 +20,16 @@ def test_readme_and_whitepaper_are_rosetta() -> None:
     assert "aziel corpus library ocr" in blob or "corpus ocr" in blob
     assert "ink" in blob and "page" in blob
     assert "never invent" in blob or "never invents" in blob
+    assert "candlelight" in blob
+    assert "1800" in blob and "2700" in blob
     assert "not a spectrometer" not in blob
     assert "not a lab spectrometer" not in blob
-    for mode in ("zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"):
+    for mode in ("zero", "tazel", "vyrn", "uv", "candle", "rosetta", "zen", "chaos", "balance"):
         assert mode in readme
+    assert "candlelight" in readme
+    assert "ultraviolet" in readme
+    assert "clsa-1.0" in readme
+    assert "ultraviolet light analysis" in blob
 
 
 FULL_AI_CLIENTS = (
@@ -82,6 +88,24 @@ def test_worker_hosts_default_asset() -> None:
     data = path.read_bytes()
     assert data[:2] == b"\x1f\x8b", f"{asset} is not gzip"
     assert len(data) > 1024, f"{asset} is too small to be a release sdist"
+
+
+def test_worker_overlay_lists_candle_and_uv_aliases() -> None:
+    overlay = (ROOT / "workers" / "download-tracker" / "src" / "overlay.js").read_text(
+        encoding="utf-8"
+    )
+    index = (ROOT / "workers" / "download-tracker" / "src" / "index.js").read_text(
+        encoding="utf-8"
+    )
+    assert 'id: "candle"' in overlay
+    assert "CLSA-1.0" in overlay
+    assert "candlelight" in overlay and "candle-light" in overlay
+    assert "ultraviolet" in overlay and "uv-light" in overlay and "uvsa" in overlay
+    assert "Ultraviolet light analysis (synthetic)" in overlay
+    assert "Candlelight spectral analysis (synthetic)" in overlay
+    assert '"candle"' in overlay
+    assert "zero, tazel, vyrn, uv, candle, rosetta, zen, chaos, balance" in index
+    assert "synthetic_candle: true" in index
 
 
 def test_worker_skill_embed_matches_skill_md() -> None:

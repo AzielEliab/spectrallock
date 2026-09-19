@@ -7,7 +7,10 @@ Tazel = Revelation SpectrumHue: Green–Gold (~170°)Function: Hidden ink, faint
 VYRN SPECTRAL ANALYSIS (VSA-1.0)
 Vyrn = Purification/Pressure SpectrumHue: Magenta (~350°)Function: Stroke pressure, overwritten text, scribal corrections.Formula: Pure VYRN overlay only.
 SYNTHETIC UV SPECTRAL ANALYSIS (UVSA-1.0)
-UV = Substrate History SpectrumFunction: Scraping, abrasion, watermark fibers, chemical halos.Formula: Pure UV synthetic fluorescence overlay.
+UV = Ultraviolet light analysis (synthetic). Canonical id uv. Aliases: ultraviolet, uv-light, uvsa.Function: 365–400 nm look from an ordinary photo — parchment glow, ink darker. Not a real UV lamp.Formula: Pure UV synthetic overlay.
+
+CANDLELIGHT SPECTRAL ANALYSIS (CLSA-1.0)
+Candle = Candlelight analysis (synthetic). Canonical id candle. Aliases: candlelight, candle-light.Function: Warm 1800–2700K / flame-side look from an ordinary photo — parchment glow, ink readable. Not a real candle scan and not multispectral capture.Formula: Pure candle overlay.
 ROSETTA SPECTRAL ANALYSIS (RSA-2.0)
 Rosetta = Decoding CompositeFormula: RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′(Z′ = Zero output, T′ = Tazel, V′ = Vyrn)Purpose: Hidden-ink decoding, structural integrity, custodial mark recovery.
 ZEN SPECTRAL ANALYSIS (ZENA-1.0)

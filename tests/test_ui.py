@@ -21,7 +21,7 @@ def test_ui_modes_and_overlay(tmp_path) -> None:
         with urllib.request.urlopen(f"http://{host}:{port}/api/modes") as res:
             payload = json.loads(res.read().decode())
         ids = [m["id"] for m in payload["modes"]]
-        assert "zero" in ids and "balance" in ids and "uv" in ids
+        assert "zero" in ids and "balance" in ids and "uv" in ids and "candle" in ids
         src = tmp_path / "p.png"
         save_rgb(synthetic_page(24, 24), str(src))
         data = src.read_bytes()

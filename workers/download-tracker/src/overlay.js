@@ -7,22 +7,34 @@
 export const LIMITATION =
   "Rosetta spectral analysis (RSA-2.0 family). SpectralLock lenses match " +
   "Aziel Corpus Library OCR — overlays plus ink/page targets " +
-  "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance). " +
-  "Synthetic UV is a 365–400 nm look from an ordinary photograph. " +
+  "(zero, tazel, vyrn, uv, candle, rosetta, zen, chaos, balance). " +
+  "Ultraviolet light analysis (uv; aliases ultraviolet, uv-light, uvsa) is " +
+  "synthetic — a 365–400 nm look from an ordinary photograph, not a real UV lamp. " +
+  "Candlelight analysis (candle; aliases candlelight, candle-light) is " +
+  "synthetic — a warm 1800–2700K / flame-side look from an ordinary photograph, " +
+  "not a real multispectral capture. " +
   "Balance never invents marks. Hosted overlay is a simplified preview " +
   "(max 256 px); the full pipeline is the Python package. The human still reads the page. " +
   "Author Aziel Eliab.";
 
 export const VERSION = "0.3.0";
 export const MAX_SIDE = 256;
-export const LIVE = ["zero", "tazel", "vyrn", "uv", "rosetta", "zen", "chaos", "balance"];
+export const LIVE = ["zero", "tazel", "vyrn", "uv", "candle", "rosetta", "zen", "chaos", "balance"];
+export const ALIASES = {
+  candlelight: "candle",
+  "candle-light": "candle",
+  ultraviolet: "uv",
+  "uv-light": "uv",
+  uvsa: "uv",
+};
 export const TARGET_IDS = ["ink", "page"];
 
 export const MODES = [
   { id: "zero", paper: "ZSA-1.0", status: "live", summary: "Equilibrium / geometry (simplified grayscale stretch)." },
   { id: "tazel", paper: "TSA-1.0", status: "live", summary: "Boost green–gold–turquoise (~170°, #1EC9A5)." },
   { id: "vyrn", paper: "VSA-1.0", status: "live", summary: "Boost magenta–red-violet (~350°, #C00066)." },
-  { id: "uv", paper: "UVSA-1.0", status: "live", summary: "Synthetic 365–400 nm simulation. Not a real UV lamp." },
+  { id: "uv", paper: "UVSA-1.0", status: "live", summary: "Ultraviolet light analysis (synthetic). UVSA-1.0 — 365–400 nm look from an ordinary photo. Not a real UV lamp.", aliases: ["ultraviolet", "uv-light", "uvsa"] },
+  { id: "candle", paper: "CLSA-1.0", status: "live", summary: "Candlelight spectral analysis (synthetic). Warm ambers ~1800–2700K, parchment glow, ink readable. Not multispectral capture.", aliases: ["candlelight", "candle-light"] },
   { id: "rosetta", paper: "RSA-2.0", status: "live", summary: "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize." },
   { id: "zen", paper: "ZENA-1.0", status: "live", summary: "(Z′ + T′ + U′ + V′) / 4 after normalize." },
   { id: "chaos", paper: "CSA-1.0", status: "live", summary: "0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize." },
@@ -184,6 +196,40 @@ function modeUv(buf) {
   return out;
 }
 
+function modeCandle(buf) {
+  const n = buf.length / 3;
+  const L = new Float32Array(n);
+  for (let i = 0, p = 0; i < n; i++, p += 3) L[i] = luma(buf[p], buf[p + 1], buf[p + 2]);
+  const t = norm01(L);
+  const out = new Float32Array(buf.length);
+  for (let i = 0; i < n; i++) {
+    const [h] = rgbToHsv(buf[i * 3], buf[i * 3 + 1], buf[i * 3 + 2]);
+    const amber = Math.exp(-0.5 * (hueDist(h, 32) / 38) ** 2);
+    let glow = clamp01(Math.pow(t[i], 0.80) * 1.14);
+    glow = glow * (1 - 0.18 * (1 - t[i]));
+    const ink = t[i] < 0.48 ? (0.48 - t[i]) / 0.48 : 0;
+    const parch = t[i] > 0.38 ? Math.min(1, (t[i] - 0.38) / 0.50) : 0;
+    let r = clamp01(glow * 1.20 + 0.06 + 0.12 * amber);
+    let g = clamp01(glow * 0.72 + 0.04 + 0.05 * amber);
+    let b = clamp01(glow * 0.32);
+    r = clamp01((r * (1 - 0.16 * parch) + 0.91 * glow * 0.16 * parch) * (1 - 0.28 * ink));
+    g = clamp01((g * (1 - 0.16 * parch) + 0.55 * glow * 0.16 * parch) * (1 - 0.28 * ink));
+    b = clamp01((b * (1 - 0.16 * parch) + 0.16 * glow * 0.16 * parch) * (1 - 0.28 * ink));
+    const p = i * 3;
+    out[p] = r;
+    out[p + 1] = g;
+    out[p + 2] = b;
+  }
+  return out;
+}
+
+function resolveMode(name) {
+  const key = String(name || "").trim().toLowerCase();
+  if (!key) return null;
+  if (LIVE.includes(key)) return key;
+  return ALIASES[key] || null;
+}
+
 function mixLuma(channels, weights) {
   const n = channels.zero.length;
   const out = new Float32Array(n);
@@ -216,11 +262,13 @@ function normalizeLenses(mode, lens, lenses) {
     else String(item).replaceAll("+", ",").split(",").forEach((x) => raw.push(x));
   }
   const out = [];
+  const known = LIVE.concat(Object.keys(ALIASES));
   for (const item of raw) {
     const key = String(item || "").trim().toLowerCase();
     if (!key) continue;
-    if (!LIVE.includes(key)) return { error: "unknown lens", unknown: key, known: LIVE };
-    if (!out.includes(key)) out.push(key);
+    const canonical = resolveMode(key);
+    if (!canonical) return { error: "unknown lens", unknown: key, known };
+    if (!out.includes(canonical)) out.push(canonical);
   }
   return { lenses: out.length ? out : ["rosetta"] };
 }
@@ -279,6 +327,7 @@ function applyMode(buf, w, h, mode) {
   if (mode === "tazel") return modeTazel(buf);
   if (mode === "vyrn") return modeVyrn(buf);
   if (mode === "uv") return modeUv(buf);
+  if (mode === "candle") return modeCandle(buf);
   const ch = baseChannels(buf, w, h);
   if (mode === "rosetta") return grayToRgb(mixLuma(ch, ROSETTA_W));
   if (mode === "zen") return grayToRgb(mixLuma(ch, ZEN_W));

@@ -46,7 +46,7 @@ def test_import_jpeg_export_png_sidecar(tmp_path: Path) -> None:
     assert Image.open(dst).format == "PNG"
 
 
-def test_roundtrip_all_eight_modes_write_png(tmp_path: Path) -> None:
+def test_roundtrip_all_nine_modes_write_png(tmp_path: Path) -> None:
     src = tmp_path / "page.png"
     save_rgb(synthetic_page(24, 24), str(src))
     for mode in LIVE_MODES:

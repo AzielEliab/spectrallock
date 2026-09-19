@@ -1,10 +1,11 @@
 /* SpectralLock local UI. Rosetta spectral analysis. Loopback only. No telemetry. */
-const LIVE = ["zero","tazel","vyrn","uv","rosetta","zen","chaos","balance"];
+const LIVE = ["zero","tazel","vyrn","uv","candle","rosetta","zen","chaos","balance"];
 const KID = {
   zero: "Zero",
   tazel: "Tazel",
   vyrn: "Vyrn",
-  uv: "Uv",
+  uv: "Ultraviolet",
+  candle: "Candlelight",
   rosetta: "Rosetta",
   zen: "Zen",
   chaos: "Chaos",
@@ -12,6 +13,7 @@ const KID = {
 };
 const PAPERS = {
   zero: "ZSA-1.0", tazel: "TSA-1.0", vyrn: "VSA-1.0", uv: "UVSA-1.0",
+  candle: "CLSA-1.0",
   rosetta: "RSA-2.0", zen: "ZENA-1.0", chaos: "CSA-1.0", balance: "BSA",
 };
 

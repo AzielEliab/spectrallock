@@ -22,7 +22,8 @@ ink or page polarity.
 
 - Not a court exhibit or a claim of authenticity.
 - Not a substitute for a human reading the page.
-- Synthetic UV is a 365–400 nm *look* from an ordinary photograph, not a lamp.
+- Ultraviolet light analysis (`uv`) is a 365–400 nm *look* from an ordinary photograph, not a lamp.
+- Candlelight analysis (`candle`) is a warm 1800–2700K / flame-side *look* from an ordinary photograph, not a real candle scan or multispectral capture.
 - Balance never invents marks or symbols.
 
 The human still reads the page.
@@ -56,9 +57,17 @@ the background.
 
 ### UVSA-1.0 `uv`
 
-**Synthetic** 365–400 nm simulation from an ordinary RGB photo: boost
-parchment luminance, blue-violet weight, microtexture high-pass, ink
-darker.
+**Ultraviolet light analysis (synthetic).** 365–400 nm simulation from
+an ordinary RGB photo: boost parchment luminance, blue-violet weight,
+microtexture high-pass, ink darker. Canonical id `uv`. Aliases:
+`ultraviolet`, `uv-light`, `uvsa`. Not a real UV lamp.
+
+### CLSA-1.0 `candle`
+
+**Candlelight spectral analysis (synthetic).** Warm ambers ~1800–2700K
+and a flame-side look from an ordinary RGB photo: lift parchment glow,
+keep ink readable. Canonical id `candle`. Aliases: `candlelight`,
+`candle-light`. Not a real candle scan and not multispectral capture.
 
 ### RSA-2.0 `rosetta`
 
@@ -132,5 +141,5 @@ remains Rosetta spectral analysis.
 Sample page, SpectralLock lens grid (multi-select), Ink/Page target,
 Simple/Advanced labels, overlay-only or side-by-side, Export PNG + JSON
 sidecar, Verify receipt (lenses, target, paper, SHA-256 in/out, size).
-`spectrallock doctor` checks all eight lenses × both targets, no NaN,
+`spectrallock doctor` checks all nine lenses × both targets, no NaN,
 loopback, no telemetry.

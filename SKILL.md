@@ -7,9 +7,9 @@ description: Use when calling SpectralLock hosted /v1 or installing the local pa
 
 Rosetta spectral analysis software (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets. Author: **Aziel Eliab**.
 
-**THIS IS:** Rosetta spectral analysis — SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr).
+**THIS IS:** Rosetta spectral analysis — SpectralLock lenses, overlays, and ink/page modes, aligned with [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr). Live lenses: zero, tazel, vyrn, uv, candle, rosetta, zen, chaos, balance. Targets: ink, page. `uv` (aliases `ultraviolet`, `uv-light`, `uvsa`) is Ultraviolet light analysis (synthetic). `candle` (aliases `candlelight`, `candle-light`) is Candlelight spectral analysis (synthetic, CLSA-1.0). Hosted overlay is a 256px preview; the full pipeline is the Python package. Never invent marks. Lamb Lens: Service → Clarity → Peace.
 
-**THIS IS NOT:** a court exhibit or a claim of authenticity. Hosted `/v1` does not increment downloads or views.
+**THIS IS NOT:** a court exhibit or a claim of authenticity. Hosted `/v1` does not increment downloads or views. Stub ops stay stub.
 
 Always send `User-Agent: Mozilla/5.0`. Cloudflare Workers may 403 an empty agent.
 
