@@ -1,0 +1,47 @@
+# SpectralLock
+
+> Author: Aziel Eliab only
+> Version: 0.3.0
+> License: Apache-2.0
+> Status: live Rosetta spectral analysis (RSA-2.0 family)
+
+SpectralLock is Rosetta spectral analysis software. Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets.
+
+LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon.
+Targets: ink, page.
+Balance never invents marks. Lemon never invents marks. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE. Never invent letters.
+
+## Public Worker
+
+https://spectrallock-download-tracker.vibelock.workers.dev/
+
+- Counted download: /download (gzip HTTP 200)
+- One-click install: /install.sh
+- OpenAPI: /openapi.json
+- Skill: /v1/skill
+- Health: /v1/health
+- Lenses: /v1/lenses
+- Overlay: POST /v1/overlay
+- Unredact: GET|POST /v1/unredact
+- Recover: GET|POST /v1/recover
+- Handwriting: GET|POST /v1/handwriting
+- Suite mesh PROXY: GET /v1/mesh (default OFF; QNM-BUILD-1.0; QNS-CD-1.0)
+- cite.json: /cite.json
+- ai.txt: /ai.txt
+
+## Catalog
+
+- https://aziel-runtime.vibelock.workers.dev/
+- MCP: POST https://aziel-runtime.vibelock.workers.dev/mcp
+- Product: https://aziel-runtime.vibelock.workers.dev/p/spectrallock/
+
+## Local package
+
+https://github.com/AzielEliab/spectrallock
+
+```bash
+curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash
+spectrallock ui
+```
+
+Identity: Aziel Eliab only. Lamb Lens: Service → Clarity → Peace. NO-LIE.

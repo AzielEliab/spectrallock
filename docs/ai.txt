@@ -1,0 +1,19 @@
+SpectralLock — Rosetta spectral analysis (RSA-2.0 family) by Aziel Eliab only.
+
+Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets.
+LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon.
+Targets: ink, page. Hosted overlay is a 256 px PNG preview. Full pipeline is the Python package.
+
+Balance never invents marks. Never invent letters. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE.
+
+Worker: https://spectrallock-download-tracker.vibelock.workers.dev/
+OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json
+Skill: https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill
+llms.txt: https://spectrallock-download-tracker.vibelock.workers.dev/llms.txt
+cite.json: https://spectrallock-download-tracker.vibelock.workers.dev/cite.json
+Catalog MCP: POST https://aziel-runtime.vibelock.workers.dev/mcp
+GitHub: https://github.com/AzielEliab/spectrallock
+Corpus OCR: https://www.azielcorpuslibrary.net/ocr
+
+Always send User-Agent: Mozilla/5.0.
+Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic), Cursor (MCP), Glama (MCP), Perplexity, Microsoft Copilot / Bing, Google Gemini / Vertex, Mistral, Meta AI, Apple Intelligence surfaces, Amazon Q tooling, DuckAssist, You.com, Cohere, and other MCP/OpenAPI-capable assistants.

@@ -1,0 +1,18 @@
+{
+  "author": "Aziel Eliab",
+  "identity": "Aziel Eliab only",
+  "title": "SpectralLock",
+  "version": "0.3.0",
+  "description": "Rosetta spectral analysis (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR — overlays plus ink/page targets.",
+  "github": "https://github.com/AzielEliab/spectrallock",
+  "live": "https://spectrallock-download-tracker.vibelock.workers.dev/",
+  "download": "https://spectrallock-download-tracker.vibelock.workers.dev/download",
+  "openapi": "https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json",
+  "skill": "https://spectrallock-download-tracker.vibelock.workers.dev/v1/skill",
+  "llms": "https://spectrallock-download-tracker.vibelock.workers.dev/llms.txt",
+  "ai": "https://spectrallock-download-tracker.vibelock.workers.dev/ai.txt",
+  "catalog": "https://aziel-runtime.vibelock.workers.dev/",
+  "doi": null,
+  "license": "Apache-2.0",
+  "honesty": "Balance never invents marks. Opaque replace with no leftover container bytes refuses SL-UNREDACT-OPAQUE. Never invent letters. Author: Aziel Eliab only."
+}

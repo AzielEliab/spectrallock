@@ -92,27 +92,26 @@ LIMITATION = (
     "(zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon). "
     "Synthetic UV is a 365–400 nm look from an ordinary photograph. "
     "Candlelight is a warm flame-side look from an ordinary photo. "
-    "Indent is an image-enhancement heuristic for surface relief, not electrostatic detection. "
+    "Indent is an image-enhancement heuristic for surface relief. "
     "Lemon enhances heat-/acid-style browning already in the pixels; it never invents marks. "
     "Balance never invents marks. "
-    "Inject ON is false-color membership tint (paint), not recovered pigment. "
+    "Inject ON is false-color membership tint (paint). "
     "OFF is luminance of the same gate. Zero ignores the switch. "
-    "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. "
+    "An empty gate is a valid reading. Copy-of-copy works only if the hue is still in-band. "
     "Unredact / lift-overlay locates leftover bytes and residual only — never invents letters. "
     "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). "
-    "Heatmaps are not transcripts. "
-    "Handwriting analysis is synthetic scan heuristics of ink-on-paper photos — "
-    "not ESDA, not chemical dating, not a court finding, not writer identity. "
+    "Heatmaps are residual overlays. "
+    "Handwriting analysis is synthetic scan heuristics of ink-on-paper photos. "
     "Lamb Lens: Service → Clarity → Peace. "
     "The human still reads the page. Author Aziel Eliab."
 )
 
 INJECT_NOTE = (
     "ON paints membership (false color). OFF is the same gate as gray. "
-    "ON is not recovered pigment. Zero ignores the switch. "
-    "Synthetic UV is not a lamp. Balance does not invent marks. "
+    "Zero ignores the switch. "
+    "UV is a synthetic 365–400 nm look from an ordinary photograph. Balance never invents marks. "
     "Report tazel_inband_pct and vyrn_inband_pct before claiming a hit. "
-    "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band."
+    "An empty gate is a valid reading. Copy-of-copy works only if the hue is still in-band."
 )
 
 TAZEL_HEX = "#1EC9A5"
@@ -1042,13 +1041,13 @@ MODES: dict[str, dict] = {
     "uv": {
         "id": "uv",
         "kid_label": "Fake UV look",
-        "kid_hint": "Ultraviolet light analysis (synthetic). A 365–400 nm look from an ordinary photo. Not a real UV lamp.",
+        "kid_hint": "Ultraviolet light analysis (synthetic). A 365–400 nm look from an ordinary photo.",
         "paper": "UVSA-1.0",
         "status": "live",
         "hue": None,
         "hex": None,
         "aliases": ["ultraviolet", "uv-light", "uvsa"],
-        "summary": "Ultraviolet light analysis (synthetic). 365–400 nm look from an ordinary photograph. Not a real UV lamp.",
+        "summary": "Ultraviolet light analysis (synthetic). 365–400 nm look from an ordinary photograph.",
     },
     "rosetta": {
         "id": "rosetta",
@@ -1093,25 +1092,25 @@ MODES: dict[str, dict] = {
     "candle": {
         "id": "candle",
         "kid_label": "Candlelight",
-        "kid_hint": "Warm flame-side look from an ordinary photo. Not a real lamp.",
+        "kid_hint": "Warm flame-side look from an ordinary photo.",
         "paper": "CLSA-1.0",
         "status": "live",
         "hue": None,
         "hex": None,
         "aliases": ["candlelight", "candle-light"],
-        "summary": "Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look; parchment glow; ink readable. Not multispectral capture.",
+        "summary": "Candlelight analysis (synthetic). Amber ~1800–2700K flame-side look; parchment glow; ink readable.",
     },
     "indent": {
         "id": "indent",
         "kid_label": "Ink-suppress / indent",
-        "kid_hint": "Washes visible ink so paper fibers and pressure dents are easier to look at. Prefer Page. Not ESDA.",
+        "kid_hint": "Washes visible ink so paper fibers and pressure dents are easier to look at. Prefer Page.",
         "paper": "ISA-1.0",
         "status": "live",
         "hue": None,
         "hex": None,
         "aliases": ["indentation", "suppress-ink", "ink-suppress", "revealer-indent"],
         "preferred_target": "page",
-        "summary": "Ink-suppress / indentation reveal (synthetic). Image-enhancement heuristic for fiber and pressure relief. Prefer target=page. Not electrostatic detection.",
+        "summary": "Ink-suppress / indentation reveal (synthetic). Image-enhancement heuristic for fiber and pressure relief. Prefer target=page.",
     },
     "lemon": {
         "id": "lemon",

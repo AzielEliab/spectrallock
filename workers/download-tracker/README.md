@@ -10,7 +10,7 @@ Serves gzip via `ASSETS.fetch`, `Cache-Control: private, no-store`.
 Build it with `scripts/build_tarball.sh`. Author Aziel Eliab.
 
 `/v1` never increments DOWNLOADS KV.
-`/v1/mesh/*` PROXY to aziel-runtime suite mesh (`AZIEL_RUNTIME` / `https://aziel-runtime.vibelock.workers.dev`). Default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). Local qnsd is coded in [qnm-node](https://github.com/AzielEliab/qnm-node). Runtime cites + catalog field live in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime). AZInterface holds pair custody. Not a Softwares-tab product. No Node Gate. No public qnsd proxy. No auto-heal. Not anonymity. Human UI Live Nodes strip polls `GET /v1/mesh`. Status / Live Nodes JSON includes `qns_cd_spec` + `qns_cd` so peers can see the cross-map.
+`/v1/mesh/*` PROXY to aziel-runtime suite mesh (`AZIEL_RUNTIME` / `https://aziel-runtime.vibelock.workers.dev`). Default OFF. QNM-BUILD-1.0 live|locked|isolated. QNS-CD-1.0 hub cite / Worker mesh cross-map only (photon QNS1 packet transfer). Local qnsd is coded in [qnm-node](https://github.com/AzielEliab/qnm-node). Runtime cites + catalog field live in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime). AZInterface holds pair custody. No Node Gate. No public qnsd proxy. No auto-heal. Human UI Live Nodes strip polls `GET /v1/mesh`. Status / Live Nodes JSON includes `qns_cd_spec` + `qns_cd` so peers can see the cross-map.
 
 Verify: `curl -sS -A 'Mozilla/5.0' https://spectrallock-download-tracker.vibelock.workers.dev/v1/mesh/status` returns MESH-OK style JSON with `enabled: false` by default and the QNS-CD-1.0 cross-map.
 
@@ -22,11 +22,14 @@ Works with ChatGPT (GPT Actions / OpenAI), Grok (xAI), Venice, Claude (Anthropic
 - Health: `GET /v1/health`
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
-- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px. `inject` true|false is paint, not pigment. LIVE: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon (aliases resolve). Rosetta preview.
-- Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query, twin_b64?}` locate / leftover-historical recover / residual lift. Returns `revision_graph` (startxref/Prev edges + per-revision tip-cut copies / embeds). Opaque rewrite + no leftover → `SL-UNREDACT-OPAQUE`. Never invents letters. Heatmaps are not transcripts. OCR only after structural recovery. Hosted may cap copy `b64` and cite sha256+offsets — no invented bytes.
-- Recover: `GET /v1/recover` ops + LIVE vs SLOT; `POST /v1/recover` `{b64, op, filename, twin_b64?}`. Present bytes only. Secrets suppressed. SLOT ≠ LIVE.
-- Handwriting: `GET /v1/handwriting` ops + LIVE vs SLOT; `POST /v1/handwriting` `{b64, op, filename, twin_b64?}`. Synthetic ink-on-paper scan heuristics. 256 px PNG preview. Not ESDA / chemical dating / writer identity / court finding.
+- Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px. `inject` true|false is false-color membership paint. LIVE: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon (aliases resolve). Rosetta preview.
+- Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query, twin_b64?}` locate / leftover-historical recover / residual lift. Returns `revision_graph` (startxref/Prev edges + per-revision tip-cut copies / embeds). Opaque rewrite + no leftover → `SL-UNREDACT-OPAQUE`. Never invents letters. Heatmaps are residual overlays. OCR only after structural recovery. Hosted may cap copy `b64` and cite sha256+offsets — never invents bytes.
+- Recover: `GET /v1/recover` ops + LIVE vs SLOT; `POST /v1/recover` `{b64, op, filename, twin_b64?}`. Present bytes only. Secrets suppressed. SLOT stays SLOT; LIVE stays LIVE.
+- Handwriting: `GET /v1/handwriting` ops + LIVE vs SLOT; `POST /v1/handwriting` `{b64, op, filename, twin_b64?}`. Synthetic ink-on-paper scan heuristics. 256 px PNG preview. Never invents marks.
 - Setup HTML: `GET /ai`
+- llms.txt: `GET /llms.txt`
+- ai.txt: `GET /ai.txt`
+- cite.json: `GET /cite.json`
 
 Banner: Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab.
 

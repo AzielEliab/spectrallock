@@ -1,7 +1,7 @@
 """Suite mesh Live Nodes + QNM-BUILD-1.0 + QNS-CD-1.0 cross-map.
 
 Default OFF. live|locked|isolated. No Node Gate. No public qnsd proxy.
-No auto-heal. Not anonymity. Not a Softwares-tab product.
+No auto-heal.
 """
 
 from __future__ import annotations
@@ -55,7 +55,8 @@ def test_qns_cd_cross_map() -> None:
     assert "QNS-CD-1.0" in SKILL
     assert "QNS-CD-1.0" in WORKER_README
     assert "photon QNS1" in README or "QNS-CD-1.0" in README
-    assert "not a Softwares-tab product" in SKILL.lower() or "Not a Softwares-tab product" in SKILL
+    assert "softwares_tab: false" in MESH
+    assert "THIS IS NOT" not in SKILL
     assert "no public qnsd proxy" in SKILL.lower() or "No public qnsd proxy" in SKILL
 
 
@@ -117,7 +118,8 @@ def test_home_live_nodes_strip_no_node_gate() -> None:
     assert "no public qnsd proxy" in INDEX
     assert "No Node Gate" in INDEX
     assert "No auto-heal" in INDEX
-    assert "Not an anonymity network" in INDEX
+    assert "anonymity_network: false" in MESH
+    assert "Not an anonymity network" not in INDEX
     assert "/v1/mesh" in INDEX
     assert 'product: "spectrallock"' in INDEX
     assert 'id="node-gate"' not in INDEX

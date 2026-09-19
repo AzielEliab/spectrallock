@@ -93,9 +93,9 @@ def test_inband_pct_fields_before_hit_claim() -> None:
     assert "vyrn_inband_pct" in meta
     assert meta["pigment_recovery"] is False
     assert meta["empty_gate_not_broken_lens"] is True
-    assert "not recovered pigment" in INJECT_NOTE.lower() or "not recovered pigment" in meta["inject_note"].lower()
+    assert "paints membership" in INJECT_NOTE.lower() or "false color" in INJECT_NOTE.lower()
     # magenta stroke is in-band for vyrn; the faint "cyan" understroke is ~110°
-    # (same class as Voynich leaves) so tazel may be 0.00 — empty gate ≠ broken
+    # (same class as Voynich leaves) so tazel may be 0.00 — empty gate is a valid reading
     assert meta["vyrn_inband_pct"] > 0.0
     empty = np.empty((32, 32, 3), dtype=np.float32)
     empty[:] = (0.93, 0.88, 0.76)
