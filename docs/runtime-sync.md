@@ -66,7 +66,9 @@ concatenated with `path\\n` + bytes + `\\n`). Recompute only from disk.
    `GET|POST /v1/unredact` (aliases `/v1/lift`, `/v1/redact-locate`) must
    refuse opaque sanitized rewrite with no leftover bytes (`SL-UNREDACT-OPAQUE`)
    and must never invent letters. Recover/locate return `page_revisions`,
-   `revision_compare`, `operator_text`, `classifications`,
+   `revision_compare`, `revision_graph` (startxref/Prev edges + per-revision
+   tip-cut `copy` / embeds; hosted may cap `b64` and cite sha256+offsets),
+   `operator_text`, `classifications`,
    `recovered_characters` (page / object_id / generation / xref_revision /
    stream_offset / operator / font / decoded_bytes / source_revision /
    sha256), `ocr` (after structural only; hosted OCR unbound), and

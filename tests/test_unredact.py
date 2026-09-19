@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import numpy as np
@@ -83,7 +84,11 @@ def pdf_opaque_rewrite() -> bytes:
 
 
 def pdf_incremental_leftover() -> bytes:
-    """Second xref replaces object 4; prior stream with ALICE SMITH remains."""
+    """Two-revision incremental update: rev1 replaces object 4; prior ALICE SMITH stream remains.
+
+    /Prev points at the previous xref byte offset (the startxref value), not
+    the ``startxref`` token. Used as the hash-stable revision-graph + copy fixture.
+    """
     first = _assemble([
         (1, b"<< /Type /Catalog /Pages 2 0 R >>"),
         (2, b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>"),
@@ -91,7 +96,8 @@ def pdf_incremental_leftover() -> bytes:
         (4, _content_stream("ALICE SMITH")),
         (5, b"<< /Title (Production Set) /Author (Clerk) >>"),
     ], info=5)
-    prev = first.rfind(b"xref")
+    prev_match = re.search(rb"startxref\s+(\d+)", first)
+    prev = int(prev_match.group(1)) if prev_match else first.find(b"\nxref\n") + 1
     new_body = _black_stream()
     new_off = len(first)
     tail = _wrap(4, new_body)

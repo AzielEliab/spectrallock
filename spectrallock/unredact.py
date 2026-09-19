@@ -53,7 +53,8 @@ UNREDACT_NOTE = (
     "Unredact / lift-overlay is locate + leftover-bytes + residual only. "
     "Locate reports text still in the file, metadata, attachments, "
     "twin-page residual, leftover container bytes, and historical page "
-    "revisions (stale /Page, prior streams, xref/ObjStm, after-EOF). "
+    "revisions (stale /Page, prior streams, xref/ObjStm, after-EOF, "
+    "incremental startxref/Prev revision graph + per-revision tip-cut copies). "
     "It does not invent letters. "
     "Opaque replace (clipped solid black / true rewrite) with no leftover "
     "bytes refuses (" + REFUSE_OPAQUE + "). "
@@ -133,6 +134,8 @@ def list_unredact() -> dict[str, Any]:
         "refuse_code": REFUSE_OPAQUE,
         "leftover_bytes_recovery": True,
         "deep_history": True,
+        "revision_graph": True,
+        "revision_copies": True,
         "capabilities": list(DEEP_CAPABILITIES),
         "ocr_after_structural_only": True,
         "covered_letters_from_context": False,
@@ -211,6 +214,12 @@ def _base_finding(*, op: str) -> dict[str, Any]:
         "recovered_characters": [],
         "page_geometry": [],
         "object_ids_replaced": [],
+        "revision_graph": {
+            "revisions": [],
+            "edges": [],
+            "root_startxref": None,
+            "eof_offsets": [],
+        },
     }
 
 
@@ -790,6 +799,7 @@ _HISTORY_KEYS = (
     "object_ids_replaced",
     "extra_catalog_follow",
     "deep_history",
+    "revision_graph",
 )
 
 

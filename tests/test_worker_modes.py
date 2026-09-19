@@ -93,6 +93,7 @@ if (!card.leftover_bytes_recovery) throw new Error("card leftover");
 if (!card.deep_history) throw new Error("card deep");
 if (card.capabilities.length !== 14) throw new Error("14 caps");
 if (DEEP_CAPABILITIES.length !== 14) throw new Error("DEEP 14");
+if (!card.revision_graph || !card.revision_copies) throw new Error("card graph");
 const enc = new TextEncoder();
 const pdf = enc.encode("%PDF-1.4\\n1 0 obj << /Title (Docket) >> endobj\\n4 0 obj << /Length 20 >> stream\\nBT (ALICE SMITH) Tj ET\\nendstream\\nendobj\\n4 0 obj << /Length 8 >> stream\\n0 0 0 rg\\nendstream\\nendobj\\n%%EOF\\n%%EOF\\n");
 const loc = locatePdfBytes(pdf);
@@ -114,6 +115,50 @@ if (refused.leftover_bytes) throw new Error("opaque leftover");
 if (refused.refuse_code !== "SL-UNREDACT-OPAQUE") throw new Error("opaque refuse");
 const twin = await unredactFromB64(toB64(efta), {{ op: "locate", twin_b64: toB64(opaque) }});
 if (!twin.twin_diff || twin.twin_diff.invented) throw new Error("twin");
+function xrefRow(offset, gen = 0, used = true) {{
+  const flag = used ? "n" : "f";
+  return String(offset).padStart(10, "0") + " " + String(gen).padStart(5, "0") + " " + flag + " \\n";
+}}
+function wrap(n, body) {{ return n + " 0 obj\\n" + body + "\\nendobj\\n"; }}
+function assemble(objs) {{
+  const parts = ["%PDF-1.4\\n"];
+  const offsets = {{}};
+  for (const [n, body] of objs) {{
+    offsets[n] = parts.reduce((a, p) => a + p.length, 0);
+    parts.push(wrap(n, body));
+  }}
+  const xrefAt = parts.reduce((a, p) => a + p.length, 0);
+  const maxId = Math.max(...objs.map(([n]) => n));
+  let xref = "xref\\n0 " + (maxId + 1) + "\\n" + xrefRow(0, 65535, false);
+  for (let i = 1; i <= maxId; i++) xref += offsets[i] != null ? xrefRow(offsets[i]) : xrefRow(0, 0, false);
+  parts.push(xref);
+  parts.push("trailer << /Size " + (maxId + 1) + " /Root 1 0 R >>\\nstartxref\\n" + xrefAt + "\\n%%EOF\\n");
+  return parts.join("");
+}}
+const first = assemble([
+  [1, "<< /Type /Catalog /Pages 2 0 R >>"],
+  [2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"],
+  [3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R >>"],
+  [4, "<< /Length 42 >>\\nstream\\nBT /F1 12 Tf 10 100 Td (ALICE SMITH) Tj ET\\nendstream"],
+]);
+const prev = first.match(/startxref\\s+(\\d+)/)[1];
+const tailObj = wrap(4, "<< /Length 19 >>\\nstream\\n0 0 0 rg 10 80 120 24 re f\\nendstream");
+const xrefAt2 = first.length + tailObj.length;
+const inc = enc.encode(first + tailObj + "xref\\n4 1\\n" + xrefRow(first.length) + "trailer << /Size 6 /Root 1 0 R /Prev " + prev + " >>\\nstartxref\\n" + xrefAt2 + "\\n%%EOF\\n");
+const graphHist = await locatePdfHistory(inc);
+if (!graphHist.revision_graph || graphHist.revision_graph.revisions.length !== 2) throw new Error("graph revs " + ((graphHist.revision_graph || {{}}).revisions || []).length);
+if (graphHist.revision_graph.edges.length !== 1) throw new Error("graph edges");
+if (!graphHist.revision_graph.edges[0].replaced.some((r) => r.id === 4)) throw new Error("obj 4 replaced");
+const c0 = graphHist.revision_graph.revisions[0].copy;
+const c1 = graphHist.revision_graph.revisions[1].copy;
+if (c0.invented || c1.invented) throw new Error("invented copy");
+if (!c0.sha256 || !c1.sha256 || c0.sha256 === c1.sha256) throw new Error("copy hashes");
+if (c0.b64) {{
+  const raw0 = Buffer.from(c0.b64, "base64");
+  const {{ createHash }} = await import("node:crypto");
+  if (createHash("sha256").update(raw0).digest("hex") !== c0.sha256) throw new Error("copy hash mismatch");
+  if (!Buffer.from(raw0).includes("ALICE SMITH") && !raw0.toString("latin1").includes("ALICE SMITH")) throw new Error("rev0 missing ALICE");
+}}
 const buf = new Float32Array(32 * 48 * 3);
 for (let i = 0; i < buf.length; i++) buf[i] = 0.93;
 for (let y = 8; y < 24; y++) for (let x = 6; x < 42; x++) {{

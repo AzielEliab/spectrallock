@@ -173,7 +173,9 @@ or forensic certification.
   historical page revisions (stale `/Page` objects with recursive
   `/Contents` `/Resources` `/XObject` `/Font` `/ToUnicode` `/Annots`
   `/Metadata` `/PieceInfo` `/StructParents` `/AcroForm` / embedded-file
-  follow; xref streams and object streams; bytes after logical EOF).
+  follow; xref streams and object streams; bytes after logical EOF;
+  explicit incremental-update revision graph from `startxref` / `/Prev`
+  / trailer / classic xref + XRef streams).
 - **Lift** is non-opaque residual enhancement with inject OFF. A heatmap
   is not a transcript. Flattened screenshots of a box are treated as replace.
 - **Recover** is allowed only when leftover / historical bytes remain
@@ -187,7 +189,17 @@ or forensic certification.
   `object_deleted_bytes_remain` / `sanitized_rewrite`), and
   `recovered_characters` with page / object_id / generation /
   xref_revision / stream_offset / operator / font / decoded_bytes /
-  source_revision / sha256. That is reading present bytes.
+  source_revision / sha256, and `revision_graph` (`revisions[]` nodes
+  with `startxref`, `trailer_offset`, `page_ids`, `sha256_tip`, and a
+  reconstructable tip-cut `copy` plus surviving embeds from that
+  revision's object set; `edges[]` report objects added / replaced /
+  deleted / freed, pages whose `/Contents` `/Resources` `/XObject`
+  `/Annots` `/Metadata` changed, and `redaction_ops` classified
+  `replaced` | `overlaid` | `detached` | `sanitized rewrite` with
+  object ids, generations, stream offsets, and sha256 of before/after
+  streams). Copies are leftover bytes carved at each `%%EOF`, not
+  invented. Hosted preview may omit large `b64` and cite sha256 +
+  offsets. That is reading present bytes.
 - **OCR** runs only after structural recovery. It may read unredacted
   surrounding text and historical raster differences. It never
   reconstructs covered letters from context. Context guesses are not
@@ -195,8 +207,9 @@ or forensic certification.
 - **Refuse** `SL-UNREDACT-OPAQUE` when the cover is an opaque sanitized
   rewrite (or a flattened box) **and** leftover bytes are gone.
 
-Hosted `/v1/unredact` may keep preview limits (payload cap, no OCR
-engine) but must not lie about capabilities. Runtime rehash after merge
+Hosted `/v1/unredact` may keep preview limits (payload cap, revision-copy
+cap, no OCR engine) but must not invent bytes or lie about capabilities.
+Runtime rehash after merge
 still copies `overlay.js` only — follow-on aziel-runtime sync after this
 product PR (GitBaby CLEARs). Do not invent a digest.
 

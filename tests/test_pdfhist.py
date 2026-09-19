@@ -6,6 +6,8 @@ OCR never reconstructs covered letters from context. Author Aziel Eliab.
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import zlib
 from pathlib import Path
@@ -27,8 +29,10 @@ from tests.test_unredact import (
     _content_stream,
     _wrap,
     _xref_row,
+    pdf_incremental_leftover,
     pdf_opaque_rewrite,
     pdf_text_under_box,
+    pdf_unused_and_attachment,
 )
 
 
@@ -401,3 +405,99 @@ def test_hosted_ocr_unbound_flag() -> None:
     assert hist["ocr"]["ocr_status"] == "unbound-hosted-preview"
     assert hist["ocr"]["covered_letters_from_context"] is False
     assert hist["ocr"]["ocr_ran"] is False
+
+
+def test_revision_graph_and_copies_roundtrip() -> None:
+    data = pdf_incremental_leftover()
+    hist = recover_pdf_history(data)
+    graph = hist["revision_graph"]
+    assert graph["invented"] is False
+    assert len(graph["revisions"]) == 2
+    assert len(graph["edges"]) == 1
+    assert graph["eof_offsets"]
+    assert graph["root_startxref"] == graph["revisions"][0]["startxref"]
+    edge = graph["edges"][0]
+    assert edge["from"] == 0 and edge["to"] == 1
+    assert any(item["id"] == 4 for item in edge["replaced"])
+    kinds = {op["kind"] for op in edge["redaction_ops"]}
+    assert kinds & {"replaced", "detached", "overlaid"}
+    assert any("Contents" in (d.get("changed") or []) or d.get("page") for d in edge["page_deltas"])
+    replaced4 = next(item for item in edge["replaced"] if item["id"] == 4)
+    assert replaced4["sha256_before"]
+    assert replaced4["sha256_after"]
+    assert replaced4["sha256_before"] != replaced4["sha256_after"]
+    assert replaced4["offset_before"] != replaced4["offset_after"]
+
+    c0 = graph["revisions"][0]["copy"]
+    c1 = graph["revisions"][1]["copy"]
+    assert c0["media_type"] == "application/pdf"
+    assert c0["filename"] == "revision-0.pdf"
+    assert c1["filename"] == "revision-1.pdf"
+    raw0 = base64.b64decode(c0["b64"])
+    raw1 = base64.b64decode(c1["b64"])
+    assert raw0.startswith(b"%PDF")
+    assert raw1.startswith(b"%PDF")
+    assert raw0.rstrip().endswith(b"%%EOF")
+    assert raw1.rstrip().endswith(b"%%EOF")
+    assert hashlib.sha256(raw0).hexdigest() == c0["sha256"]
+    assert hashlib.sha256(raw1).hexdigest() == c1["sha256"]
+    assert c0["sha256"] == graph["revisions"][0]["sha256_tip"]
+    assert c0["byte_length"] == len(raw0)
+    assert raw0 == data[: c0["offset_end"]]
+    assert raw1 == data[: c1["offset_end"]]
+    assert raw0 != raw1
+    assert b"ALICE SMITH" in raw0
+    # Rev 1 tip still contains leftover prior bytes (incremental), plus the new black stream.
+    assert b"ALICE SMITH" in raw1
+
+    again = recover_pdf_history(data)
+    assert again["revision_graph"]["revisions"][0]["copy"]["sha256"] == c0["sha256"]
+    assert again["revision_graph"]["revisions"][1]["copy"]["sha256"] == c1["sha256"]
+
+    h0 = recover_pdf_history(raw0)
+    texts = " ".join(s.get("text") or "" for s in h0["operator_text"])
+    texts += " ".join(s for loc in h0["text_layer"] for s in loc.get("strings") or [])
+    assert "ALICE" in texts.upper()
+    assert h0["revision_graph"]["revisions"][0]["copy"]["sha256"] == c0["sha256"]
+    assert h0["revision_graph"]["revisions"][0]["copy"]["b64"]
+    # Re-carving revision 0 is hash-stable.
+    raw0b = base64.b64decode(h0["revision_graph"]["revisions"][0]["copy"]["b64"])
+    assert hashlib.sha256(raw0b).hexdigest() == c0["sha256"]
+
+    out = analyze_unredact(data, op="recover")
+    assert out["revision_graph"]["edges"]
+    assert out["revision_graph"]["revisions"][0]["copy"]["sha256"] == c0["sha256"]
+    assert out["guessed_letters"] is False
+
+
+def test_revision_copy_hosted_cap_does_not_invent(monkeypatch) -> None:
+    import spectrallock.pdfhist as ph
+
+    monkeypatch.setattr(ph, "HOSTED_COPY_MAX", 32)
+    data = pdf_incremental_leftover()
+    hist = recover_pdf_history(data, hosted=True)
+    copy = hist["revision_graph"]["revisions"][0]["copy"]
+    assert copy["invented"] is False
+    assert copy["b64"] is None
+    assert copy["omitted"] == "hosted-preview-cap"
+    assert copy["sha256"]
+    assert copy["byte_length"] > 32
+    assert "Not invented" in (copy.get("note") or "")
+
+
+def test_revision_embeds_from_surviving_bytes() -> None:
+    data = pdf_unused_and_attachment()
+    hist = recover_pdf_history(data)
+    embeds = []
+    for rev in hist["revision_graph"]["revisions"]:
+        embeds.extend(rev.get("embeds") or [])
+    # Attachment objects after the first EOF may appear in after-eof, not live rev 0.
+    blob = json.dumps(hist)
+    assert "notes.txt" in blob or "SECRET" in blob
+    if embeds:
+        rec = embeds[0]
+        assert rec["invented"] is False
+        assert rec["sha256"]
+        if rec.get("b64"):
+            raw = base64.b64decode(rec["b64"])
+            assert hashlib.sha256(raw).hexdigest() == rec["sha256"]

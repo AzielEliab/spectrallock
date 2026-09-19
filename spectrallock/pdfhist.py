@@ -16,6 +16,7 @@ No FragGate invent. No forensic certification claims.
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import io
 import re
@@ -46,6 +47,14 @@ CLASS_TEXT_RASTERIZED = "text_rasterized_into_image"
 CLASS_OLD_REVISION = "old_revision_survives"
 CLASS_DELETED_BYTES = "object_deleted_bytes_remain"
 CLASS_SANITIZED = "sanitized_rewrite"
+
+KIND_REPLACED = "replaced"
+KIND_OVERLAID = "overlaid"
+KIND_DETACHED = "detached"
+KIND_SANITIZED = "sanitized rewrite"
+
+HOSTED_COPY_MAX = 24_000
+PAGE_DELTA_KEYS = ("Contents", "Resources", "XObject", "Annots", "Metadata")
 
 PAGE_FOLLOW_KEYS = (
     "Contents",
@@ -455,6 +464,8 @@ def _raw_objects(data: bytes) -> list[dict[str, Any]]:
 def _parse_classic_xrefs(data: bytes) -> list[dict[str, Any]]:
     revisions: list[dict[str, Any]] = []
     for marker in re.finditer(rb"\bxref\b", data):
+        if marker.start() >= 5 and data[marker.start() - 5 : marker.start() + 4] == b"startxref":
+            continue
         pos = marker.end()
         live: dict[int, dict[str, Any]] = {}
         freed: list[dict[str, Any]] = []
@@ -495,12 +506,23 @@ def _parse_classic_xrefs(data: bytes) -> list[dict[str, Any]]:
             nxt = data.find(b"startxref", tpos)
             chunk = data[tpos + 7 : nxt if nxt > tpos else tpos + 800]
             trailer = parse_pdf_dict(chunk)
+        startxref_val = None
+        trailer_offset = tpos if tpos >= 0 else marker.start()
+        prev = None
+        if isinstance(trailer.get("Prev"), (int, float)):
+            prev = int(trailer["Prev"])
+        sx = _STARTXREF_RE.search(data, trailer_offset)
+        if sx:
+            startxref_val = int(sx.group(1))
         revisions.append({
             "kind": "classic",
             "offset": marker.start(),
             "live": live,
             "freed": freed,
             "trailer": trailer,
+            "trailer_offset": trailer_offset,
+            "startxref": startxref_val if startxref_val is not None else marker.start(),
+            "prev": prev,
         })
     return revisions
 
@@ -558,6 +580,7 @@ def _parse_xref_stream(obj: dict[str, Any]) -> dict[str, Any] | None:
                     "index": fields[2],
                 }
                 compressed.append({"id": obj_id, "objstm": fields[1], "index": fields[2]})
+    prev = int(d["Prev"]) if isinstance(d.get("Prev"), (int, float)) else None
     return {
         "kind": "xref-stream",
         "offset": obj["offset"],
@@ -566,6 +589,9 @@ def _parse_xref_stream(obj: dict[str, Any]) -> dict[str, Any] | None:
         "compressed": compressed,
         "trailer": d,
         "object_id": obj["id"],
+        "trailer_offset": obj["offset"],
+        "startxref": obj["offset"],
+        "prev": prev,
     }
 
 
@@ -724,6 +750,449 @@ def _is_live_instance(obj: dict[str, Any], live: dict[int, dict[str, Any]]) -> b
     if off is None:
         return False
     return abs(int(off) - int(obj["offset"])) <= 8
+
+
+def _eof_cut(data: bytes, eof_match_end: int) -> int:
+    end = eof_match_end
+    if end < len(data) and data[end : end + 1] == b"\r":
+        end += 1
+        if end < len(data) and data[end : end + 1] == b"\n":
+            end += 1
+    elif end < len(data) and data[end : end + 1] == b"\n":
+        end += 1
+    return end
+
+
+def _startxref_eof_spans(data: bytes) -> list[dict[str, Any]]:
+    spans: list[dict[str, Any]] = []
+    for m in _STARTXREF_RE.finditer(data):
+        eof = _EOF_RE.search(data, m.end())
+        if not eof:
+            continue
+        spans.append({
+            "startxref": int(m.group(1)),
+            "startxref_token": m.start(),
+            "eof_end": _eof_cut(data, eof.end()),
+        })
+    return spans
+
+
+def _obj_at(container: dict[str, Any], oid: int, offset: int | None) -> dict[str, Any] | None:
+    if offset is None:
+        versions = container["by_id"].get(int(oid)) or []
+        return versions[-1] if versions else None
+    best = None
+    best_d = 10**9
+    for obj in container["by_id"].get(int(oid)) or []:
+        d = abs(int(obj["offset"]) - int(offset))
+        if d < best_d:
+            best = obj
+            best_d = d
+    return best if best is not None and best_d <= 16 else None
+
+
+def _page_key_snapshot(page_obj: dict[str, Any] | None) -> dict[str, Any]:
+    if not page_obj:
+        return {}
+    d = page_obj.get("dict") or {}
+    snap = {}
+    for key in PAGE_DELTA_KEYS:
+        refs = [f"{a} {b}" for a, b in _as_refs(d.get(key))]
+        snap[key] = refs
+    return snap
+
+
+def _guess_embed_type(name: str, payload: bytes | None) -> str:
+    low = (name or "").lower()
+    if payload:
+        if payload.startswith(b"%PDF"):
+            return "application/pdf"
+        if payload.startswith(b"\x89PNG"):
+            return "image/png"
+        if payload.startswith(b"\xff\xd8\xff"):
+            return "image/jpeg"
+        if payload.startswith(b"PK"):
+            if low.endswith(".docx"):
+                return "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            if low.endswith(".xlsx"):
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            return "application/zip"
+    if low.endswith(".txt"):
+        return "text/plain"
+    if low.endswith(".pdf"):
+        return "application/pdf"
+    return "application/octet-stream"
+
+
+def _copy_payload(raw: bytes, *, source_revision: int, filename: str, media_type: str, hosted: bool) -> dict[str, Any]:
+    digest = sha256_hex(raw)
+    out = {
+        "media_type": media_type,
+        "filename": filename,
+        "b64": None,
+        "sha256": digest,
+        "byte_length": len(raw),
+        "source_revision": source_revision,
+        "invented": False,
+    }
+    if hosted and len(raw) > HOSTED_COPY_MAX:
+        out["omitted"] = "hosted-preview-cap"
+        out["note"] = (
+            "Copy bytes survive in the container. Hosted preview cites sha256 + "
+            "length only. Local package returns full b64. Not invented."
+        )
+        return out
+    out["b64"] = base64.b64encode(raw).decode("ascii")
+    return out
+
+
+def _revision_embeds(container: dict[str, Any], cumulative: dict[int, dict[str, Any]], *, index: int, hosted: bool) -> list[dict[str, Any]]:
+    embeds: list[dict[str, Any]] = []
+    for oid, meta in cumulative.items():
+        obj = _obj_at(container, oid, meta.get("offset"))
+        if not obj:
+            continue
+        body = obj.get("body") or b""
+        header = obj.get("header") or b""
+        blob = header + body
+        if b"/EmbeddedFile" not in blob and b"/Filespec" not in blob and b"/EF" not in blob:
+            continue
+        names = []
+        for match in re.finditer(rb"/(?:F|UF|Desc)\s*(\((?:\\.|[^\\)])*\))", body):
+            names.append(printable_preview(_latin(unescape_pdf_literal(match.group(1)))))
+        payload = obj.get("stream")
+        if payload is None and obj.get("from_objstm"):
+            continue
+        name = next((n for n in names if n), f"embed-{oid}")
+        if payload is None:
+            # Filespec pointing at another object
+            for rid, rgen in _as_refs((obj.get("dict") or {}).get("EF")) + _as_refs((obj.get("dict") or {}).get("F")):
+                child_meta = cumulative.get(rid)
+                child = _obj_at(container, rid, (child_meta or {}).get("offset"))
+                if child and child.get("stream") is not None:
+                    payload = child["stream"]
+                    break
+        if payload is None:
+            continue
+        rec = _copy_payload(
+            payload,
+            source_revision=index,
+            filename=name,
+            media_type=_guess_embed_type(name, payload),
+            hosted=hosted,
+        )
+        rec["object_id"] = f"{obj['id']} {obj['gen']}"
+        rec["offset"] = obj["offset"]
+        embeds.append(rec)
+    return embeds
+
+
+def _classify_stream_change(old_obj: dict[str, Any] | None, new_obj: dict[str, Any] | None, *, old_bytes_remain: bool) -> str:
+    if old_obj and not new_obj:
+        return KIND_DETACHED if old_bytes_remain else KIND_SANITIZED
+    if not old_obj and new_obj:
+        return KIND_REPLACED
+    if not old_obj or not new_obj:
+        return KIND_SANITIZED
+    old_stream = old_obj.get("stream")
+    new_stream = new_obj.get("stream")
+    if old_stream is None and new_stream is None:
+        if (old_obj.get("body") or b"") == (new_obj.get("body") or b""):
+            return KIND_REPLACED
+        return KIND_REPLACED if old_bytes_remain else KIND_SANITIZED
+    if old_stream is not None and new_stream is not None:
+        old_ops = extract_operator_text(old_stream, lambda _n: {"map_kind": "none", "tounicode": {}, "differences": {}})
+        new_ops = extract_operator_text(new_stream, lambda _n: {"map_kind": "none", "tounicode": {}, "differences": {}})
+        if new_ops.get("text_under_overlay"):
+            return KIND_OVERLAID
+        if old_ops.get("has_text_ops") and new_ops.get("overlays") and old_ops.get("has_text_ops"):
+            return KIND_REPLACED if old_bytes_remain else KIND_SANITIZED
+        if old_stream != new_stream:
+            return KIND_REPLACED if old_bytes_remain else KIND_SANITIZED
+    if old_bytes_remain:
+        return KIND_REPLACED
+    return KIND_SANITIZED
+
+
+def _resolve_revision(
+    cursor: int,
+    by_start: dict[int, dict[str, Any]],
+    revisions_raw: list[dict[str, Any]],
+    data: bytes,
+) -> dict[str, Any] | None:
+    """Map a /Prev or startxref pointer onto a parsed xref table."""
+    if cursor in by_start:
+        return by_start[cursor]
+    nearest = None
+    best = 10**9
+    for r in revisions_raw:
+        for key in ("offset", "startxref"):
+            if r.get(key) is None:
+                continue
+            d = abs(int(r[key]) - cursor)
+            if d < best:
+                nearest = r
+                best = d
+    if nearest is not None and best <= 32:
+        return nearest
+    # Mis-aimed /Prev at the "startxref" token (contains "xref").
+    token_at = max(0, cursor - 5)
+    if data[token_at : cursor + 4] == b"startxref":
+        sx = _STARTXREF_RE.search(data, token_at)
+        if sx:
+            pointed = int(sx.group(1))
+            if pointed != cursor:
+                return by_start.get(pointed) or _resolve_revision(
+                    pointed, by_start, revisions_raw, data
+                )
+    return None
+
+
+def build_revision_graph(data: bytes, container: dict[str, Any], *, hosted: bool = False) -> dict[str, Any]:
+    """Explicit incremental-update graph from startxref / Prev / trailer / xref."""
+    revisions_raw = list(container.get("revisions") or [])
+    spans = _startxref_eof_spans(data)
+    eof_offsets = [_eof_cut(data, m.end()) for m in _EOF_RE.finditer(data)]
+
+    by_start: dict[int, dict[str, Any]] = {}
+    for rev in revisions_raw:
+        sx = rev.get("startxref")
+        if sx is None:
+            sx = rev.get("offset")
+        by_start[int(sx)] = rev
+        by_start[int(rev.get("offset") or 0)] = rev
+
+    tip = int(spans[-1]["startxref"]) if spans else (int(revisions_raw[-1]["offset"]) if revisions_raw else 0)
+    chain: list[dict[str, Any]] = []
+    seen: set[int] = set()
+    cursor: int | None = tip if revisions_raw or spans else None
+    while cursor is not None and cursor not in seen:
+        seen.add(cursor)
+        rev = _resolve_revision(cursor, by_start, revisions_raw, data)
+        if rev is None:
+            break
+        chain.append(rev)
+        prev = rev.get("prev")
+        if prev is None:
+            trailer = rev.get("trailer") or {}
+            if isinstance(trailer.get("Prev"), (int, float)):
+                prev = int(trailer["Prev"])
+        cursor = int(prev) if prev is not None else None
+    chain.reverse()
+    # Leftover xref tables still in the file are not independent leftovers only.
+    if len(chain) < len(revisions_raw):
+        chain = list(revisions_raw)
+    if not chain:
+        chain = list(revisions_raw)
+
+    # Dedup while preserving order
+    uniq = []
+    seen_off = set()
+    for rev in chain:
+        key = (rev.get("kind"), rev.get("offset"), rev.get("startxref"))
+        if key in seen_off:
+            continue
+        seen_off.add(key)
+        uniq.append(rev)
+    chain = uniq
+
+    cumulative: dict[int, dict[str, Any]] = {}
+    snapshots: list[dict[int, dict[str, Any]]] = []
+    nodes: list[dict[str, Any]] = []
+    for i, rev in enumerate(chain):
+        for item in rev.get("freed") or []:
+            cumulative.pop(item.get("id"), None)
+        for oid, meta in (rev.get("live") or {}).items():
+            cumulative[int(oid)] = dict(meta)
+        snap = {k: dict(v) for k, v in cumulative.items()}
+        snapshots.append(snap)
+        page_ids = []
+        for oid, meta in snap.items():
+            obj = _obj_at(container, oid, meta.get("offset"))
+            if obj and _name_of((obj.get("dict") or {}).get("Type")) == "Page":
+                page_ids.append(f"{obj['id']} {obj['gen']}")
+        span = None
+        sx = rev.get("startxref") if rev.get("startxref") is not None else rev.get("offset")
+        for s in spans:
+            if abs(int(s["startxref"]) - int(sx or 0)) <= 8:
+                span = s
+                break
+        if span is None and i < len(spans):
+            span = spans[i]
+        cut = span["eof_end"] if span else (eof_offsets[i] if i < len(eof_offsets) else len(data))
+        blob = data[:cut]
+        if not blob.startswith(b"%PDF"):
+            blob = data[:cut]
+        copy = _copy_payload(
+            blob,
+            source_revision=i,
+            filename=f"revision-{i}.pdf",
+            media_type="application/pdf",
+            hosted=hosted,
+        )
+        copy["offset_start"] = 0
+        copy["offset_end"] = cut
+        copy["carve"] = "incremental-tip-cut"
+        nodes.append({
+            "index": i,
+            "startxref": int(sx or 0),
+            "trailer_offset": rev.get("trailer_offset") or rev.get("offset"),
+            "kind": rev.get("kind"),
+            "object_count": len(snap),
+            "page_ids": page_ids,
+            "sha256_tip": copy["sha256"],
+            "copy": copy,
+            "embeds": _revision_embeds(container, snap, index=i, hosted=hosted),
+            "invented": False,
+        })
+
+    edges: list[dict[str, Any]] = []
+    for i in range(len(snapshots) - 1):
+        a, b = snapshots[i], snapshots[i + 1]
+        added, replaced, deleted, freed = [], [], [], []
+        ids_a, ids_b = set(a), set(b)
+        for oid in sorted(ids_b - ids_a):
+            meta = b[oid]
+            obj = _obj_at(container, oid, meta.get("offset"))
+            added.append({
+                "id": oid,
+                "generation": (obj or {}).get("gen", meta.get("gen")),
+                "offset": meta.get("offset"),
+                "invented": False,
+            })
+        for oid in sorted(ids_a - ids_b):
+            meta = a[oid]
+            obj = _obj_at(container, oid, meta.get("offset"))
+            remain = bool(obj)
+            deleted.append({
+                "id": oid,
+                "generation": (obj or {}).get("gen", meta.get("gen")),
+                "offset": meta.get("offset"),
+                "kind": KIND_DETACHED if remain else KIND_SANITIZED,
+                "invented": False,
+            })
+        for item in chain[i + 1].get("freed") or []:
+            freed.append({
+                "id": item.get("id"),
+                "generation": item.get("gen"),
+                "invented": False,
+            })
+        page_deltas = []
+        redaction_ops = []
+        for oid in sorted(ids_a & ids_b):
+            oa, ob = a[oid], b[oid]
+            old_off, new_off = oa.get("offset"), ob.get("offset")
+            same = old_off is not None and new_off is not None and abs(int(old_off) - int(new_off)) <= 8
+            same_objstm = oa.get("kind") == "objstm" and oa.get("objstm") == ob.get("objstm") and oa.get("index") == ob.get("index")
+            if same or same_objstm:
+                continue
+            old_obj = _obj_at(container, oid, old_off)
+            new_obj = _obj_at(container, oid, new_off)
+            remain = old_obj is not None
+            kind = _classify_stream_change(old_obj, new_obj, old_bytes_remain=remain)
+            sha_before = sha256_hex(old_obj["stream"] if old_obj and old_obj.get("stream") is not None else (old_obj.get("body") if old_obj else b"")) if old_obj else None
+            sha_after = sha256_hex(new_obj["stream"] if new_obj and new_obj.get("stream") is not None else (new_obj.get("body") if new_obj else b"")) if new_obj else None
+            rec = {
+                "id": oid,
+                "generation": (new_obj or old_obj or {}).get("gen", 0),
+                "offset_before": old_off,
+                "offset_after": new_off,
+                "stream_offset_before": (old_obj or {}).get("stream_offset"),
+                "stream_offset_after": (new_obj or {}).get("stream_offset"),
+                "sha256_before": sha_before,
+                "sha256_after": sha_after,
+                "kind": kind,
+                "invented": False,
+            }
+            replaced.append(rec)
+            if remain:
+                redaction_ops.append({
+                    "kind": KIND_DETACHED,
+                    "object_id": f"{oid} {(old_obj or {}).get('gen', 0)}",
+                    "offset": old_off,
+                    "sha256": sha_before,
+                    "invented": False,
+                })
+            # page whose contents/resources changed
+            pages_touch = []
+            for pid, pmeta in b.items():
+                pobj = _obj_at(container, pid, pmeta.get("offset"))
+                if not pobj or _name_of((pobj.get("dict") or {}).get("Type")) != "Page":
+                    continue
+                refs = _as_refs((pobj.get("dict") or {}).get("Contents"))
+                refs += _as_refs((pobj.get("dict") or {}).get("Resources"))
+                refs += _as_refs((pobj.get("dict") or {}).get("Annots"))
+                refs += _as_refs((pobj.get("dict") or {}).get("Metadata"))
+                if any(r[0] == oid for r in refs) or pid == oid:
+                    pages_touch.append(f"{pobj['id']} {pobj['gen']}")
+            redaction_ops.append({
+                "kind": kind,
+                "page": pages_touch[0] if pages_touch else None,
+                "pages": pages_touch,
+                "object_id": f"{oid} {(new_obj or {}).get('gen', 0)}",
+                "generation": (new_obj or {}).get("gen", 0),
+                "stream_offset": (new_obj or {}).get("stream_offset"),
+                "sha256_before": sha_before,
+                "sha256_after": sha_after,
+                "invented": False,
+            })
+
+        # page-level key compare
+        pages_a = {pid: _obj_at(container, pid, a[pid].get("offset")) for pid in a}
+        pages_b = {pid: _obj_at(container, pid, b[pid].get("offset")) for pid in b}
+        page_ids = set()
+        for pid, obj in {**pages_a, **pages_b}.items():
+            if obj and _name_of((obj.get("dict") or {}).get("Type")) == "Page":
+                page_ids.add(pid)
+        for pid in sorted(page_ids):
+            sa = _page_key_snapshot(pages_a.get(pid))
+            sb = _page_key_snapshot(pages_b.get(pid))
+            changed = [k for k in PAGE_DELTA_KEYS if sa.get(k) != sb.get(k)]
+            if not changed and pid in a and pid in b:
+                oa, ob = a[pid], b[pid]
+                if oa.get("offset") is not None and ob.get("offset") is not None and abs(int(oa["offset"]) - int(ob["offset"])) > 8:
+                    changed = ["Page"]
+            # contents object replaced even if the ref id is unchanged
+            if not changed and pid in pages_b:
+                pobj = pages_b[pid]
+                for rid, _g in _as_refs((pobj.get("dict") or {}).get("Contents") if pobj else None):
+                    if rid in a and rid in b:
+                        if a[rid].get("offset") != b[rid].get("offset"):
+                            changed.append("Contents")
+            if changed:
+                page_deltas.append({
+                    "page": f"{pid} 0",
+                    "changed": sorted(set(changed)),
+                    "before": sa,
+                    "after": sb,
+                    "invented": False,
+                })
+
+        edges.append({
+            "from": i,
+            "to": i + 1,
+            "added": added,
+            "replaced": replaced,
+            "deleted": deleted,
+            "freed": freed,
+            "page_deltas": page_deltas,
+            "redaction_ops": redaction_ops,
+            "invented": False,
+        })
+
+    return {
+        "revisions": nodes,
+        "edges": edges,
+        "root_startxref": nodes[0]["startxref"] if nodes else None,
+        "tip_startxref": nodes[-1]["startxref"] if nodes else tip,
+        "eof_offsets": eof_offsets,
+        "invented": False,
+        "note": (
+            "Incremental-update graph from startxref / Prev / trailer / xref "
+            "(classic + XRef streams). Copies are tip-cuts of leftover bytes. "
+            "Not invented. Not a forensic certification."
+        ),
+    }
 
 
 def _xref_rev_for(obj: dict[str, Any], revisions: list[dict[str, Any]]) -> int | None:
@@ -1808,6 +2277,12 @@ def recover_pdf_history(data: bytes, *, hosted: bool = False) -> dict[str, Any]:
         "recovered_characters": [],
         "page_geometry": [],
         "object_ids_replaced": [],
+        "revision_graph": {
+            "revisions": [],
+            "edges": [],
+            "root_startxref": None,
+            "eof_offsets": [],
+        },
     }
     if not data.startswith(b"%PDF"):
         return empty
@@ -2372,6 +2847,7 @@ def recover_pdf_history(data: bytes, *, hosted: bool = False) -> dict[str, Any]:
         "page_geometry": page_geometry,
         "object_ids_replaced": object_ids_replaced,
         "extra_catalog_follow": extra_follow,
+        "revision_graph": build_revision_graph(data, container, hosted=hosted),
         "invented": False,
         "guessed_letters": False,
         "heatmap_is_transcript": False,
@@ -2402,6 +2878,7 @@ def merge_history_into_locate(scanned: dict[str, Any], history: dict[str, Any]) 
         "page_geometry",
         "object_ids_replaced",
         "extra_catalog_follow",
+        "revision_graph",
     ):
         out[key] = history.get(key)
     # Prefer history leftover/recovered when it found more.

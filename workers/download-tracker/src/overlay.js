@@ -782,7 +782,8 @@ export const UNREDACT_NOTE =
   "Unredact / lift-overlay is locate + leftover-bytes + residual only. " +
   "Locate reports text still in the file, metadata, attachments, twin-page residual, " +
   "leftover container bytes, and historical page revisions (stale /Page, prior streams, " +
-  "xref/ObjStm, after-EOF). It does not invent letters. " +
+  "xref/ObjStm, after-EOF, incremental startxref/Prev revision graph + per-revision tip-cut copies). " +
+  "It does not invent letters. " +
   "Opaque replace (clipped solid black / true rewrite) with no leftover bytes refuses (" +
   REFUSE_OPAQUE +
   "). That is the only honest switch for visual unredact. " +
@@ -803,6 +804,8 @@ export function listUnredact() {
     refuse_code: REFUSE_OPAQUE,
     leftover_bytes_recovery: true,
     deep_history: true,
+    revision_graph: true,
+    revision_copies: true,
     capabilities: DEEP_CAPABILITIES.slice(),
     ocr_after_structural_only: true,
     covered_letters_from_context: false,
@@ -1136,6 +1139,7 @@ export function unredactFromBytes(u8, extras = {}) {
     classifications: [],
     recovered_characters: [],
     ocr: { ocr_ran: false, ocr_after_structural_only: true, covered_letters_from_context: false, ocr_status: "unbound-hosted-preview", invented: false },
+    revision_graph: { revisions: [], edges: [], root_startxref: null, eof_offsets: [], invented: false },
   };
   const latinHead = bytesToLatin(u8.subarray(0, 5));
   if (latinHead === "%PDF-") {
@@ -1201,6 +1205,7 @@ export async function unredactFromB64(b64, extras = {}) {
     base.ocr = hist.ocr;
     base.recovered_characters = hist.recovered_characters;
     base.orphans = hist.orphans;
+    base.revision_graph = hist.revision_graph;
     const twinB64 = extras.twin_b64 || extras.twin;
     if (twinB64) {
       try {
@@ -1466,6 +1471,404 @@ function extractOpsJs(streamText, fontResolver) {
   };
 }
 
+export const HOSTED_COPY_MAX = 24000;
+const KIND_REPLACED = "replaced";
+const KIND_OVERLAID = "overlaid";
+const KIND_DETACHED = "detached";
+const KIND_SANITIZED = "sanitized rewrite";
+
+function eofCutText(text, eofEnd) {
+  let end = eofEnd;
+  if (text[end] === "\r") end += 1;
+  if (text[end] === "\n") end += 1;
+  return end;
+}
+
+function parseClassicXrefsJs(text) {
+  const revisions = [];
+  const re = /\bxref\b/g;
+  let m;
+  while ((m = re.exec(text))) {
+    if (m.index >= 5 && text.slice(m.index - 5, m.index + 4) === "startxref") continue;
+    let pos = m.index + 4;
+    const live = {};
+    const freed = [];
+    while (pos < text.length) {
+      while (pos < text.length && /[ \t\r\n]/.test(text[pos])) pos += 1;
+      if (text.slice(pos, pos + 7) === "trailer" || text.slice(pos, pos + 9) === "startxref") break;
+      const hm = /^(\d+)\s+(\d+)\s+/.exec(text.slice(pos));
+      if (!hm) break;
+      const first = Number(hm[1]);
+      const count = Number(hm[2]);
+      pos += hm[0].length;
+      for (let i = 0; i < count; i += 1) {
+        while (pos < text.length && /[\r\n]/.test(text[pos])) pos += 1;
+        const line = text.slice(pos, pos + 20);
+        pos += Math.min(20, Math.max(0, text.length - pos));
+        const parts = line.trim().split(/\s+/);
+        if (parts.length < 3) continue;
+        const off = Number(parts[0]);
+        const gen = Number(parts[1]);
+        const flag = String(parts[2] || "")[0];
+        const objId = first + i;
+        if (flag === "n") live[objId] = { offset: off, gen, kind: "n" };
+        else if (flag === "f") {
+          delete live[objId];
+          freed.push({ id: objId, gen, next: off });
+        }
+      }
+    }
+    const tpos = text.indexOf("trailer", m.index + 4);
+    let prev = null;
+    let startxrefVal = m.index;
+    const trailerOffset = tpos >= 0 ? tpos : m.index;
+    if (tpos >= 0) {
+      const nxt = text.indexOf("startxref", tpos);
+      const chunk = text.slice(tpos, nxt >= 0 ? nxt : tpos + 400);
+      const pm = chunk.match(/\/Prev\s+(\d+)/);
+      if (pm) prev = Number(pm[1]);
+      const sx = /startxref\s+(\d+)/.exec(text.slice(tpos));
+      if (sx) startxrefVal = Number(sx[1]);
+    }
+    revisions.push({
+      kind: "classic",
+      offset: m.index,
+      live,
+      freed,
+      prev,
+      startxref: startxrefVal,
+      trailer_offset: trailerOffset,
+    });
+  }
+  return revisions;
+}
+
+async function copyPayloadJs(rawU8, { sourceRevision, filename, mediaType, hosted }) {
+  const digest = await sha256HexBytes(rawU8);
+  const out = {
+    media_type: mediaType,
+    filename,
+    b64: null,
+    sha256: digest,
+    byte_length: rawU8.length,
+    source_revision: sourceRevision,
+    invented: false,
+  };
+  if (hosted && rawU8.length > HOSTED_COPY_MAX) {
+    out.omitted = "hosted-preview-cap";
+    out.note = "Copy bytes survive in the container. Hosted preview cites sha256 + length only. Local package returns full b64. Not invented.";
+    return out;
+  }
+  out.b64 = bytesToB64(rawU8);
+  return out;
+}
+
+function resolveRevisionJs(cursor, byStart, revisionsRaw, text) {
+  if (byStart.has(cursor)) return byStart.get(cursor);
+  let nearest = null;
+  let best = 1e15;
+  for (const r of revisionsRaw) {
+    for (const key of ["offset", "startxref"]) {
+      if (r[key] == null) continue;
+      const d = Math.abs(Number(r[key]) - cursor);
+      if (d < best) {
+        nearest = r;
+        best = d;
+      }
+    }
+  }
+  if (nearest && best <= 32) return nearest;
+  const tokenAt = Math.max(0, cursor - 5);
+  if (text.slice(tokenAt, cursor + 4) === "startxref") {
+    const sx = /startxref\s+(\d+)/.exec(text.slice(tokenAt));
+    if (sx) {
+      const pointed = Number(sx[1]);
+      if (pointed !== cursor) return resolveRevisionJs(pointed, byStart, revisionsRaw, text);
+    }
+  }
+  return null;
+}
+
+export async function buildRevisionGraph(u8, objects = [], { hosted = true } = {}) {
+  const text = bytesToLatin(u8);
+  const revisionsRaw = parseClassicXrefsJs(text);
+  for (const obj of objects) {
+    if (!/\/Type\s*\/XRef/.test(obj.body || "")) continue;
+    const prevM = (obj.body || "").match(/\/Prev\s+(\d+)/);
+    revisionsRaw.push({
+      kind: "xref-stream",
+      offset: obj.offset,
+      startxref: obj.offset,
+      trailer_offset: obj.offset,
+      prev: prevM ? Number(prevM[1]) : null,
+      live: {},
+      freed: [],
+    });
+  }
+  revisionsRaw.sort((a, b) => (a.offset || 0) - (b.offset || 0));
+  const spans = [];
+  const sxRe = /startxref\s+(\d+)/g;
+  let sm;
+  while ((sm = sxRe.exec(text))) {
+    const eof = text.indexOf("%%EOF", sm.index);
+    if (eof < 0) continue;
+    spans.push({ startxref: Number(sm[1]), startxref_token: sm.index, eof_end: eofCutText(text, eof + 5) });
+  }
+  const eofOffsets = [];
+  let ei = 0;
+  while ((ei = text.indexOf("%%EOF", ei)) >= 0) {
+    eofOffsets.push(eofCutText(text, ei + 5));
+    ei += 5;
+  }
+  const byStart = new Map();
+  for (const rev of revisionsRaw) {
+    const sx = rev.startxref != null ? rev.startxref : rev.offset;
+    byStart.set(Number(sx), rev);
+    byStart.set(Number(rev.offset || 0), rev);
+  }
+  const tip = spans.length ? spans[spans.length - 1].startxref : (revisionsRaw.length ? revisionsRaw[revisionsRaw.length - 1].offset : 0);
+  let chain = [];
+  const seen = new Set();
+  let cursor = (revisionsRaw.length || spans.length) ? tip : null;
+  while (cursor != null && !seen.has(cursor)) {
+    seen.add(cursor);
+    const rev = resolveRevisionJs(cursor, byStart, revisionsRaw, text);
+    if (!rev) break;
+    chain.push(rev);
+    cursor = rev.prev != null ? Number(rev.prev) : null;
+  }
+  chain.reverse();
+  if (chain.length < revisionsRaw.length) chain = revisionsRaw.slice();
+  const uniq = [];
+  const seenOff = new Set();
+  for (const rev of chain) {
+    const key = `${rev.kind}|${rev.offset}|${rev.startxref}`;
+    if (seenOff.has(key)) continue;
+    seenOff.add(key);
+    uniq.push(rev);
+  }
+  chain = uniq;
+
+  const objAt = (oid, offset) => {
+    const vers = objects.filter((o) => o.id === Number(oid));
+    if (!vers.length) return null;
+    if (offset == null) return vers[vers.length - 1];
+    let best = null;
+    let bestD = 1e15;
+    for (const o of vers) {
+      const d = Math.abs((o.offset || 0) - offset);
+      if (d < bestD) {
+        best = o;
+        bestD = d;
+      }
+    }
+    return bestD <= 16 ? best : null;
+  };
+
+  const latinBytes = (s) => {
+    const out = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i += 1) out[i] = s.charCodeAt(i) & 0xff;
+    return out;
+  };
+
+  const cumulative = {};
+  const snapshots = [];
+  const nodes = [];
+  for (let i = 0; i < chain.length; i += 1) {
+    const rev = chain[i];
+    for (const item of rev.freed || []) delete cumulative[item.id];
+    for (const [oid, meta] of Object.entries(rev.live || {})) cumulative[Number(oid)] = { ...meta };
+    const snap = {};
+    for (const [k, v] of Object.entries(cumulative)) snap[Number(k)] = { ...v };
+    snapshots.push(snap);
+    const pageIds = [];
+    for (const [oid, meta] of Object.entries(snap)) {
+      const obj = objAt(Number(oid), meta.offset);
+      if (obj && /\/Type\s*\/Page\b/.test(obj.body || "")) pageIds.push(`${obj.id} ${obj.gen}`);
+    }
+    const sx = rev.startxref != null ? rev.startxref : rev.offset;
+    let span = spans.find((s) => Math.abs(s.startxref - (sx || 0)) <= 8);
+    if (!span && spans[i]) span = spans[i];
+    const cut = span ? span.eof_end : (eofOffsets[i] != null ? eofOffsets[i] : u8.length);
+    const blob = u8.subarray(0, cut);
+    const copy = await copyPayloadJs(blob, {
+      sourceRevision: i,
+      filename: `revision-${i}.pdf`,
+      mediaType: "application/pdf",
+      hosted,
+    });
+    copy.offset_start = 0;
+    copy.offset_end = cut;
+    copy.carve = "incremental-tip-cut";
+    const embeds = [];
+    for (const [oid, meta] of Object.entries(snap)) {
+      const obj = objAt(Number(oid), meta.offset);
+      if (!obj) continue;
+      if (!/\/EmbeddedFile|\/Filespec|\/EF/.test(obj.body || "")) continue;
+      const nameM = (obj.body || "").match(/\/(?:F|UF|Desc)\s*\(([^)]*)\)/);
+      const name = nameM ? nameM[1] : `embed-${oid}`;
+      if (obj.stream == null) continue;
+      const rec = await copyPayloadJs(latinBytes(obj.stream), {
+        sourceRevision: i,
+        filename: name,
+        mediaType: "application/octet-stream",
+        hosted,
+      });
+      rec.object_id = `${obj.id} ${obj.gen}`;
+      rec.offset = obj.offset;
+      embeds.push(rec);
+    }
+    nodes.push({
+      index: i,
+      startxref: Number(sx || 0),
+      trailer_offset: rev.trailer_offset || rev.offset,
+      kind: rev.kind,
+      object_count: Object.keys(snap).length,
+      page_ids: pageIds,
+      sha256_tip: copy.sha256,
+      copy,
+      embeds,
+      invented: false,
+    });
+  }
+
+  const edges = [];
+  for (let i = 0; i < snapshots.length - 1; i += 1) {
+    const a = snapshots[i];
+    const b = snapshots[i + 1];
+    const idsA = new Set(Object.keys(a).map(Number));
+    const idsB = new Set(Object.keys(b).map(Number));
+    const added = [];
+    const replaced = [];
+    const deleted = [];
+    const freed = [];
+    for (const oid of [...idsB].filter((x) => !idsA.has(x)).sort((x, y) => x - y)) {
+      added.push({ id: oid, generation: (b[oid] || {}).gen, offset: (b[oid] || {}).offset, invented: false });
+    }
+    for (const oid of [...idsA].filter((x) => !idsB.has(x)).sort((x, y) => x - y)) {
+      deleted.push({
+        id: oid,
+        generation: (a[oid] || {}).gen,
+        offset: (a[oid] || {}).offset,
+        kind: KIND_DETACHED,
+        invented: false,
+      });
+    }
+    for (const item of chain[i + 1].freed || []) freed.push({ id: item.id, generation: item.gen, invented: false });
+    const pageDeltas = [];
+    const redactionOps = [];
+    for (const oid of [...idsA].filter((x) => idsB.has(x)).sort((x, y) => x - y)) {
+      const oa = a[oid];
+      const ob = b[oid];
+      const same = oa.offset != null && ob.offset != null && Math.abs(oa.offset - ob.offset) <= 8;
+      if (same) continue;
+      const oldObj = objAt(oid, oa.offset);
+      const newObj = objAt(oid, ob.offset);
+      let kind = KIND_REPLACED;
+      if (oldObj && newObj) {
+        const newOps = extractOpsJs(newObj.stream || "", () => ({ tounicode: {} }));
+        if (newOps.text_under_overlay && newOps.text_under_overlay.length) kind = KIND_OVERLAID;
+        else if ((oldObj.stream || "") !== (newObj.stream || "")) kind = KIND_REPLACED;
+      } else if (oldObj && !newObj) kind = KIND_DETACHED;
+      else if (!oldObj && !newObj) kind = KIND_SANITIZED;
+      const shaBefore = oldObj && oldObj.stream != null ? await sha256HexBytes(latinBytes(oldObj.stream)) : null;
+      const shaAfter = newObj && newObj.stream != null ? await sha256HexBytes(latinBytes(newObj.stream)) : null;
+      replaced.push({
+        id: oid,
+        generation: (newObj || oldObj || {}).gen || 0,
+        offset_before: oa.offset,
+        offset_after: ob.offset,
+        sha256_before: shaBefore,
+        sha256_after: shaAfter,
+        kind,
+        invented: false,
+      });
+      if (oldObj) {
+        redactionOps.push({
+          kind: KIND_DETACHED,
+          object_id: `${oid} ${(oldObj || {}).gen || 0}`,
+          offset: oa.offset,
+          sha256: shaBefore,
+          invented: false,
+        });
+      }
+      const pagesTouch = [];
+      for (const [pid, pmeta] of Object.entries(b)) {
+        const pobj = objAt(Number(pid), pmeta.offset);
+        if (!pobj || !/\/Type\s*\/Page\b/.test(pobj.body || "")) continue;
+        if (new RegExp("/Contents\\s+" + oid + "\\s+").test(pobj.body) || Number(pid) === oid) {
+          pagesTouch.push(`${pobj.id} ${pobj.gen}`);
+        }
+      }
+      redactionOps.push({
+        kind,
+        page: pagesTouch[0] || null,
+        pages: pagesTouch,
+        object_id: `${oid} ${(newObj || {}).gen || 0}`,
+        sha256_before: shaBefore,
+        sha256_after: shaAfter,
+        invented: false,
+      });
+    }
+    for (const pid of new Set([...Object.keys(a), ...Object.keys(b)].map(Number))) {
+      const pa = objAt(pid, (a[pid] || {}).offset);
+      const pb = objAt(pid, (b[pid] || {}).offset);
+      const isPage = (o) => o && /\/Type\s*\/Page\b/.test(o.body || "");
+      if (!isPage(pa) && !isPage(pb)) continue;
+      const keys = ["Contents", "Resources", "XObject", "Annots", "Metadata"];
+      const snapKeys = (o) => {
+        const s = {};
+        for (const k of keys) {
+          const mm = [...(o?.body || "").matchAll(new RegExp("/" + k + "\\s+(\\d+)\\s+(\\d+)\\s+R", "g"))];
+          s[k] = mm.map((x) => `${x[1]} ${x[2]}`);
+        }
+        return s;
+      };
+      const sa = snapKeys(pa);
+      const sb = snapKeys(pb);
+      const changed = keys.filter((k) => JSON.stringify(sa[k]) !== JSON.stringify(sb[k]));
+      if (!changed.length && a[pid] && b[pid] && a[pid].offset !== b[pid].offset) changed.push("Page");
+      if (!changed.length && pb) {
+        const cref = [...(pb.body || "").matchAll(/\/Contents\s+(\d+)\s+(\d+)\s+R/g)];
+        for (const r of cref) {
+          const rid = Number(r[1]);
+          if (a[rid] && b[rid] && a[rid].offset !== b[rid].offset) changed.push("Contents");
+        }
+      }
+      if (changed.length) {
+        pageDeltas.push({
+          page: `${pid} 0`,
+          changed: [...new Set(changed)],
+          before: sa,
+          after: sb,
+          invented: false,
+        });
+      }
+    }
+    edges.push({
+      from: i,
+      to: i + 1,
+      added,
+      replaced,
+      deleted,
+      freed,
+      page_deltas: pageDeltas,
+      redaction_ops: redactionOps,
+      invented: false,
+    });
+  }
+
+  return {
+    revisions: nodes,
+    edges,
+    root_startxref: nodes[0] ? nodes[0].startxref : null,
+    tip_startxref: nodes.length ? nodes[nodes.length - 1].startxref : tip,
+    eof_offsets: eofOffsets,
+    invented: false,
+    note: "Incremental-update graph from startxref / Prev / trailer / xref (classic + XRef streams). Copies are tip-cuts of leftover bytes. Not invented. Not a forensic certification.",
+  };
+}
+
 export async function locatePdfHistory(u8) {
   const head = bytesToLatin(u8.subarray(0, 5));
   const empty = {
@@ -1484,6 +1887,7 @@ export async function locatePdfHistory(u8) {
     classifications: [],
     recovered_characters: [],
     ocr: { ocr_ran: false, covered_letters_from_context: false, ocr_status: "unbound-hosted-preview", invented: false },
+    revision_graph: { revisions: [], edges: [], root_startxref: null, eof_offsets: [], invented: false },
   };
   if (head !== "%PDF-") return empty;
   const text = bytesToLatin(u8);
@@ -1840,6 +2244,7 @@ export async function locatePdfHistory(u8) {
     page_geometry: page_revisions.map((p) => ({ page_object: p.page_object, invented: false })),
     object_ids_replaced: revision_compare.map((c) => ({ old: c.old_object, new: c.new_object })),
     extra_catalog_follow: extraFollow,
+    revision_graph: await buildRevisionGraph(u8, objects, { hosted: true }),
     guessed_letters: false,
     heatmap_is_transcript: false,
     forensic_certification: false,
@@ -1869,6 +2274,5 @@ export function twinCompareHistory(a, b) {
 void pixelsFromRgb;
 void copyBuf;
 void inflateBytes;
-void sha256HexBytes;
 void u8slice;
 void indexOfBytes;
