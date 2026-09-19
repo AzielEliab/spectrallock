@@ -60,6 +60,15 @@ concatenated with `path\\n` + bytes + `\\n`). Recompute only from disk.
    accept `inject` and report `tazel_inband_pct` / `vyrn_inband_pct` before
    any hit claim. Lamb Lens remains Service → Clarity → Peace (no invented
    marks; inject ON is paint, not pigment).
+   `overlay.js` now also carries the honest unredact / leftover-bytes
+   family (`locate`, `lift`, `recover`, `refuse`). Product Worker
+   `GET|POST /v1/unredact` (aliases `/v1/lift`, `/v1/redact-locate`) must
+   refuse opaque replace with no leftover bytes (`SL-UNREDACT-OPAQUE`)
+   and must never invent letters. Leftover recovery reads present
+   container bytes only (object id / offset / stream). Catalog door ops
+   stay the list above until GitBaby adds `unredact` to LIVE_OPS — do not
+   invent a door op. Rehash still uses `ENGINE_ARTIFACTS.spectrallock =
+   ["spectrallock/overlay.js"]` only.
 
 6. **Bump runtime** (GitBaby bump) and deploy
    `aziel-runtime.vibelock.workers.dev`.

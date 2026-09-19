@@ -163,6 +163,28 @@ python3 spectrallock_inject.py page.jpg --mode vyrn --inject -o vyrn_on.jpg
 Hosted `/v1/overlay` may accept `inject` without claiming pigment recovery.
 256 px preview honesty stays. Prefer the local package.
 
+## Unredact / leftover-bytes (operator lock — NO-LIE)
+
+Not a lens. Does not invent letters. Does not claim ESDA, chemical, lab,
+or forensic certification.
+
+- **Locate** reports text still in a PDF under a visual box, metadata,
+  attachments, twin-page residual, and leftover container bytes.
+- **Lift** is non-opaque residual enhancement with inject OFF. A heatmap
+  is not a transcript. Flattened screenshots of a box are treated as replace.
+- **Recover** is allowed only when the producer left old bytes in the
+  container (incremental update, unused objects, prior streams,
+  attachments, un-garbage-collected objects). Fields:
+  `leftover_bytes`, `recovered_from` (`pdf-object` / `attachment` /
+  `prior-stream` / `unused-object` / `incremental-revision` / `png-chunk`),
+  plus object id / offset / stream. That is reading present bytes.
+- **Refuse** `SL-UNREDACT-OPAQUE` when the cover is clipped solid black
+  (or a flattened box) **and** leftover bytes are gone.
+
+Runtime rehash after merge still copies `overlay.js` only, then
+`node scripts/hash-engines.mjs --write`. GitBaby CLEARs `spectrallock`
+then bumps aziel-runtime. Do not invent a digest.
+
 ## Hosted preview vs package
 
 The Cloudflare Worker `/v1/overlay` is a simplified JavaScript port

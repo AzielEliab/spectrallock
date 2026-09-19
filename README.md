@@ -98,6 +98,10 @@ stand in for a conservator.
 The hosted Worker `/v1/overlay` is a **simplified preview** (longest side
 capped at 256 px, PNG in/out). The full pipeline is this Python package.
 
+**Unredact / lift-overlay** locates leftover bytes and residual only.
+It does not invent letters. Opaque replace with no leftover container
+bytes refuses (`SL-UNREDACT-OPAQUE`). A heatmap is not a transcript.
+
 ## Lenses (all live in 0.3.0)
 
 Same names as the Corpus OCR SpectralLock lens checkboxes, plus candle /
@@ -118,6 +122,27 @@ indent / lemon synthetic looks. Aliases resolve to the canonical id.
 | `lemon` | LISA-1.0 | Hidden lemon ink analysis (synthetic). Heat-/acid-style browning from existing pixels. Never invents marks. Aliases: `lemon-ink`, `hidden-lemon`, `invisible-ink-lemon`. |
 
 Stub (refused): `spectrometer`, `forensic`, `invent_mark`.
+
+## Unredact / lift-overlay (operator lock — NO-LIE)
+
+Not a spectral lens. Family: `unredact` / `lift` / `redact-locate`.
+Ops: `locate`, `lift`, `recover`, `refuse`.
+
+| op | honesty |
+|----|---------|
+| `locate` | Report text still in the PDF, metadata, attachments, twin-page residual, leftover container bytes. Do not invent letters. |
+| `lift` | Non-opaque cover only. Contrast / residual with `--no-inject` (gray of the same gate). Heatmap ≠ transcript. |
+| `recover` | If the producer left old bytes in the container (incremental update, unused objects, prior streams, attachments), extract them with object id / offset / stream provenance. That is reading present bytes — not guessing a black box. |
+| `refuse` | Opaque replace / flattened screenshot and no leftover bytes → `SL-UNREDACT-OPAQUE`. |
+
+Returns `opaque_replace`, `residual_usable`, `leftover_bytes`, `recovered_from`, `refuse_code`. Never claim pigment recovery, ESDA, chemical, lab, or forensic certification.
+
+```bash
+spectrallock unredact locate page.pdf --json
+spectrallock unredact recover page.pdf --json
+spectrallock lift cover.png --no-inject -o residual.png --json
+spectrallock redact-locate page.pdf --twin page_less.pdf --query "Alice"
+```
 
 ## Ink / page targets
 
@@ -187,6 +212,10 @@ spectrallock overlay --mode zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|
 spectrallock overlay --lens tazel --target page --no-inject page.jpg out.png --json
 spectrallock overlay --mode tazel page.jpg out.png --verify --sidecar
 spectrallock inject page.jpg --mode vyrn --inject -o vyrn_on.jpg
+spectrallock unredact locate page.pdf --json
+spectrallock unredact recover page.pdf --json
+spectrallock lift cover.png --no-inject -o residual.png --json
+spectrallock redact-locate page.pdf --twin other.pdf --query Alice
 spectrallock ui          # 127.0.0.1:8861
 spectrallock serve       # alias for ui
 ```
@@ -215,6 +244,7 @@ flutter run
 - Lenses: `GET /v1/lenses` (alias `GET /v1/modes`)
 - Targets: `GET /v1/targets`
 - Overlay: `POST /v1/overlay` `{b64, mode|lens|lenses, target, inject}` — PNG, max 256 px longest side. `inject` true\|false is paint, not pigment. Mode aliases (`ultraviolet`, `candlelight`, `ink-suppress`, `hidden-lemon`, …) resolve to canonical ids. Does **not** increment the download counter.
+- Unredact: `GET /v1/unredact` honesty banner; `POST /v1/unredact` `{b64, op, query}` locate / leftover recover / residual lift. Opaque + no leftover → `SL-UNREDACT-OPAQUE`. Aliases `POST /v1/lift`, `POST /v1/redact-locate`. Never invents letters.
 - Suite mesh: `GET /v1/mesh` PROXY to aziel-runtime (default OFF; QNM-BUILD-1.0 live|locked|isolated; QNS-CD-1.0 hub cite / Worker mesh cross-map only — photon QNS1 packet transfer; local qnsd in [qnm-node](https://github.com/AzielEliab/qnm-node); runtime cites in [aziel-runtime](https://github.com/AzielEliab/aziel-runtime); no Node Gate; no public qnsd proxy; not a Softwares-tab product)
 - AI help: https://spectrallock-download-tracker.vibelock.workers.dev/ai
 - Catalog: https://aziel-runtime.vibelock.workers.dev/ (MCP tools `spectrallock_modes`, `spectrallock_overlay`; catalog `mesh_*` + FragGate `slug=mesh`)

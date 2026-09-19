@@ -16,6 +16,9 @@ export const LIMITATION =
   "Inject ON is false-color membership tint (paint), not recovered pigment. " +
   "OFF is luminance of the same gate. Zero ignores the switch. " +
   "Empty gate ≠ broken lens. Copy-of-copy works only if the hue is still in-band. " +
+  "Unredact / lift-overlay locates leftover bytes and residual only — never invents letters. " +
+  "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). " +
+  "Heatmaps are not transcripts. " +
   "Lamb Lens: Service → Clarity → Peace. " +
   "Hosted overlay is a simplified preview (max 256 px); the full pipeline is the Python package. " +
   "Does not claim pigment recovery. The human still reads the page. Author Aziel Eliab.";
@@ -753,6 +756,474 @@ export async function overlayFromB64(b64, mode, extras = {}) {
     author: "Aziel Eliab",
     advisory: LIMITATION,
   };
+}
+
+export const REFUSE_OPAQUE = "SL-UNREDACT-OPAQUE";
+export const UNREDACT_OPS = ["locate", "lift", "recover", "refuse"];
+export const UNREDACT_FAMILY = ["unredact", "lift", "redact-locate"];
+export const UNREDACT_NOTE =
+  "Unredact / lift-overlay is locate + leftover-bytes + residual only. " +
+  "Locate reports text still in the file, metadata, attachments, twin-page residual, " +
+  "and leftover container bytes. It does not invent letters. " +
+  "Opaque replace (clipped solid black / true rewrite) with no leftover bytes refuses (" +
+  REFUSE_OPAQUE +
+  "). That is the only honest switch for visual unredact. " +
+  "Non-opaque cover may use contrast / residual with inject OFF. No guessed letters. " +
+  "A heatmap of ghosts is not a transcript. A flattened screenshot of a box is replace. " +
+  "Leftover-bytes recovery reads prior objects / unused streams / attachments / incremental " +
+  "revisions still in the container — not guessing letters from a black box. " +
+  "If the container was rewritten and old bytes are gone, leftover_bytes is false. " +
+  "Never claim pigment recovery, ESDA, chemical, lab, or forensic certification. " +
+  "Lamb Lens: Service → Clarity → Peace. Author Aziel Eliab. NO-LIE.";
+
+export function listUnredact() {
+  return {
+    family: UNREDACT_FAMILY.slice(),
+    ops: UNREDACT_OPS.slice(),
+    refuse_code: REFUSE_OPAQUE,
+    leftover_bytes_recovery: true,
+    pigment_recovery: false,
+    guessed_letters: false,
+    heatmap_is_transcript: false,
+    esda: false,
+    forensic_certification: false,
+    inject_default: false,
+    note: UNREDACT_NOTE,
+    author: "Aziel Eliab",
+    status: "live",
+  };
+}
+
+export function parseUnredactOp(value, fallback = "locate") {
+  const key = String(value || fallback).trim().toLowerCase().replaceAll("_", "-");
+  const aliases = {
+    "redact-locate": "locate",
+    locate: "locate",
+    lift: "lift",
+    "lift-overlay": "lift",
+    recover: "recover",
+    leftover: "recover",
+    "leftover-bytes": "recover",
+    refuse: "refuse",
+    unredact: "locate",
+  };
+  return aliases[key] || null;
+}
+
+function latinPreview(s, limit = 240) {
+  const cleaned = String(s || "").replace(/[^\x20-\x7e\n\t]/g, " ").replace(/[ \t]+/g, " ").trim();
+  return cleaned.length > limit ? cleaned.slice(0, limit) + "…" : cleaned;
+}
+
+function looksLikeText(s) {
+  if (!s || s.trim().length < 2) return false;
+  let printable = 0;
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c >= 32 && c < 127) printable += 1;
+  }
+  return printable / s.length >= 0.55;
+}
+
+function unescapePdfLiteral(raw) {
+  let inner = raw;
+  if (inner.startsWith("(") && inner.endsWith(")")) inner = inner.slice(1, -1);
+  return inner.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t").replace(/\\([()\\])/g, "$1");
+}
+
+function extractPdfStrings(text) {
+  const found = [];
+  const lit = /\((?:\\.|[^\\)])*\)/g;
+  let m;
+  while ((m = lit.exec(text))) {
+    const s = unescapePdfLiteral(m[0]);
+    if (looksLikeText(s)) found.push(s);
+  }
+  const hex = /<([0-9A-Fa-f \t\r\n]+)>/g;
+  while ((m = hex.exec(text))) {
+    const h = m[1].replace(/\s+/g, "");
+    if (h.length < 4) continue;
+    let out = "";
+    for (let i = 0; i + 1 < h.length; i += 2) {
+      out += String.fromCharCode(parseInt(h.slice(i, i + 2), 16));
+    }
+    if (looksLikeText(out)) found.push(out);
+  }
+  return found;
+}
+
+function bytesToLatin(u8) {
+  let s = "";
+  for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+  return s;
+}
+
+export function locatePdfBytes(u8) {
+  const head = bytesToLatin(u8.subarray(0, 5));
+  if (head !== "%PDF-") {
+    return { is_pdf: false, leftover_bytes: false, recovered: [], recovered_from: [], text_layer: [], metadata_hits: [], attachments: [], locations: [] };
+  }
+  const text = bytesToLatin(u8);
+  const eofCount = (text.match(/%%EOF/g) || []).length;
+  const objects = [];
+  const objRe = /(?:^|[^0-9])(\d+)\s+(\d+)\s+obj/g;
+  let m;
+  while ((m = objRe.exec(text))) {
+    const id = Number(m[1]);
+    const gen = Number(m[2]);
+    const offset = m.index + (m[0].startsWith("0") || m[0].startsWith("1") || /[0-9]/.test(m[0][0]) ? 0 : 1);
+    const start = m.index + m[0].length;
+    const endRel = text.indexOf("endobj", start);
+    if (endRel < 0) continue;
+    const body = text.slice(start, endRel);
+    const hasStream = body.includes("stream");
+    objects.push({ id, gen, offset: m.index, body, has_stream: hasStream });
+  }
+  const live = {};
+  const xrefRe = /xref\s+([\s\S]*?)(?:trailer|startxref)/g;
+  while ((m = xrefRe.exec(text))) {
+    const block = m[1];
+    const lines = block.split(/\r?\n/);
+    let first = 0;
+    let remain = 0;
+    for (const line of lines) {
+      const hdr = line.trim().match(/^(\d+)\s+(\d+)$/);
+      if (hdr) {
+        first = Number(hdr[1]);
+        remain = Number(hdr[2]);
+        continue;
+      }
+      const row = line.trim().match(/^(\d+)\s+(\d+)\s+([fn])/);
+      if (row && remain > 0) {
+        const objId = first;
+        first += 1;
+        remain -= 1;
+        if (row[3] === "n") live[objId] = Number(row[1]);
+        else delete live[objId];
+      }
+    }
+  }
+  const byId = {};
+  for (const obj of objects) {
+    (byId[obj.id] || (byId[obj.id] = [])).push(obj);
+  }
+  const text_layer = [];
+  const recovered = [];
+  const recovered_from = [];
+  const locations = [];
+  const metadata_hits = [];
+  const infoRe = /\/(Title|Author|Subject|Keywords|Creator|Producer|CreationDate|ModDate)\s*(\((?:\\.|[^\\)])*\))/g;
+  while ((m = infoRe.exec(text))) {
+    const value = latinPreview(unescapePdfLiteral(m[2]));
+    if (value) metadata_hits.push({ key: m[1], value, source: "pdf-bytes", invented: false });
+  }
+  for (const id of Object.keys(byId)) {
+    const versions = byId[id].slice().sort((a, b) => a.offset - b.offset);
+    for (let i = 0; i < versions.length; i++) {
+      const obj = versions[i];
+      const liveOff = live[obj.id];
+      let leftover = false;
+      let kind = "pdf-object";
+      if (liveOff != null) leftover = Math.abs(liveOff - obj.offset) > 8 && i !== versions.length - 1;
+      else if (Object.keys(live).length && liveOff == null) {
+        leftover = true;
+        kind = "unused-object";
+      }
+      if (versions.length > 1 && i < versions.length - 1) {
+        leftover = true;
+        kind = obj.has_stream ? "prior-stream" : "incremental-revision";
+      }
+      const strings = extractPdfStrings(obj.body);
+      const uniq = [];
+      for (const s of strings) {
+        const p = latinPreview(s);
+        if (p && !uniq.includes(p)) uniq.push(p);
+      }
+      locations.push({
+        object_id: `${obj.id} ${obj.gen}`,
+        offset: obj.offset,
+        stream: obj.has_stream,
+        leftover,
+        kind,
+        strings: uniq,
+        invented: false,
+      });
+      if (leftover) {
+        recovered.push({
+          object_id: `${obj.id} ${obj.gen}`,
+          offset: obj.offset,
+          stream: obj.has_stream,
+          recovered_from: kind,
+          preview: uniq.join(" | "),
+          invented: false,
+        });
+        if (!recovered_from.includes(kind)) recovered_from.push(kind);
+      } else if (uniq.length) {
+        text_layer.push({
+          object_id: `${obj.id} ${obj.gen}`,
+          offset: obj.offset,
+          strings: uniq,
+          under_visual_box_possible: true,
+          invented: false,
+          note: "Text still in the PDF object. Not guessed from a black rectangle.",
+        });
+      }
+    }
+  }
+  const attachments = [];
+  for (const obj of objects) {
+    if (!/\/EmbeddedFile|\/Filespec|\/EF\b/.test(obj.body)) continue;
+    const names = [];
+    const nm = /\/(?:F|UF|Desc)\s*(\((?:\\.|[^\\)])*\))/g;
+    let n;
+    while ((n = nm.exec(obj.body))) names.push(unescapePdfLiteral(n[1]));
+    const preview = latinPreview(extractPdfStrings(obj.body).join(" "));
+    attachments.push({
+      object_id: `${obj.id} ${obj.gen}`,
+      offset: obj.offset,
+      names: names.filter(Boolean),
+      has_stream: obj.has_stream,
+      preview,
+      recovered_from: "attachment",
+      invented: false,
+    });
+    recovered.push({
+      object_id: `${obj.id} ${obj.gen}`,
+      offset: obj.offset,
+      stream: obj.has_stream,
+      recovered_from: "attachment",
+      preview,
+      names: names.filter(Boolean),
+      invented: false,
+    });
+    if (!recovered_from.includes("attachment")) recovered_from.push("attachment");
+  }
+  return {
+    is_pdf: true,
+    object_count: objects.length,
+    incremental_updates: Math.max(0, eofCount - 1),
+    text_layer,
+    metadata_hits,
+    attachments,
+    recovered,
+    leftover_bytes: recovered.length > 0,
+    recovered_from,
+    locations,
+  };
+}
+
+export function classifyCoverBuf(buf, w, h) {
+  const n = w * h;
+  const L = toLuma(buf, w, h);
+  let darkN = 0;
+  let minX = w, minY = h, maxX = 0, maxY = 0;
+  for (let i = 0; i < n; i++) {
+    if (L[i] <= 0.42) {
+      darkN += 1;
+      const x = i % w;
+      const y = (i - x) / w;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  const dark_frac = n ? darkN / n : 0;
+  if (darkN < 24 || dark_frac < 0.012) {
+    return { opaque_replace: false, residual_usable: false, flattened_screenshot_replace: false, cover_regions: [], dark_frac, width: w, height: h };
+  }
+  let sum = 0, sum2 = 0, mx = 0, mn = 1, near = 0, count = 0;
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      const v = L[y * w + x];
+      sum += v; sum2 += v * v;
+      if (v > mx) mx = v;
+      if (v < mn) mn = v;
+      if (v <= 0.045) near += 1;
+      count += 1;
+    }
+  }
+  const mean = sum / count;
+  const std = Math.sqrt(Math.max(0, sum2 / count - mean * mean));
+  const nearFrac = near / count;
+  const isOpaque = nearFrac >= 0.72 && std <= 0.045 && mx <= 0.12;
+  const isResidual = !isOpaque && std >= 0.028 && (mx - mn) >= 0.08;
+  return {
+    opaque_replace: isOpaque && !isResidual,
+    residual_usable: isResidual,
+    flattened_screenshot_replace: isOpaque && !isResidual,
+    cover_regions: [{ x0: minX, y0: minY, x1: maxX + 1, y1: maxY + 1, mean, std, opaque: isOpaque, residual_usable: isResidual, invented: false }],
+    dark_frac,
+    width: w,
+    height: h,
+  };
+}
+
+function residualEnhanceBuf(buf, w, h) {
+  const L = norm01(toLuma(buf, w, h));
+  return grayToRgb(L);
+}
+
+export function unredactFromBytes(u8, extras = {}) {
+  const op = parseUnredactOp(extras.op || extras.verb || "locate") || "locate";
+  const finding = {
+    product: "spectrallock",
+    version: VERSION,
+    author: "Aziel Eliab",
+    family: "unredact",
+    aliases: UNREDACT_FAMILY.slice(),
+    op,
+    opaque_replace: false,
+    residual_usable: false,
+    leftover_bytes: false,
+    refuse_code: null,
+    recovered_from: [],
+    locations: [],
+    metadata_hits: [],
+    attachments: [],
+    recovered: [],
+    text_layer: [],
+    cover_regions: [],
+    twin_diff: null,
+    name_hits: [],
+    inject: false,
+    inject_applied: false,
+    pigment_recovery: false,
+    guessed_letters: false,
+    heatmap_is_transcript: false,
+    residual_is_transcript: false,
+    esda: false,
+    chemical_recovery: false,
+    forensic_certification: false,
+    flattened_screenshot_replace: false,
+    empty_gate_not_broken_lens: true,
+    inject_note: INJECT_NOTE,
+    unredact_note: UNREDACT_NOTE,
+    advisory: UNREDACT_NOTE,
+    limitation: LIMITATION,
+    hosted_preview_honesty: "256px residual preview when lifted; leftover-bytes recovery reads present container bytes only",
+    lamb_lens: "Service → Clarity → Peace",
+    identity: "Aziel Eliab",
+  };
+  const latinHead = bytesToLatin(u8.subarray(0, 5));
+  if (latinHead === "%PDF-") {
+    const scanned = locatePdfBytes(u8);
+    finding.text_layer = scanned.text_layer;
+    finding.metadata_hits = scanned.metadata_hits;
+    finding.attachments = scanned.attachments;
+    finding.recovered = scanned.recovered;
+    finding.locations = scanned.locations;
+    finding.recovered_from = scanned.recovered_from;
+    finding.leftover_bytes = scanned.leftover_bytes;
+    finding.container = "pdf";
+    finding.incremental_updates = scanned.incremental_updates;
+    finding.pdf_object_count = scanned.object_count;
+  } else {
+    let decoded;
+    try {
+      decoded = null;
+    } catch {
+      decoded = null;
+    }
+  }
+  return { finding, op };
+}
+
+export async function unredactFromB64(b64, extras = {}) {
+  let u8;
+  try {
+    u8 = b64ToBytes(b64);
+  } catch (err) {
+    return { error: "decode failed: " + String(err.message || err), advisory: UNREDACT_NOTE };
+  }
+  const op = parseUnredactOp(extras.op || extras.verb || "locate");
+  if (!op) return { error: "unknown unredact op", known: UNREDACT_OPS, advisory: UNREDACT_NOTE };
+  const base = unredactFromBytes(u8, { op }).finding;
+  base.op = op;
+  const isPdf = bytesToLatin(u8.subarray(0, 5)) === "%PDF-";
+  if (!isPdf) {
+    try {
+      const decoded = await decodePng(u8);
+      const capped = capSide(decoded.buf, decoded.w, decoded.h);
+      const cover = classifyCoverBuf(capped.buf, capped.w, capped.h);
+      base.opaque_replace = cover.opaque_replace;
+      base.residual_usable = cover.residual_usable;
+      base.flattened_screenshot_replace = cover.flattened_screenshot_replace;
+      base.cover_regions = cover.cover_regions;
+      base.width = cover.width;
+      base.height = cover.height;
+      base.dark_frac = cover.dark_frac;
+      base.container = "png";
+      if (op === "lift" && cover.residual_usable && !cover.opaque_replace) {
+        const out = residualEnhanceBuf(capped.buf, capped.w, capped.h);
+        const png = await encodePng(out, capped.w, capped.h);
+        base.residual_png_b64 = bytesToB64(png);
+        base.note = "Non-opaque cover: residual / contrast with inject OFF. Heatmap is not a transcript.";
+        return base;
+      }
+    } catch (err) {
+      if (op === "lift" && !base.leftover_bytes) {
+        return { error: "PNG decode failed for lift: " + String(err.message || err), advisory: UNREDACT_NOTE };
+      }
+    }
+  }
+  const leftover = !!base.leftover_bytes;
+  const opaque = !!base.opaque_replace;
+  const residual = !!base.residual_usable;
+  const mustRefuse = (opaque || base.flattened_screenshot_replace) && !leftover;
+  if (op === "recover") {
+    if (leftover) {
+      base.note = "Recovered leftover bytes still in the container. Not guessed letters.";
+      return base;
+    }
+    base.refuse_code = REFUSE_OPAQUE;
+    base.stop = true;
+    base.note = "No leftover container bytes. " + REFUSE_OPAQUE;
+    return base;
+  }
+  if (op === "lift") {
+    if (residual && !opaque) {
+      base.note = "Non-opaque cover: residual / contrast with inject OFF. Heatmap is not a transcript.";
+      return base;
+    }
+    if (leftover) {
+      base.op = "recover";
+      base.note = "Visual lift refused on clipped black. Leftover container bytes were extracted instead.";
+      return base;
+    }
+    base.refuse_code = REFUSE_OPAQUE;
+    base.stop = true;
+    base.op = "refuse";
+    base.note = "Lift-overlay refuses on clipped black / flattened box with no leftover bytes. " + REFUSE_OPAQUE;
+    return base;
+  }
+  if (leftover) {
+    base.note = "Locate + leftover-bytes. Recovered content is still in the container. Not guessed from a black box.";
+  } else if (residual) {
+    base.note = "Locate: non-opaque cover. Residual may be enhanced with inject OFF. Heatmap is not a transcript.";
+  } else if (mustRefuse) {
+    base.refuse_code = REFUSE_OPAQUE;
+    base.stop = true;
+    base.note = "Locate: opaque replace and no leftover bytes. Visual unredact refuses. " + REFUSE_OPAQUE;
+  } else {
+    base.note = "Locate complete. No invented letters.";
+  }
+  if (extras.query) {
+    const q = String(extras.query);
+    const hay = [];
+    for (const hit of base.metadata_hits) hay.push(["metadata:" + hit.key, hit.value || ""]);
+    for (const loc of base.text_layer) hay.push(["object:" + loc.object_id, (loc.strings || []).join(" ")]);
+    for (const rec of base.recovered) hay.push(["leftover:" + rec.object_id, rec.preview || ""]);
+    const low = q.toLowerCase();
+    base.name_hits = hay.filter(([, t]) => String(t).toLowerCase().includes(low)).map(([where, t]) => ({
+      query: q,
+      where,
+      excerpt: latinPreview(t, 160),
+      invented: false,
+      note: "Cited from bytes already in the file. Not fabricated.",
+    }));
+  }
+  return base;
 }
 
 void pixelsFromRgb;
