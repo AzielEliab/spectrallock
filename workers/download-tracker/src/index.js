@@ -56,6 +56,8 @@ const CITE_JSON = {
   version: VERSION,
   description: "Rosetta spectral analysis (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR — overlays plus ink/page targets.",
   github: GITHUB_REPO,
+  x: "https://x.com/AzielEliab",
+  x_handle: "@AzielEliab",
   live: HOST + "/",
   download: HOST + "/download",
   openapi: HOST + "/openapi.json",
@@ -71,6 +73,7 @@ const CITE_JSON = {
 const LLMS_TXT = `# SpectralLock
 
 > Author: Aziel Eliab only
+> X / Twitter: @AzielEliab https://x.com/AzielEliab
 > Version: ${VERSION}
 > License: Apache-2.0
 > Status: live Rosetta spectral analysis (RSA-2.0 family)
@@ -117,7 +120,7 @@ spectrallock ui
 Identity: Aziel Eliab only. Lamb Lens: Service → Clarity → Peace. NO-LIE.
 `;
 
-const AI_TXT = `SpectralLock — Rosetta spectral analysis (RSA-2.0 family) by Aziel Eliab only.
+const AI_TXT = `SpectralLock — Rosetta spectral analysis (RSA-2.0 family) by Aziel Eliab only.\nX / Twitter: @AzielEliab https://x.com/AzielEliab.
 
 Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets.
 LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon.
