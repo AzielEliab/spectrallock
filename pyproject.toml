@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spectrallock"
-version = "0.3.0"
+version = "0.3.1"
 description = "SpectralLock: Rosetta spectral analysis. Same lenses as Aziel Corpus Library OCR (overlays, ink/page). Author Aziel Eliab, 2026."
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -48,7 +48,7 @@ spectrallock-inject = "spectrallock.inject:main"
 
 [project.urls]
 Homepage = "https://github.com/AzielEliab/spectrallock"
-Download = "https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz"
+Download = "https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.1.tar.gz"
 Issues = "https://github.com/AzielEliab/spectrallock/issues"
 Counted-downloads = "https://spectrallock-download-tracker.vibelock.workers.dev/"
 

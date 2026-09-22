@@ -55,6 +55,25 @@ def test_ui_modes_and_overlay(tmp_path) -> None:
         assert "127.0.0.1:8861" in html
         assert "ink" in html.lower() and "page" in html.lower()
         assert "inject" in html.lower()
+        assert "restore pigment" in html.lower()
+        req_p = urllib.request.Request(
+            f"http://{host}:{port}/api/pigment",
+            data=json.dumps({
+                "op": "restore",
+                "b64": __import__("base64").b64encode(data).decode("ascii"),
+            }).encode(),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req_p) as pres:
+                pigment = json.loads(pres.read().decode())
+                pigment_status = pres.status
+        except urllib.error.HTTPError as exc:
+            pigment_status = exc.code
+            pigment = json.loads(exc.read().decode())
+        assert pigment["pigment_recovery"] is True
+        assert pigment_status in {200, 409}
     finally:
         httpd.shutdown()
         httpd.server_close()

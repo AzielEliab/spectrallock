@@ -8,7 +8,7 @@
 </head>
 <body>
   <header>
-    <div class="tag">SpectralLock · v0.3.0 · RSA-2.0 · 127.0.0.1:8861</div>
+    <div class="tag">SpectralLock · v0.3.1 · RSA-2.0 · 127.0.0.1:8861</div>
     <h1>Rosetta spectral analysis</h1>
     <p class="lede">
       SpectralLock is Rosetta spectral analysis software — the same
@@ -18,8 +18,9 @@
       <code>0.40·Z′ + 0.35·T′ + 0.25·V′</code>. Balance never invents marks.
       Synthetic UV is a 365–400&nbsp;nm look from an ordinary photograph.
       Candle, indent, and lemon are synthetic looks from ordinary photos.
-      Inject ON paints membership (false color), not recovered pigment.
+      Inject ON paints membership from the Spectral Harmonic Wheel.
       OFF is gray of the same gate. Zero ignores the switch.
+      Restore lost pigment estimates faded signal still in the pixels.
       The human still reads the page. Author Aziel Eliab.
     </p>
   </header>
@@ -58,6 +59,7 @@
     <div class="actions">
       <button type="button" id="add-file" class="action giant">Add file</button>
       <button type="button" id="sample" class="action">Sample page</button>
+      <button type="button" id="pigment" class="action" disabled title="Restore lost pigment where the pixels still carry a signal">Restore pigment</button>
       <button type="button" id="export" class="action giant" disabled title="overlay PNG plus JSON sidecar">Export</button>
       <button type="button" id="verify" class="action" disabled title="receipt: lenses, target, paper, sha256 in/out, size">Verify</button>
     </div>

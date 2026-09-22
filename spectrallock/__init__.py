@@ -64,6 +64,18 @@ from spectrallock.handwriting import (
     list_handwriting,
     parse_handwriting_op,
 )
+from spectrallock.pigment import (
+    PIGMENT_FAMILY,
+    PIGMENT_NOTE,
+    PIGMENT_OPS,
+    REFUSE_GONE,
+    analyze_pigment,
+    analyze_pigment_bytes,
+    analyze_pigment_path,
+    list_pigment,
+    parse_pigment_op,
+    pigment_mode_card,
+)
 from spectrallock.unredact import (
     REFUSE_OPAQUE,
     UNREDACT_FAMILY,
@@ -77,7 +89,7 @@ from spectrallock.unredact import (
     parse_unredact_op,
 )
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 __author__ = "Aziel Eliab"
 __all__ = [
     "LIMITATION",
@@ -140,5 +152,15 @@ __all__ = [
     "analyze_handwriting_path",
     "list_handwriting",
     "parse_handwriting_op",
+    "PIGMENT_NOTE",
+    "PIGMENT_OPS",
+    "PIGMENT_FAMILY",
+    "REFUSE_GONE",
+    "analyze_pigment",
+    "analyze_pigment_bytes",
+    "analyze_pigment_path",
+    "list_pigment",
+    "parse_pigment_op",
+    "pigment_mode_card",
     "__version__",
 ]

@@ -10,4 +10,5 @@ workers/download-tracker/node_modules/
 # Keep extra local sdists out of git; the Worker DEFAULT_ASSET must be hosted.
 workers/download-tracker/public/*.tar.gz
 !workers/download-tracker/public/spectrallock-0.3.0.tar.gz
+!workers/download-tracker/public/spectrallock-0.3.1.tar.gz
 .wrangler

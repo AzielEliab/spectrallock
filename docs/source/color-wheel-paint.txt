@@ -1,0 +1,38 @@
+Spectral Harmonic Wheel — paint schema
+Operator lock 2026-09-22. Author Aziel Eliab.
+
+This file is the membership-tint (paint) plane. It does not replace the spectral triad in color-defs.txt.
+
+Spectral analysis (densitometry / in-band), unchanged:
+Tazel
+Hex: #1EC9A5
+Hue ~170°. Engine TAZEL_HEX. In-band spectral math.
+Vyrn
+Hex: #C00066
+Hue ~350°. Engine VYRN_HEX. In-band spectral math.
+Zero
+Hex: #6F6485
+Hue ~260°. Engine ZERO_HEX. In-band spectral math.
+
+Wheel paint (inject membership tints). Hexes are authoritative, sampled from the operator Spectral Harmonic Wheel art.
+ZERO
+Hex: #325767
+Meaning: deep blue-slate membership tint for the Zero label. The zero gate itself stays gray; this hex paints Zero when a membership mix includes it.
+CHAOS
+Hex: #8D223D
+Meaning: crimson membership tint for the Chaos label.
+VYRN
+Hex: #A22639
+Meaning: red membership tint for the Vyrn label. In-band vyrn math stays #C00066 / ~350°.
+UV
+Hex: #9F3B2B
+Meaning: burnt-red membership tint for the UV label. The synthetic 365–400 nm look stays its own gate; this hex is the membership paint.
+TAZEL
+Hex: #797A2D
+Meaning: olive membership tint for the Tazel label. In-band tazel math stays #1EC9A5 / ~170°.
+ROSETTA
+Hex: #467542
+Meaning: leaf-green membership tint for the Rosetta composite.
+ZEN
+Hex: #DFD2B5
+Meaning: parchment-cream membership tint for the Zen composite.

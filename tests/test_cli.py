@@ -50,8 +50,12 @@ def test_cli_modes_json(capsys) -> None:
     assert main(["modes", "--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
     ids = [m["id"] for m in payload["modes"]]
-    assert ids == list(LIVE_MODES)
+    assert ids == list(LIVE_MODES) + ["pigment"]
     assert all(m["status"] == "live" for m in payload["modes"])
+    assert payload["pigment"]["status"] == "live"
+    assert payload["pigment"]["refuse_code"] == "SL-PIGMENT-GONE"
+    assert payload["live_modes"][-1] == "pigment"
+    assert [m["id"] for m in payload["lenses"]] == list(LIVE_MODES)
     assert "rosetta" in payload["advisory"].lower()
     assert payload["targets"]
     assert payload["lenses"]

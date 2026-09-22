@@ -2,8 +2,8 @@
   "author": "Aziel Eliab",
   "identity": "Aziel Eliab only",
   "title": "SpectralLock",
-  "version": "0.3.0",
-  "description": "Rosetta spectral analysis (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR — overlays plus ink/page targets.",
+  "version": "0.3.1",
+  "description": "Rosetta spectral analysis (RSA-2.0 family). Same SpectralLock lenses as Aziel Corpus Library OCR — overlays, ink/page, and restore lost pigment.",
   "github": "https://github.com/AzielEliab/spectrallock",
   "live": "https://spectrallock-download-tracker.vibelock.workers.dev/",
   "download": "https://spectrallock-download-tracker.vibelock.workers.dev/download",
@@ -14,5 +14,5 @@
   "catalog": "https://aziel-runtime.vibelock.workers.dev/",
   "doi": null,
   "license": "Apache-2.0",
-  "honesty": "Balance never invents marks. Opaque replace with no leftover container bytes refuses SL-UNREDACT-OPAQUE. Never invent letters. Author: Aziel Eliab only."
+  "honesty": "Balance never invents marks. Opaque replace with no leftover container bytes refuses SL-UNREDACT-OPAQUE. Never invent letters. Restore lost pigment reports a signal only where pixels still carry it and refuses SL-PIGMENT-GONE when that signal is gone. Author: Aziel Eliab only."
 }

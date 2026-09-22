@@ -1,10 +1,10 @@
 SpectralLock — Rosetta spectral analysis (RSA-2.0 family) by Aziel Eliab only.
 
 Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets.
-LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon.
+LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon, pigment (restore-pigment).
 Targets: ink, page. Hosted overlay is a 256 px PNG preview. Full pipeline is the Python package.
 
-Balance never invents marks. Never invent letters. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE.
+Balance never invents marks. Never invent letters. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE. Restore lost pigment refuses SL-PIGMENT-GONE when the faded signal is gone.
 
 Worker: https://spectrallock-download-tracker.vibelock.workers.dev/
 OpenAPI: https://spectrallock-download-tracker.vibelock.workers.dev/openapi.json

@@ -12,6 +12,7 @@ from importlib.resources import files
 from urllib.parse import parse_qs, urlparse
 
 from spectrallock import LIMITATION, __version__, list_unredact
+from spectrallock.pigment import analyze_pigment_bytes, list_pigment, pigment_mode_card
 from spectrallock.debug import debug
 from spectrallock.engine import (
     PLAIN_NOT_IMAGE,
@@ -89,6 +90,8 @@ class Handler(BaseHTTPRequestHandler):
                 "corpus_ocr_aligned": True,
                 "simple_default": True,
                 "unredact": list_unredact(),
+                "pigment": list_pigment(),
+                "live_modes": [m["id"] for m in list_modes()] + ["pigment"],
             })
             return
         if path == "/api/targets":
@@ -106,6 +109,15 @@ class Handler(BaseHTTPRequestHandler):
                 "X-SpectralLock-Sample": "synthetic_page",
             }
             self._send(200, png, "image/png", extra)
+            return
+        if path == "/api/pigment":
+            self._json(200, {
+                "product": "spectrallock",
+                "version": __version__,
+                "author": "Aziel Eliab",
+                "pigment": list_pigment(),
+                "mode": pigment_mode_card(),
+            })
             return
         if path == "/api/doctor":
             self._json(200, {
@@ -125,6 +137,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         path = urlparse(self.path).path
+        if path == "/api/pigment":
+            self._post_pigment()
+            return
         if path != "/api/overlay":
             self._json(404, {"error": "not found"})
             return
@@ -263,6 +278,57 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, meta)
             return
         self._send(200, png, "image/png", extra)
+
+    def _post_pigment(self) -> None:
+        import base64
+
+        try:
+            length = int(self.headers.get("Content-Length") or "0")
+        except ValueError:
+            self._json(400, {"error": NO_PICTURE, "advisory": LIMITATION})
+            return
+        if length <= 0 or length > MAX_UPLOAD:
+            self._json(400, {"error": NO_PICTURE if length <= 0 else TOO_BIG, "advisory": LIMITATION})
+            return
+        raw = self.rfile.read(length)
+        ctype = (self.headers.get("Content-Type") or "").lower()
+        op = "restore"
+        inject = True
+        img_bytes = raw
+        if "application/json" in ctype:
+            try:
+                payload = json.loads(raw.decode("utf-8") or "{}")
+            except json.JSONDecodeError:
+                self._json(400, {"error": "JSON body required"})
+                return
+            if not isinstance(payload, dict):
+                self._json(400, {"error": "JSON object required"})
+                return
+            op = str(payload.get("op") or payload.get("verb") or "restore")
+            if "inject" in payload:
+                inject = parse_inject(payload.get("inject"))
+            b64 = payload.get("b64") or payload.get("image") or ""
+            try:
+                img_bytes = base64.b64decode(b64)
+            except Exception:
+                self._json(400, {"error": PLAIN_NOT_IMAGE, "advisory": LIMITATION})
+                return
+        if not img_bytes:
+            self._json(400, {"error": NO_PICTURE, "advisory": LIMITATION})
+            return
+        try:
+            finding = analyze_pigment_bytes(img_bytes, op=op, inject=inject)
+        except ValueError as exc:
+            self._json(400, {"error": str(exc), "advisory": LIMITATION})
+            return
+        except Exception:
+            debug("pigment decode failed")
+            self._json(400, {"error": PLAIN_NOT_IMAGE, "advisory": LIMITATION})
+            return
+        status = 200 if finding.get("recovered") or finding.get("png_b64") else 409
+        if finding.get("error"):
+            status = 400
+        self._json(status, finding)
 
 
 def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes, str, list[str], bool]:
