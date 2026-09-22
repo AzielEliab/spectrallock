@@ -33,6 +33,10 @@ __all__ = [
     "TAZEL_HUE",
     "VYRN_HUE",
     "ZERO_HUE",
+    "WHEEL_PAINT_HEX",
+    "WHEEL_PAINT_RGB",
+    "SPECTRAL_TRIAD_HEX",
+    "paint_rgb",
     "OverlayResult",
     "apply_mode",
     "analyze",
@@ -95,8 +99,10 @@ LIMITATION = (
     "Indent is an image-enhancement heuristic for surface relief. "
     "Lemon enhances heat-/acid-style browning already in the pixels; it never invents marks. "
     "Balance never invents marks. "
-    "Inject ON is false-color membership tint (paint). "
+    "Inject ON is false-color membership tint (paint) from the Spectral Harmonic Wheel. "
     "OFF is luminance of the same gate. Zero ignores the switch. "
+    "In-band spectral math keeps Tazel #1EC9A5, Vyrn #C00066, Zero #6F6485. "
+    "Restore lost pigment estimates faded signal still in the pixels and refuses SL-PIGMENT-GONE when that evidence is gone. "
     "An empty gate is a valid reading. Copy-of-copy works only if the hue is still in-band. "
     "Unredact / lift-overlay locates leftover bytes and residual only — never invents letters. "
     "Opaque replace with no leftover container bytes refuses (SL-UNREDACT-OPAQUE). "
@@ -114,20 +120,38 @@ INJECT_NOTE = (
     "An empty gate is a valid reading. Copy-of-copy works only if the hue is still in-band."
 )
 
+def _hex_to_rgb(code: str) -> tuple[float, float, float]:
+    h = str(code).strip().lstrip("#")
+    return (int(h[0:2], 16) / 255.0, int(h[2:4], 16) / 255.0, int(h[4:6], 16) / 255.0)
+
+
+# Spectral triad — densitometry / in-band. Do not replace with wheel paint.
 TAZEL_HEX = "#1EC9A5"
 VYRN_HEX = "#C00066"
 ZERO_HEX = "#6F6485"
+SPECTRAL_TRIAD_HEX = {"tazel": TAZEL_HEX, "vyrn": VYRN_HEX, "zero": ZERO_HEX}
 TAZEL_HUE = 170.0
 VYRN_HUE = 350.0
 ZERO_HUE = 260.0
-TAZEL_RGB = (0x1E / 255.0, 0xC9 / 255.0, 0xA5 / 255.0)
-VYRN_RGB = (0xC0 / 255.0, 0x00 / 255.0, 0x66 / 255.0)
-ZERO_RGB = (0x6F / 255.0, 0x64 / 255.0, 0x85 / 255.0)
-UV_RGB = (0.55, 0.45, 0.85)
+TAZEL_RGB = _hex_to_rgb(TAZEL_HEX)
+VYRN_RGB = _hex_to_rgb(VYRN_HEX)
+ZERO_RGB = _hex_to_rgb(ZERO_HEX)
+# Spectral Harmonic Wheel — membership paint only (operator lock 2026-09-22).
+WHEEL_PAINT_HEX = {
+    "zero": "#325767",
+    "chaos": "#8D223D",
+    "vyrn": "#A22639",
+    "uv": "#9F3B2B",
+    "tazel": "#797A2D",
+    "rosetta": "#467542",
+    "zen": "#DFD2B5",
+}
+WHEEL_PAINT_RGB = {name: _hex_to_rgb(code) for name, code in WHEEL_PAINT_HEX.items()}
+UV_RGB = (0.55, 0.45, 0.85)  # synthetic 365–400 look weights; membership paint is the wheel
 CANDLE_RGB = (1.00, 0.62, 0.22)
 INDENT_RGB = (0.72, 0.68, 0.58)
 LEMON_RGB = (0.62, 0.38, 0.14)
-CHAOS_RGB = (0.55, 0.22, 0.38)
+CHAOS_RGB = WHEEL_PAINT_RGB["chaos"]
 TAZEL_INBAND_SIGMA = 24.0
 VYRN_INBAND_SIGMA = 28.0
 INBAND_SAT_MIN = 0.12
@@ -547,9 +571,9 @@ def zero_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
 
 
 def tazel_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
-    """TSA-1.0: 170° #1EC9A5 teal heat on in-band pixels when inject ON.
+    """TSA-1.0: in-band math stays 170° #1EC9A5.
 
-    OFF is luminance of the same gate (gray). Not recovered pigment.
+    Inject ON paints membership with wheel Tazel #797A2D. OFF is gray of the same gate.
     """
     h, s, v = rgb_to_hsv(rgb)
     w = np.exp(-0.5 * (hue_distance(h, TAZEL_HUE) / TAZEL_INBAND_SIGMA) ** 2)
@@ -563,16 +587,16 @@ def tazel_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
     out = hsv_to_rgb(h, s2, v2)
     if not inject:
         return gate_gray(out)
-    # teal heat on in-band pixels — paint, not pigment
-    tint = np.asarray(TAZEL_RGB, dtype=np.float32)
+    # wheel membership paint — densitometry stays on TAZEL_HUE / TAZEL_HEX
+    tint = np.asarray(WHEEL_PAINT_RGB["tazel"], dtype=np.float32)
     out = np.clip(out * (1.0 - 0.18 * w[..., None]) + tint * (v2 * 0.18 * w)[..., None], 0.0, 1.0)
     return out.astype(np.float32)
 
 
 def vyrn_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
-    """VSA-1.0: 350° #C00066 magenta heat on in-band pixels when inject ON.
+    """VSA-1.0: in-band math stays 350° #C00066.
 
-    OFF is luminance of the same gate (gray). Not recovered pigment.
+    Inject ON paints membership with wheel Vyrn #A22639. OFF is gray of the same gate.
     """
     h, s, v = rgb_to_hsv(rgb)
     w = np.exp(-0.5 * (hue_distance(h, VYRN_HUE) / VYRN_INBAND_SIGMA) ** 2)
@@ -586,7 +610,7 @@ def vyrn_overlay(rgb: np.ndarray, *, inject: bool = True) -> np.ndarray:
     out = hsv_to_rgb(h, s2, v2)
     if not inject:
         return gate_gray(out)
-    tint = np.asarray(VYRN_RGB, dtype=np.float32)
+    tint = np.asarray(WHEEL_PAINT_RGB["vyrn"], dtype=np.float32)
     out = np.clip(out * (1.0 - 0.22 * w[..., None]) + tint * (np.clip(v2, 0, 1) * 0.22 * w)[..., None], 0.0, 1.0)
     # suppress residual green
     out[..., 1] = np.clip(out[..., 1] * (1.0 - 0.25 * cyan), 0.0, 1.0)
@@ -723,12 +747,13 @@ def rosetta_overlay(
 ) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     """RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after per-channel normalize.
 
-    Inject ON = composite tint. OFF = gray of the same mix. Not pigment.
+    Inject ON paints wheel Rosetta #467542. OFF = gray of the same mix.
+    Spectral weights stay 0.40·Z′ + 0.35·T′ + 0.25·V′.
     """
     ch = _base_channels(rgb)
     mix = blend_channels(ch, ROSETTA_WEIGHTS)
-    color = (0.40 * np.array(ZERO_RGB) + 0.35 * np.array(TAZEL_RGB) + 0.25 * np.array(VYRN_RGB))
-    out = _composite_from_luma(mix, tuple(color) if _composite_paint(inject=inject, tint=tint) else None)
+    color = WHEEL_PAINT_RGB["rosetta"]
+    out = _composite_from_luma(mix, color if _composite_paint(inject=inject, tint=tint) else None)
     return out, ch
 
 
@@ -738,10 +763,13 @@ def zen_overlay(
     inject: bool | None = None,
     tint: bool | None = None,
 ) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-    """ZENA-1.0 = (Z′ + T′ + U′ + V′) / 4 after normalize."""
+    """ZENA-1.0 = (Z′ + T′ + U′ + V′) / 4 after normalize.
+
+    Inject ON paints wheel Zen #DFD2B5. The mix weights stay equal quarters.
+    """
     ch = _base_channels(rgb)
     mix = blend_channels(ch, ZEN_WEIGHTS)
-    color = tuple((np.array(ZERO_RGB) + np.array(TAZEL_RGB) + np.array(VYRN_RGB) + np.array(UV_RGB)) / 4.0)
+    color = WHEEL_PAINT_RGB["zen"]
     out = _composite_from_luma(mix, color if _composite_paint(inject=inject, tint=tint) else None)
     return out, ch
 
@@ -752,10 +780,13 @@ def chaos_overlay(
     inject: bool | None = None,
     tint: bool | None = None,
 ) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-    """CSA-1.0 = 0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize."""
+    """CSA-1.0 = 0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize.
+
+    Inject ON paints wheel Chaos #8D223D. Weights stay on the spectral mix.
+    """
     ch = _base_channels(rgb)
     mix = blend_channels(ch, CHAOS_WEIGHTS)
-    out = _composite_from_luma(mix, CHAOS_RGB if _composite_paint(inject=inject, tint=tint) else None)
+    out = _composite_from_luma(mix, WHEEL_PAINT_RGB["chaos"] if _composite_paint(inject=inject, tint=tint) else None)
     return out, ch
 
 
@@ -796,17 +827,28 @@ def synthetic_page(width: int = 96, height: int = 96) -> np.ndarray:
     return img
 
 
+def paint_rgb(mode: str) -> tuple[float, float, float]:
+    """Membership tint for a named mode. Wheel labels prefer wheel paint hexes."""
+    key = str(mode or "").strip().lower()
+    if key in WHEEL_PAINT_RGB:
+        return WHEEL_PAINT_RGB[key]
+    return INJECT_RGB.get(key, (0.70, 0.70, 0.70))
+
+
+_BALANCE_PAINT = tuple(
+    float(x)
+    for x in (np.array(WHEEL_PAINT_RGB["zen"]) + np.array(WHEEL_PAINT_RGB["chaos"])) / 2.0
+)
+
 INJECT_RGB: dict[str, tuple[float, float, float]] = {
-    "zero": ZERO_RGB,
-    "tazel": TAZEL_RGB,
-    "vyrn": VYRN_RGB,
-    "uv": UV_RGB,
-    "rosetta": tuple(
-        0.40 * np.array(ZERO_RGB) + 0.35 * np.array(TAZEL_RGB) + 0.25 * np.array(VYRN_RGB)
-    ),
-    "zen": tuple((np.array(ZERO_RGB) + np.array(TAZEL_RGB) + np.array(VYRN_RGB) + np.array(UV_RGB)) / 4.0),
-    "chaos": CHAOS_RGB,
-    "balance": tuple((np.array(UV_RGB) + np.array(CHAOS_RGB)) / 2.0),
+    "zero": WHEEL_PAINT_RGB["zero"],
+    "tazel": WHEEL_PAINT_RGB["tazel"],
+    "vyrn": WHEEL_PAINT_RGB["vyrn"],
+    "uv": WHEEL_PAINT_RGB["uv"],
+    "rosetta": WHEEL_PAINT_RGB["rosetta"],
+    "zen": WHEEL_PAINT_RGB["zen"],
+    "chaos": WHEEL_PAINT_RGB["chaos"],
+    "balance": _BALANCE_PAINT,
     "candle": CANDLE_RGB,
     "indent": INDENT_RGB,
     "lemon": LEMON_RGB,
@@ -1016,7 +1058,8 @@ MODES: dict[str, dict] = {
         "status": "live",
         "hue": ZERO_HUE,
         "hex": ZERO_HEX,
-        "summary": "Equilibrium / geometry. Grayscale, hist-eq, band-pass, unsharp.",
+        "paint_hex": WHEEL_PAINT_HEX["zero"],
+        "summary": "Equilibrium / geometry. Grayscale, hist-eq, band-pass, unsharp. Spectral #6F6485. Wheel paint #325767.",
     },
     "tazel": {
         "id": "tazel",
@@ -1026,7 +1069,8 @@ MODES: dict[str, dict] = {
         "status": "live",
         "hue": TAZEL_HUE,
         "hex": TAZEL_HEX,
-        "summary": "Revelation. Boost green–gold–turquoise (~170°, #1EC9A5).",
+        "paint_hex": WHEEL_PAINT_HEX["tazel"],
+        "summary": "Revelation. Boost green–gold–turquoise (~170°, #1EC9A5). Wheel paint #797A2D.",
     },
     "vyrn": {
         "id": "vyrn",
@@ -1036,7 +1080,8 @@ MODES: dict[str, dict] = {
         "status": "live",
         "hue": VYRN_HUE,
         "hex": VYRN_HEX,
-        "summary": "Purification / pressure. Boost magenta–red-violet (~350°, #C00066).",
+        "paint_hex": WHEEL_PAINT_HEX["vyrn"],
+        "summary": "Purification / pressure. Boost magenta–red-violet (~350°, #C00066). Wheel paint #A22639.",
     },
     "uv": {
         "id": "uv",
@@ -1046,6 +1091,7 @@ MODES: dict[str, dict] = {
         "status": "live",
         "hue": None,
         "hex": None,
+        "paint_hex": WHEEL_PAINT_HEX["uv"],
         "aliases": ["ultraviolet", "uv-light", "uvsa"],
         "summary": "Ultraviolet light analysis (synthetic). 365–400 nm look from an ordinary photograph.",
     },
@@ -1057,7 +1103,8 @@ MODES: dict[str, dict] = {
         "status": "live",
         "hue": None,
         "hex": None,
-        "summary": "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize.",
+        "paint_hex": WHEEL_PAINT_HEX["rosetta"],
+        "summary": "Rosetta spectral analysis RSA-2.0 = 0.40·Z′ + 0.35·T′ + 0.25·V′ after normalize. Wheel paint #467542.",
     },
     "zen": {
         "id": "zen",
@@ -1067,7 +1114,8 @@ MODES: dict[str, dict] = {
         "status": "live",
         "hue": None,
         "hex": None,
-        "summary": "(Z′ + T′ + U′ + V′) / 4 after normalize.",
+        "paint_hex": WHEEL_PAINT_HEX["zen"],
+        "summary": "(Z′ + T′ + U′ + V′) / 4 after normalize. Wheel paint #DFD2B5.",
     },
     "chaos": {
         "id": "chaos",
@@ -1077,7 +1125,8 @@ MODES: dict[str, dict] = {
         "status": "live",
         "hue": None,
         "hex": None,
-        "summary": "0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize.",
+        "paint_hex": WHEEL_PAINT_HEX["chaos"],
+        "summary": "0.40·U′ + 0.35·V′ + 0.20·T′ + 0.05·Z′ after normalize. Wheel paint #8D223D.",
     },
     "balance": {
         "id": "balance",

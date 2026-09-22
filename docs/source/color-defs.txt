@@ -8,3 +8,27 @@ Opposite spectrum of Tazel; magenta–red‑violet–purple; hue ~350°. Symboli
 Zero
 Hex: #6F6485
 Midpoint between Tazel and Vyrn; indigo/blue‑violet; hue ~260°. Represents equilibrium, suspension, the still center, and harmonic axis.
+
+Spectral Harmonic Wheel — paint plane (operator lock 2026-09-22)
+Separate from the spectral triad above. Densitometry and in-band spectral math keep Tazel #1EC9A5, Vyrn #C00066, and Zero #6F6485. Membership tints (inject paint) use the wheel hexes in color-wheel-paint.txt. Hexes below are authoritative; sampled from the operator wheel art.
+ZERO
+Hex: #325767
+Wheel paint for Zero membership. Deep blue-slate. Equilibrium tint on the paint plane.
+CHAOS
+Hex: #8D223D
+Wheel paint for Chaos membership. Crimson. Catalytic mix tint on the paint plane.
+VYRN
+Hex: #A22639
+Wheel paint for Vyrn membership. Red. Purification tint on the paint plane.
+UV
+Hex: #9F3B2B
+Wheel paint for UV membership. Burnt red. Ultraviolet membership tint on the paint plane.
+TAZEL
+Hex: #797A2D
+Wheel paint for Tazel membership. Olive. Revelation tint on the paint plane.
+ROSETTA
+Hex: #467542
+Wheel paint for Rosetta membership. Leaf green. RSA-2.0 composite tint on the paint plane.
+ZEN
+Hex: #DFD2B5
+Wheel paint for Zen membership. Parchment cream. Still-center tint on the paint plane.

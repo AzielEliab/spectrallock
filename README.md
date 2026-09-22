@@ -8,7 +8,7 @@ overlays plus ink/page targets.
 **Author:** Aziel Eliab
 **Date:** 2026
 **License:** [Apache-2.0](LICENSE)
-**Version:** 0.3.0
+**Version:** 0.3.1
 
 > The human still reads the page.
 
@@ -44,7 +44,7 @@ The Worker serves the gzip itself (HTTP 200, no 302 to GitHub).
 # → [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/) ←
 
 Direct tarball (also counted):
-[spectrallock-0.3.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz)
+[spectrallock-0.3.1.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.1.tar.gz)
 
 - Live count JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/count](https://spectrallock-download-tracker.vibelock.workers.dev/count) (`{project, views, downloads, total}`)
 - Full stats JSON: [https://spectrallock-download-tracker.vibelock.workers.dev/stats](https://spectrallock-download-tracker.vibelock.workers.dev/stats)
@@ -81,7 +81,7 @@ Isolated counter: Worker `spectrallock-download-tracker`, KV `SPECTRALLOCK_DOWNL
 
 Counted download: [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/)
 
-Direct tarball: [spectrallock-0.3.0.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.0.tar.gz)
+Direct tarball: [spectrallock-0.3.1.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.1.tar.gz)
 
 Papers: [docs/source/](docs/source/) · spec: [docs/whitepaper.md](docs/whitepaper.md) ·
 runtime sync: [docs/runtime-sync.md](docs/runtime-sync.md)
@@ -106,7 +106,7 @@ bytes refuses (`SL-UNREDACT-OPAQUE`). Heatmaps are residual overlays.
 **Handwriting** is synthetic image analysis of a scan or photo of ink
 on paper. Indicators are heuristics — human verification required.
 
-## Lenses (all live in 0.3.0)
+## Lenses (all live in 0.3.1)
 
 Same names as the Corpus OCR SpectralLock lens checkboxes, plus candle /
 indent / lemon synthetic looks. Aliases resolve to the canonical id.
@@ -166,8 +166,23 @@ spectrallock recover revision-graph page.pdf --json
 spectrallock handwriting analyze ink_scan.png --json
 spectrallock handwriting compare questioned.png --twin known.png --json
 spectrallock forgery-scan ink_scan.png --json
+spectrallock pigment restore page.png --json
+spectrallock restore-pigment page.png -o restored.png --json
 spectrallock lift cover.png --no-inject -o residual.png --json
 spectrallock redact-locate page.pdf --twin page_less.pdf --query "Alice"
+```
+
+## Restore lost pigment (operator lock 2026-09-22 — NO-LIE)
+
+Family: `pigment` / `restore-pigment`.
+Ops: `restore`, `estimate`, `refuse`.
+
+LIVE on SpectralLock (CLI, local UI, Worker `GET|POST /v1/pigment`, alias `POST /v1/restore-pigment`). Estimates faded pigment where pixels still differ from the page in a supported cluster. Visible dark ink stays already-present pigment. When the faded signal is gone the op refuses `SL-PIGMENT-GONE` and writes no new marks. Receipts set `pigment_recovery` true only when this path ran. Overlay and unredact receipts keep `pigment_recovery` false. Wheel paint is a separate plane from this estimate.
+
+```bash
+spectrallock pigment restore page.png -o restored.png --json
+spectrallock pigment estimate page.png --json
+spectrallock restore-pigment page.png --json
 ```
 
 ## Ink / page targets
@@ -194,8 +209,8 @@ Worker `POST /v1/overlay` `{inject: true|false}`).
 | **OFF** (`--no-inject`) | Luminance of the **same gate** (gray). |
 | `zero` | Ignores the switch (stays gray either way). |
 
-- `tazel`: 170° `#1EC9A5` teal heat on in-band pixels when ON.
-- `vyrn`: 350° `#C00066` magenta heat on in-band pixels when ON.
+- In-band spectral math stays tazel 170° `#1EC9A5`, vyrn 350° `#C00066`, zero `#6F6485`.
+- Membership paint (Spectral Harmonic Wheel, operator lock 2026-09-22): ZERO `#325767`, CHAOS `#8D223D`, VYRN `#A22639`, UV `#9F3B2B`, TAZEL `#797A2D`, ROSETTA `#467542`, ZEN `#DFD2B5`. Source: `docs/source/color-wheel-paint.txt`.
 - `uv`: synthetic 365–400 look (violet parchment / residual) from an ordinary photograph.
 - `rosetta` / `zen` / `chaos` / `balance`: composite tint when ON; gray gate when OFF. Balance never invents marks.
 - `candle` / `indent` / `lemon`: honest ON tint vs OFF gray of the same gate.
@@ -243,6 +258,8 @@ spectrallock recover locate page.pdf --json
 spectrallock recover production ./case_folder --recursive --json
 spectrallock handwriting analyze ink_scan.png --json
 spectrallock handwriting compare questioned.png known.png --json
+spectrallock pigment restore page.png --json
+spectrallock restore-pigment page.png -o restored.png --json
 spectrallock lift cover.png --no-inject -o residual.png --json
 spectrallock redact-locate page.pdf --twin other.pdf --query Alice
 spectrallock ui          # 127.0.0.1:8861

@@ -29,6 +29,7 @@ const meta = document.getElementById("meta");
 const fname = document.getElementById("fname");
 const addFileBtn = document.getElementById("add-file");
 const sampleBtn = document.getElementById("sample");
+const pigmentBtn = document.getElementById("pigment");
 const exportBtn = document.getElementById("export");
 const verifyBtn = document.getElementById("verify");
 const receiptEl = document.getElementById("receipt");
@@ -67,6 +68,7 @@ function stemFromName(name) {
 function setExportEnabled(on) {
   exportBtn.disabled = !on;
   verifyBtn.disabled = !on;
+  if (pigmentBtn) pigmentBtn.disabled = !sourceFile;
 }
 
 function activeLenses() {
@@ -151,6 +153,50 @@ drop.addEventListener("drop", (e) => {
   const f = e.dataTransfer.files && e.dataTransfer.files[0];
   setFile(f);
 });
+
+if (pigmentBtn) {
+  pigmentBtn.addEventListener("click", async () => {
+    if (!sourceFile) return;
+    meta.textContent = "restoring pigment…";
+    pigmentBtn.disabled = true;
+    try {
+      const buf = await sourceFile.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const res = await fetch("/api/pigment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ op: "restore", inject: inject, b64: btoa(binary) }),
+      });
+      const payload = await res.json();
+      if (!payload.pigment_recovery) {
+        meta.textContent = "error: pigment path did not run";
+        return;
+      }
+      if (!payload.recovered || !payload.png_b64) {
+        meta.textContent = "pigment refused " + (payload.refuse_code || "SL-PIGMENT-GONE") + " — no supported faded signal, no new marks";
+        return;
+      }
+      const raw = atob(payload.png_b64);
+      const out = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+      const blob = new Blob([out], { type: "image/png" });
+      overlayBlob = blob;
+      lastReceipt = payload;
+      const u = URL.createObjectURL(blob);
+      objectUrls.push(u);
+      after.src = u;
+      afterLabel.textContent = "· restore pigment";
+      meta.textContent = "pigment recovered · evidence pixels " + payload.evidence_pixels + " · pigment_recovery true";
+      setExportEnabled(true);
+    } catch (err) {
+      meta.textContent = String(err);
+    } finally {
+      pigmentBtn.disabled = !sourceFile;
+    }
+  });
+}
 
 sampleBtn.addEventListener("click", async () => {
   meta.textContent = "loading sample page…";

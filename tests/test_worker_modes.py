@@ -262,3 +262,53 @@ process.stdout.write(JSON.stringify({{ ok: true, band }}));
     assert body["ok"] is True
     assert "tazel_inband_pct" in body["band"]
     assert "vyrn_inband_pct" in body["band"]
+
+
+def test_overlay_js_wheel_paint_and_pigment_in_node() -> None:
+    node = shutil.which("node")
+    assert node, "node is required to execute wheel paint and pigment helpers"
+    script = f"""
+import {{
+  SPECTRAL_TRIAD_HEX, WHEEL_PAINT_HEX, WHEEL_PAINT_RGB, encodePng, pigmentFromB64, listPigment, REFUSE_GONE,
+}} from {json.dumps(str(OVERLAY))};
+if (SPECTRAL_TRIAD_HEX.tazel !== "#1EC9A5") throw new Error("triad tazel");
+if (SPECTRAL_TRIAD_HEX.vyrn !== "#C00066") throw new Error("triad vyrn");
+if (SPECTRAL_TRIAD_HEX.zero !== "#6F6485") throw new Error("triad zero");
+const wheel = {{
+  zero: "#325767", chaos: "#8D223D", vyrn: "#A22639", uv: "#9F3B2B",
+  tazel: "#797A2D", rosetta: "#467542", zen: "#DFD2B5",
+}};
+for (const [name, hex] of Object.entries(wheel)) {{
+  if (WHEEL_PAINT_HEX[name] !== hex) throw new Error("wheel " + name);
+  const rgb = WHEEL_PAINT_RGB[name];
+  const expect = [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255];
+  if (Math.abs(rgb[0] - expect[0]) > 1e-9) throw new Error("rgb " + name);
+}}
+if (listPigment().status !== "live" || listPigment().refuse_code !== REFUSE_GONE) throw new Error("card");
+const cream = new Float32Array(32 * 32 * 3);
+for (let i = 0; i < cream.length; i += 3) {{ cream[i] = 0.93; cream[i + 1] = 0.88; cream[i + 2] = 0.76; }}
+const blankPng = await encodePng(cream, 32, 32);
+const gone = await pigmentFromB64(Buffer.from(blankPng).toString("base64"), {{ op: "restore" }});
+if (!gone.pigment_recovery || gone.recovered || gone.refuse_code !== "SL-PIGMENT-GONE" || gone.png_b64) throw new Error("gone");
+const faded = new Float32Array(64 * 64 * 3);
+for (let i = 0; i < faded.length; i += 3) {{ faded[i] = 0.93; faded[i + 1] = 0.88; faded[i + 2] = 0.76; }}
+for (let y = 20; y < 36; y++) {{
+  for (let x = 12; x < 48; x++) {{
+    const p = (y * 64 + x) * 3;
+    faded[p] = 0.72 * 0.93 + 0.28 * 0.45;
+    faded[p + 1] = 0.72 * 0.88 + 0.28 * 0.62;
+    faded[p + 2] = 0.72 * 0.76 + 0.28 * 0.28;
+  }}
+}}
+const fadePng = await encodePng(faded, 64, 64);
+const hit = await pigmentFromB64(Buffer.from(fadePng).toString("base64"), {{ op: "restore" }});
+if (!hit.pigment_recovery || !hit.recovered || !hit.png_b64 || hit.invented_marks) throw new Error("hit");
+process.stdout.write(JSON.stringify({{ ok: true, evidence: hit.evidence_pixels }}));
+"""
+    raw = subprocess.check_output([node, "--input-type=module", "-e", script], text=True)
+    body = json.loads(raw)
+    assert body["ok"] is True
+    assert body["evidence"] >= 24
+    idx = INDEX.read_text(encoding="utf-8")
+    assert "/v1/pigment" in idx
+    assert "/v1/restore-pigment" in idx

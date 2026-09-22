@@ -74,9 +74,12 @@ concatenated with `path\\n` + bytes + `\\n`). Recompute only from disk.
    sha256), `ocr` (after structural only; hosted OCR unbound), and
    optional `twin_b64` compare. Leftover / historical bytes = recover;
    leftover_bytes is false when the container was rewritten and old
-   bytes are gone. Catalog door ops stay the list above until GitBaby
-   adds `unredact` / `recover` / `handwriting` to LIVE_OPS — do not
-   invent a door op. Product Worker also serves `GET|POST /v1/recover`
+   bytes are gone.    Catalog door ops for unredact / recover / handwriting stay the list above until GitBaby
+   adds those names to LIVE_OPS. Operator lock 2026-09-22 adds restore lost pigment
+   as a LIVE SpectralLock door: vendored `overlay.js` exports `listPigment` and
+   `pigmentFromB64`. After rehash, FragGate `slug=spectrallock` ops `pigment` and
+   `restore-pigment` should join LIVE_OPS beside `modes` / `overlay`. AMOE stays
+   on the suite project map and is not a SpectralLock 0.3.x product. Product Worker also serves `GET|POST /v1/recover`
    (universal family; LIVE vs SLOT matrix; secrets suppressed) and
    `GET|POST /v1/handwriting` (synthetic ink-on-paper scan heuristics;
    256 px PNG preview; not ESDA / chemical dating / writer identity /

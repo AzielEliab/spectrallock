@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 python3 -m pip install -q build
 python3 -m build --sdist
-ASSET="spectrallock-0.3.0.tar.gz"
+ASSET="spectrallock-0.3.1.tar.gz"
 mkdir -p workers/download-tracker/public
 cp -f "dist/${ASSET}" "workers/download-tracker/public/${ASSET}"
 echo "Wrote workers/download-tracker/public/${ASSET}"

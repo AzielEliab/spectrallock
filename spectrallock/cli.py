@@ -11,6 +11,8 @@
     spectrallock unredact locate|lift|recover FILE
     spectrallock recover locate|deep|compare|revision-graph FILE
     spectrallock handwriting analyze|compare|graph FILE
+    spectrallock pigment restore|estimate|refuse FILE
+    spectrallock restore-pigment FILE
     spectrallock lift FILE          # alias: non-opaque residual, leftover recover
     spectrallock redact-locate FILE # alias: locate
     spectrallock ui
@@ -33,6 +35,7 @@ from spectrallock import (
     list_unredact,
 )
 from spectrallock.handwriting import list_handwriting
+from spectrallock.pigment import list_pigment, pigment_mode_card
 from spectrallock.recover import list_recover
 from spectrallock.debug import debug
 from spectrallock.engine import (
@@ -46,6 +49,13 @@ from spectrallock.engine import (
     sha256_hex,
     write_sidecar,
 )
+
+
+def _overlay_mode(name: str) -> str:
+    key = str(name or "").strip().lower().replace("_", "-")
+    if key in {"pigment", "restore-pigment", "lost-pigment", "restore-lost-pigment"}:
+        return "pigment"
+    return resolve_mode(name)
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -77,11 +87,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "--lens",
         dest="mode",
         required=True,
-        type=resolve_mode,
+        type=_overlay_mode,
         metavar="MODE",
         help=(
             "SpectralLock lens id or alias "
-            "(zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon)."
+            "(zero|tazel|vyrn|uv|rosetta|zen|chaos|balance|candle|indent|lemon) "
+            "or pigment / restore-pigment."
         ),
     )
     p_ov.add_argument(
@@ -315,6 +326,26 @@ def _build_parser() -> argparse.ArgumentParser:
         ph = sub.add_parser(alias, help=help_txt)
         _add_hand_args(ph)
 
+    def _add_pigment_args(p: argparse.ArgumentParser) -> None:
+        p.add_argument(
+            "op_or_src",
+            help="Op (restore|estimate|refuse) or the photograph if op is omitted.",
+        )
+        p.add_argument("src_opt", nargs="?", default=None, help="Photograph when the first token is an op.")
+        p.add_argument("-o", "--output", dest="output", default=None, help="Restored PNG when evidence remains.")
+        p.add_argument("--json", action="store_true", dest="as_json", help="Print pigment JSON.")
+        inj = p.add_mutually_exclusive_group()
+        inj.add_argument("--inject", dest="inject", action="store_true", help="Keep the pigment's own residual color. Default.")
+        inj.add_argument("--no-inject", dest="inject", action="store_false", help="Gray of the restored gate.")
+        p.set_defaults(inject=True)
+
+    for alias, help_txt in (
+        ("pigment", "Restore lost pigment from supported pixel evidence. Refuses SL-PIGMENT-GONE when the signal is gone."),
+        ("restore-pigment", "Alias for pigment restore."),
+    ):
+        pp = sub.add_parser(alias, help=help_txt)
+        _add_pigment_args(pp)
+
     return parser
 
 
@@ -469,6 +500,34 @@ def _run_doctor() -> int:
         lines.append("handwriting doctor: fail")
         debug(f"doctor handwriting error={type(exc).__name__}")
 
+    try:
+        from spectrallock.pigment import REFUSE_GONE, analyze_pigment
+
+        card = list_pigment()
+        faded = synthetic_page(96, 96)
+        blank = np.ones((32, 32, 3), dtype=np.float32)
+        blank[:] = (0.93, 0.88, 0.76)
+        hit = analyze_pigment(faded, op="restore")
+        gone = analyze_pigment(blank, op="restore")
+        if card.get("status") != "live" or card.get("refuse_code") != REFUSE_GONE or card.get("invented_marks"):
+            ok = False
+            lines.append("pigment card: fail")
+        elif not hit.get("pigment_recovery") or not hit.get("recovered") or hit.get("invented_marks"):
+            ok = False
+            lines.append("pigment evidence: fail")
+        elif gone.get("pigment_recovery") is not True or gone.get("recovered") or gone.get("refuse_code") != REFUSE_GONE:
+            ok = False
+            lines.append("pigment gone: fail")
+        elif gone.get("png_b64"):
+            ok = False
+            lines.append("pigment gone image: fail")
+        else:
+            lines.append("pigment restore: ok")
+    except Exception as exc:  # noqa: BLE001
+        ok = False
+        lines.append("pigment doctor: fail")
+        debug(f"doctor pigment error={type(exc).__name__}")
+
     lines.append("telemetry: none")
     lines.append("ok" if ok else "fail")
     print("\n".join(lines))
@@ -505,6 +564,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.cmd in {"modes", "lenses"}:
         rows = list_lenses() if args.cmd == "lenses" else list_modes()
+        mode_rows = list(rows)
+        if args.cmd == "modes":
+            mode_rows = mode_rows + [pigment_mode_card()]
         if args.as_json:
             print(json.dumps({
                 "product": "spectrallock",
@@ -513,22 +575,25 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "rosetta_spectral_analysis": True,
                 "corpus_ocr_aligned": True,
                 "advisory": LIMITATION,
-                "modes": rows,
+                "modes": mode_rows,
                 "lenses": list_lenses(),
                 "targets": list_targets(),
                 "unredact": list_unredact(),
                 "recover": list_recover(),
                 "handwriting": list_handwriting(),
+                "pigment": list_pigment(),
+                "live_modes": [row["id"] for row in mode_rows],
             }, indent=2))
         else:
             print(LIMITATION)
             print(f"{'id':10} {'paper':10} {'status':8} summary")
-            for row in rows:
+            for row in mode_rows:
                 print(f"{row['id']:10} {row['paper']:10} {row['status']:8} {row['summary']}")
             print("targets: ink (writing) · page (parchment)")
-            print("unredact family: locate · lift · recover · refuse (not a lens; leftover bytes only)")
+            print("unredact family: locate · lift · recover · refuse (leftover bytes only)")
             print("recover family: locate · deep-recover · revision-graph · cross-compare · extract-embedded · scan-orphans · scan-metadata · scan-sidecars · scan-history · refuse")
-            print("handwriting family: analyze · compare · side-by-side · graph · forgery-indicators · refuse (synthetic scan heuristics; not a lab)")
+            print("handwriting family: analyze · compare · side-by-side · graph · forgery-indicators · refuse (synthetic scan heuristics)")
+            print("pigment family: restore · estimate · refuse (LIVE restore lost pigment; SL-PIGMENT-GONE when the signal is gone)")
         return 0
 
     if args.cmd == "overlay":
@@ -552,6 +617,26 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(PLAIN_NOT_IMAGE, file=sys.stderr)
             return 2
         inject = False if args.no_tint else (True if args.inject is None else bool(args.inject))
+        if args.mode == "pigment":
+            from spectrallock.pigment import REFUSE_GONE, analyze_pigment
+
+            finding = analyze_pigment(rgb, op="restore", inject=inject, filename=src.name, source_bytes=src_bytes)
+            if finding.get("png_b64"):
+                import base64
+
+                Path(args.dst).write_bytes(base64.b64decode(finding["png_b64"]))
+                finding["dst"] = args.dst
+            if args.as_json:
+                print(json.dumps(finding, indent=2))
+            else:
+                print(f"op: {finding.get('op')}")
+                print(f"pigment_recovery: {str(finding.get('pigment_recovery')).lower()}")
+                print(f"recovered: {str(finding.get('recovered')).lower()}")
+                print(f"refuse_code: {finding.get('refuse_code') or 'none'}")
+                print(f"evidence_pixels: {finding.get('evidence_pixels')}")
+            if finding.get("refuse_code") == REFUSE_GONE and not finding.get("recovered"):
+                return 2
+            return 0
         try:
             result = analyze(rgb, args.mode, target=args.target, inject=inject)
         except ValueError as exc:
@@ -803,6 +888,56 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"no_lie: {finding.get('no_lie')}")
             print(HANDWRITING_NOTE)
         if finding.get("refuse_code") in {REFUSE_NO_INK, REFUSE_UNSUPPORTED} and op == "refuse":
+            return 2
+        return 0
+
+    if args.cmd in {"pigment", "restore-pigment"}:
+        from spectrallock.pigment import (
+            PIGMENT_NOTE,
+            REFUSE_GONE,
+            analyze_pigment_path,
+            parse_pigment_op,
+        )
+
+        token = str(args.op_or_src)
+        known = {
+            "restore", "estimate", "refuse", "pigment", "restore-pigment",
+            "lost-pigment", "restore-lost-pigment", "estimate-pigment",
+        }
+        key = token.lower().replace("_", "-")
+        src = args.src_opt
+        if key in known:
+            op = token
+            if not src:
+                print("pigment: missing input photograph", file=sys.stderr)
+                return 2
+        else:
+            op = "restore"
+            src = token
+        try:
+            parse_pigment_op(op)
+            finding = analyze_pigment_path(src, op=op, inject=bool(args.inject))
+        except FileNotFoundError:
+            print(f"input not found: {src}", file=sys.stderr)
+            return 2
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        if args.output and finding.get("png_b64"):
+            import base64
+
+            Path(args.output).write_bytes(base64.b64decode(finding["png_b64"]))
+            finding["dst"] = args.output
+        if args.as_json:
+            print(json.dumps(finding, indent=2, ensure_ascii=False))
+        else:
+            print(f"op: {finding.get('op')}")
+            print(f"pigment_recovery: {str(finding.get('pigment_recovery')).lower()}")
+            print(f"recovered: {str(finding.get('recovered')).lower()}")
+            print(f"refuse_code: {finding.get('refuse_code') or 'none'}")
+            print(f"evidence_pixels: {finding.get('evidence_pixels')}")
+            print(PIGMENT_NOTE)
+        if finding.get("refuse_code") == REFUSE_GONE and not finding.get("recovered"):
             return 2
         return 0
 

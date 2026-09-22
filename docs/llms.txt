@@ -1,15 +1,15 @@
 # SpectralLock
 
 > Author: Aziel Eliab only
-> Version: 0.3.0
+> Version: 0.3.1
 > License: Apache-2.0
 > Status: live Rosetta spectral analysis (RSA-2.0 family)
 
 SpectralLock is Rosetta spectral analysis software. Same SpectralLock lenses as Aziel Corpus Library OCR: overlays plus ink/page targets.
 
-LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon.
+LIVE modes: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon, pigment (restore-pigment).
 Targets: ink, page.
-Balance never invents marks. Lemon never invents marks. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE. Never invent letters.
+Balance never invents marks. Lemon never invents marks. Opaque rewrite with nothing left refuses SL-UNREDACT-OPAQUE. Never invent letters. Restore lost pigment estimates faded signal still in the pixels and refuses SL-PIGMENT-GONE when that signal is gone.
 
 ## Public Worker
 
@@ -25,6 +25,7 @@ https://spectrallock-download-tracker.vibelock.workers.dev/
 - Unredact: GET|POST /v1/unredact
 - Recover: GET|POST /v1/recover
 - Handwriting: GET|POST /v1/handwriting
+- Pigment: GET|POST /v1/pigment (alias POST /v1/restore-pigment)
 - Suite mesh PROXY: GET /v1/mesh (default OFF; QNM-BUILD-1.0; QNS-CD-1.0)
 - cite.json: /cite.json
 - ai.txt: /ai.txt

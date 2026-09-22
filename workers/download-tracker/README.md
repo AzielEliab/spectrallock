@@ -6,7 +6,7 @@ totalKey `spectrallock|__total__`. Does not 302 to GitHub on `/download`.
 Serves gzip via `ASSETS.fetch`, `Cache-Control: private, no-store`.
 
 `GET /count` returns `{project, views, downloads, total}` and does not increment KV.
-`DEFAULT_ASSET` (`spectrallock-0.3.0.tar.gz`) must live in `public/` or `/download` returns `asset not hosted`.
+`DEFAULT_ASSET` (`spectrallock-0.3.1.tar.gz`) must live in `public/` or `/download` returns `asset not hosted`.
 Build it with `scripts/build_tarball.sh`. Author Aziel Eliab.
 
 `/v1` never increments DOWNLOADS KV.

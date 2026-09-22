@@ -1,4 +1,4 @@
-# SpectralLock 0.3.0 — product spec
+# SpectralLock 0.3.1 — product spec
 
 **Author:** Aziel Eliab  
 **Date:** 2026  
@@ -36,7 +36,21 @@ The human still reads the page.
 | Vyrn | `#C00066` | ~350° | purification / pressure (magenta–red-violet) |
 | Zero | `#6F6485` | ~260° | equilibrium (indigo / blue-violet) |
 
-## Live lenses (package 0.3.0)
+## Spectral Harmonic Wheel paint (operator lock 2026-09-22)
+
+Separate from the triad above. Densitometry and in-band math keep `#1EC9A5` / `#C00066` / `#6F6485`. Inject membership tints use the wheel. Source: [`docs/source/color-wheel-paint.txt`](source/color-wheel-paint.txt). Hexes are authoritative.
+
+| label | paint hex |
+|-------|-----------|
+| ZERO | `#325767` |
+| CHAOS | `#8D223D` |
+| VYRN | `#A22639` |
+| UV | `#9F3B2B` |
+| TAZEL | `#797A2D` |
+| ROSETTA | `#467542` |
+| ZEN | `#DFD2B5` |
+
+## Live lenses (package 0.3.1)
 
 Same ids as the Corpus OCR SpectralLock lens checkboxes.
 
@@ -141,11 +155,11 @@ mixed equally, then the target is applied.
 Operator lock 19 Sep 2026. Each named mode has `--inject` / `--no-inject`
 (Python `inject=True|False`, Worker payload `inject`).
 
-- **ON** paints membership (false color). Not recovered pigment.
+- **ON** paints membership from the Spectral Harmonic Wheel.
 - **OFF** is luminance of the same gate (gray).
 - **`zero`** ignores the switch (stays gray).
-- tazel: 170° `#1EC9A5` teal heat on in-band pixels.
-- vyrn: 350° `#C00066` magenta heat on in-band pixels.
+- In-band spectral math: tazel 170° `#1EC9A5`, vyrn 350° `#C00066`, zero `#6F6485`.
+- Wheel membership paint: TAZEL `#797A2D`, VYRN `#A22639`, and the other five labels in the wheel table.
 - uv: synthetic 365–400 look (violet parchment / residual) — not a lamp.
 - rosetta / zen / chaos / balance: composite tint when ON; gray gate when OFF.
   Balance does not invent marks.
