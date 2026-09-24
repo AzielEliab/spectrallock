@@ -488,6 +488,9 @@ async function indexHtml(env) {
 <meta property="og:description" content="Rosetta spectral analysis by Aziel Eliab. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page, restore lost pigment).">
 <meta property="og:url" content="https://spectrallock-download-tracker.vibelock.workers.dev/">
 <meta property="og:type" content="website">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0b0b0b" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -506,48 +509,132 @@ async function indexHtml(env) {
 </script>
 <!-- gitbaby-seo -->
 <style>
-  :root { color-scheme: dark; }
-  body { font: 16px/1.45 system-ui, sans-serif; max-width: 42rem; margin: 3rem auto; padding: 0 1.25rem 4rem; background: #0e1014; color: #e8eaef; }
-  .brandrow { display: flex; align-items: center; margin: 0 0 1rem; min-height: 48px; }
-  .brandmark { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: 0 0 40px; box-shadow: 0 0 0 1px #0003, 0 0 0 1px #c9a227; }
-  h1 { font-size: 1.75rem; margin: 0 0 .35rem; }
-  .motto { color: #9aa3b2; margin: 0 0 1.5rem; }
-  .card { border: 1px solid #2a3140; border-radius: 12px; padding: 1.25rem 1.35rem; background: #151922; }
+  :root {
+    color-scheme: dark;
+    --bg: #0b0b0b; --ink: #f6efe4; --muted: #c4b49a; --gold: #e7c56a;
+    --panel: #16130f; --line: #8a7b68; --focus: #f0d78c;
+    --btn: #f4ecdf; --btn-ink: #1a1408; --field: #100e0c;
+    --note-bg: #2a2218; --note-ink: #f6e7c8;
+    --shadow: 0 12px 32px #00000066;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 16px/1.5 system-ui, "Segoe UI", sans-serif; }
+  img { max-width: 100%; height: auto; }
+  a { color: var(--gold); }
+  a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visible {
+    outline: 3px solid var(--focus); outline-offset: 3px;
+  }
+  .skip {
+    position: absolute; left: .75rem; top: .75rem; transform: translateY(-160%);
+    background: var(--btn); color: var(--btn-ink); padding: .65rem .9rem;
+    border-radius: 10px; z-index: 5; text-decoration: none; font-weight: 750;
+  }
+  .skip:focus, .skip:focus-visible { transform: none; }
+  .wrap { max-width: 42rem; margin: 0 auto; padding: 1.15rem 1rem 3rem; }
+  .wrap, header, .hero, .card, #meshStrip, #meshStrip > div { min-width: 0; max-width: 100%; }
+  .brandrow { display: flex; align-items: center; margin: 0 0 .75rem; min-height: 48px; }
+  .brandmark { width: 40px; height: 40px; border-radius: 10px; object-fit: cover; flex: 0 0 40px; box-shadow: 0 0 0 1px #d4af3755; }
+  h1 { font-size: clamp(2rem, 8vw, 2.6rem); line-height: 1.05; letter-spacing: -.02em; margin: 0 0 .35rem; }
+  .motto { color: var(--gold); font-style: italic; margin: 0 0 .45rem; font-size: 1.12rem; }
+  .lede { color: var(--muted); margin: 0 0 1rem; max-width: 40rem; }
+  .hero-actions { display: flex; flex-direction: column; gap: .65rem; margin: 0 0 .75rem; }
+  a.btn, button.btn {
+    display: flex; align-items: center; justify-content: center; width: 100%;
+    box-sizing: border-box; text-align: center; font: inherit; cursor: pointer;
+    text-decoration: none; border-radius: 12px; min-height: 44px;
+  }
+  a.btn.primary {
+    background: var(--btn); color: var(--btn-ink); font-size: 1.25rem; font-weight: 760;
+    padding: 1.05rem 1.25rem; min-height: 3.5rem; border: 0; box-shadow: var(--shadow);
+  }
+  a.btn.primary:hover { filter: brightness(1.06); }
+  button.btn.install {
+    background: transparent; color: var(--ink); border: 1px solid var(--line);
+    font-size: 1rem; font-weight: 650; padding: .85rem 1.05rem; min-height: 3rem;
+  }
+  button.btn.install.copied { background: #7dcf9a; color: #0e1014; border-color: transparent; }
+  .os { color: var(--muted); margin: 0 0 .35rem; font-size: .95rem; }
+  .features { list-style: none; padding: 0; margin: 1rem 0 1.1rem; display: grid; gap: .65rem; }
+  .features li { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: .8rem .95rem; margin: 0; }
+  .banner { border: 1px solid var(--line); background: var(--note-bg); color: var(--note-ink); padding: .85rem 1rem; border-radius: 12px; margin: 0 0 1.1rem; font-size: .95rem; }
+  nav.toc { display: flex; flex-wrap: wrap; gap: .45rem; margin: 0 0 1.15rem; }
+  nav.toc a {
+    text-decoration: none; color: var(--ink); border: 1px solid var(--line);
+    background: var(--panel); border-radius: 999px; padding: .45rem .8rem;
+    min-height: 44px; display: inline-flex; align-items: center; font-size: .92rem;
+  }
+  .card, .cite { border: 1px solid var(--line); border-radius: 14px; padding: 1.1rem 1.1rem 1.2rem; background: var(--panel); margin: 0 0 1.1rem; }
+  h2 { font-size: 1.12rem; margin: 0 0 .45rem; }
   .nums { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 0 0 1rem; }
-  .count { font-size: 2.2rem; font-variant-numeric: tabular-nums; font-weight: 700; margin: 0; }
-  .count span { display: block; font-size: .95rem; font-weight: 500; color: #9aa3b2; }
-  .kid { font-size: 1.05rem; margin: 0 0 1rem; }
-  .btns { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin: 0 0 .85rem; }
-  @media (max-width: 520px) { .btns { grid-template-columns: 1fr; } }
-  a.btn, button.btn { display: block; width: 100%; box-sizing: border-box; text-align: center; font: inherit; font-size: 1.2rem; font-weight: 750; padding: 1rem 1.1rem; border-radius: 10px; border: 0; cursor: pointer; text-decoration: none; }
-  a.btn.primary { background: #e8eaef; color: #0e1014; }
-  button.btn.install { background: #c9a227; color: #14110a; }
-  button.btn.install.copied { background: #7dcf9a; color: #0e1014; }
-  .meta { margin-top: 1.1rem; color: #9aa3b2; font-size: .92rem; }
-  .meta a { color: #c9d4ff; }
-  .iso { margin-top: .85rem; font-size: .85rem; color: #7d8696; }
-  .banner { border: 1px solid #5c4a1a; background: #241c0d; color: #f0d78c; padding: .85rem 1rem; border-radius: 8px; margin: 0 0 1.2rem; font-size: .92rem; }
-  pre { background: #0e1014; padding: .75rem .9rem; overflow: auto; border-radius: 8px; font-size: .82rem; }
-  code { font-size: .88rem; }
-
-  .cite { margin-top: 1.4rem; padding-top: 1rem; border-top: 1px solid #2a3140; }
+  .count { font-size: 2.1rem; font-variant-numeric: tabular-nums; font-weight: 700; margin: 0; }
+  .count span { display: block; font-size: .92rem; font-weight: 500; color: var(--muted); }
+  .meta, .iso { margin: .85rem 0 0; color: var(--muted); font-size: .92rem; }
+  .kid { margin: 0 0 .75rem; }
+  pre, code { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  pre { background: var(--field); color: var(--ink); padding: .75rem .9rem; overflow: auto; border-radius: 10px; font-size: .82rem; border: 1px solid var(--line); white-space: pre-wrap; overflow-wrap: anywhere; }
+  code { font-size: .88em; }
+  p, li, #meshProducts { overflow-wrap: anywhere; }
   .cite h2 { font-size: 1.05rem; margin: 0 0 .4rem; }
-  .cite p { color: #c5ccd8; font-size: .95rem; }
-  .cite a { color: #c9d4ff; }
-  #meshStrip { border: 1px solid #c9a227; border-radius: 12px; padding: .85rem 1rem; background: #151922; margin: 0 0 1.2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1rem; font-size: .88rem; color: #9aa3b2; }
-  #meshStrip .live { color: #e8eaef; }
-  #meshStrip .live b { color: #c9a227; font-size: 1.35rem; margin-right: .35rem; }
-  #meshStrip .rollup b { color: #c9a227; }
-  #meshStrip button { font: 700 .78rem/1 ui-monospace, Menlo, Consolas, monospace; height: 2rem; padding: 0 .75rem; border-radius: 8px; background: #101010; color: #e8eaef; border: 1px solid #c9a227; cursor: pointer; }
-  #meshStrip button:hover { background: #241c0d; color: #c9a227; }
-  #meshStrip input { width: 10rem; padding: .4rem .55rem; border: 1px solid #c9a227; border-radius: 8px; background: #0e0e0e; color: #e8eaef; font: inherit; }
+  footer.quiet { color: var(--muted); font-size: .9rem; margin: .2rem 0 0; }
+  footer.quiet p { margin: .3rem 0; }
+  footer.quiet a { color: var(--ink); }
+  #meshStrip { border: 1px solid var(--line); border-radius: 14px; padding: .85rem 1rem; background: var(--panel); margin: 0 0 1.1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .65rem .85rem; font-size: .9rem; color: var(--muted); }
+  #meshStrip .live { color: var(--ink); }
+  #meshStrip .live b { color: var(--gold); font-size: 1.35rem; margin-right: .35rem; }
+  #meshStrip .rollup b { color: var(--gold); }
+  #meshStrip > div { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+  #meshStrip button { font: 650 .82rem/1 system-ui, sans-serif; min-height: 44px; padding: .4rem .75rem; border-radius: 10px; background: transparent; color: var(--ink); border: 1px solid var(--line); cursor: pointer; }
+  #meshStrip button:hover { background: var(--note-bg); }
+  #meshStrip input { width: min(100%, 16rem); min-height: 44px; padding: .5rem .6rem; border: 1px solid var(--line); border-radius: 10px; background: var(--field); color: var(--ink); font: inherit; }
   #meshProducts { flex-basis: 100%; margin: 0; }
+  @media (min-width: 720px) {
+    .wrap { padding: 1.6rem 1.25rem 3.5rem; }
+    .hero-actions { flex-direction: row; align-items: center; }
+    a.btn.primary { width: auto; min-width: 16rem; }
+    button.btn.install { width: auto; }
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      color-scheme: light;
+      --bg: #f6f1e7; --ink: #1c160f; --muted: #5a4e3e; --gold: #7a5a00;
+      --panel: #fffdf8; --line: #7a6a58; --focus: #5c4300;
+      --btn: #1c160f; --btn-ink: #fffdf8; --field: #fffdf8;
+      --note-bg: #f3ead6; --note-ink: #3d3118;
+      --shadow: 0 12px 28px #1c160f14;
+    }
+    button.btn.install.copied { background: #0f6b3c; color: #fbf7f1; }
+  }
 </style>
 <body>
-  <div class="brandrow"><img class="brandmark" src="/sigil.png" width="40" height="40" alt="" decoding="async"></div>
-  <h1>SpectralLock</h1>
-  <p class="motto">Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus Library OCR (overlays, ink/page, restore lost pigment). Author Aziel Eliab.</p>
-  <p class="banner">RSA-2.0 family. Lenses: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon. Restore lost pigment is live (<code>pigment</code> / <code>restore-pigment</code>). Ink isolates writing; page isolates parchment. Balance never invents marks. Author: Aziel Eliab.</p>
+<a class="skip" href="#download">Skip to Download</a>
+<div class="wrap">
+  <header class="hero">
+    <div class="brandrow"><img class="brandmark" src="/sigil.png" width="40" height="40" alt="" decoding="async"></div>
+    <h1>SpectralLock</h1>
+    <p class="motto">Rosetta spectral analysis.</p>
+    <p class="lede">Same SpectralLock lenses as Aziel Corpus Library OCR. Overlays, ink or page, and restore lost pigment. Author Aziel Eliab.</p>
+    <div class="hero-actions">
+      <a id="download" class="btn primary dl" href="/download?asset=${DEFAULT_ASSET}">Download</a>
+      <button type="button" class="btn install" id="install-btn">One-click install</button>
+    </div>
+    <p class="os" id="os-line">One package for macOS, Linux, and Windows. ${DEFAULT_ASSET}.</p>
+    <pre id="install-cmd">curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash</pre>
+    <ul class="features">
+      <li>Ink isolates writing. Page isolates parchment. Balance never invents marks.</li>
+      <li>Restore lost pigment estimates faded signal still in the pixels.</li>
+      <li>This Download is counted for the canonical tree and for every branch and fork.</li>
+    </ul>
+    <p class="banner">RSA-2.0 family. Lenses: zero, tazel, vyrn, uv, rosetta, zen, chaos, balance, candle, indent, lemon. Restore lost pigment is live (<code>pigment</code> / <code>restore-pigment</code>). Author: Aziel Eliab.</p>
+    <nav class="toc" aria-label="Product">
+      <a href="#download">Download</a>
+      <a href="#meshStrip">Live Nodes</a>
+      <a href="#counts">Counts</a>
+      <a href="#cite">Cite</a>
+      <a href="/openapi.json">OpenAPI</a>
+      <a href="${GITHUB_REPO}">GitHub</a>
+    </nav>
+  </header>
   <div id="meshStrip" aria-label="Suite Live Nodes">
     <div class="live"><b id="meshLiveCount">0</b> Live Nodes</div>
     <div id="meshLine">Suite mesh: off (default). QNM-BUILD-1.0. QNS-CD-1.0.</div>
@@ -562,18 +649,12 @@ async function indexHtml(env) {
     </div>
     <p id="meshProducts">Catalog MCP mesh_* · FragGate slug=mesh · /v1/mesh/* PROXY · QNS-CD-1.0 cross-map · no public qnsd proxy</p>
   </div>
-  <div class="card">
+  <div class="card" id="counts">
     <div class="nums">
       <p class="count">${v}<span>Views</span></p>
       <p class="count">${n}<span>Downloads</span></p>
     </div>
-    <p class="kid"><strong>Two big buttons.</strong> Download saves the gzip (the Downloads number goes up). One-click install copies a Terminal command. After it finishes, type <code>spectrallock ui</code>.</p>
-    <div class="btns">
-      <a class="btn primary dl" href="/download?asset=${DEFAULT_ASSET}">Download</a>
-      <button type="button" class="btn install" id="install-btn">One-click install</button>
-    </div>
-    <pre id="install-cmd">curl -fsSL https://spectrallock-download-tracker.vibelock.workers.dev/install.sh | bash</pre>
-    <p class="kid">Then run: <code>spectrallock ui</code> and open http://127.0.0.1:8861 (this computer only).</p>
+    <p class="kid">Download saves the gzip (the Downloads number goes up). One-click install copies a Terminal command. After it finishes, type <code>spectrallock ui</code> and open http://127.0.0.1:8861 (this computer only).</p>
     <p class="meta">The download count ticks on the Download click. The Worker serves the gzip (HTTP 200). No 302 to GitHub. Forks using this same link are counted automatically. ${DEFAULT_ASSET} — ${n} counted.</p>
     <p class="iso">Isolated counter: Worker <code>spectrallock-download-tracker</code>, project <code>spectrallock</code>, KV <code>SPECTRALLOCK_DOWNLOADS</code>. SpectralLock only. /v1 does not increment downloads.</p>
     
@@ -713,6 +794,11 @@ async function indexHtml(env) {
   <p>Aziel Eliab. SpectralLock. https://github.com/AzielEliab/spectrallock. https://spectrallock-download-tracker.vibelock.workers.dev.</p>
   <p><a href="https://aziel-runtime.vibelock.workers.dev/">Catalog</a> · <a href="https://github.com/AzielEliab/spectrallock">GitHub</a> · <a href="https://spectrallock-download-tracker.vibelock.workers.dev/download">Download</a> · <a href="https://spectrallock-download-tracker.vibelock.workers.dev/cite.json">cite.json</a></p>
 </section>
+<footer class="quiet">
+  <p>Apache-2.0 · Aziel Eliab · SpectralLock ${VERSION}</p>
+  <p>The human still reads the page.</p>
+</footer>
+</div>
 <!-- /gitbaby-seo -->
 </body>
 </html>`;
