@@ -3,165 +3,171 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SpectralLock — Rosetta spectral analysis</title>
+  <title>SpectralLock</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header>
-    <div class="tag">SpectralLock · v0.3.1 · RSA-2.0 · 127.0.0.1:8861</div>
-    <h1>Rosetta spectral analysis</h1>
-    <p class="lede">
-      SpectralLock is Rosetta spectral analysis software — the same
-      <strong>SpectralLock lenses</strong> used by
-      <a href="https://www.azielcorpuslibrary.net/ocr">Aziel Corpus Library OCR</a>
-      (overlays, ink/page modes). RSA-2.0 decoding composite:
-      <code>0.40·Z′ + 0.35·T′ + 0.25·V′</code>. Balance never invents marks.
-      Synthetic UV is a 365–400&nbsp;nm look from an ordinary photograph.
-      Candle, indent, and lemon are synthetic looks from ordinary photos.
-      Inject ON paints membership from the Spectral Harmonic Wheel.
-      OFF is gray of the same gate. Zero ignores the switch.
-      Restore lost pigment estimates faded signal still in the pixels.
-      The human still reads the page. Author Aziel Eliab.
-    </p>
+  <header class="topbar">
+    <div>
+      <p class="product">SpectralLock</p>
+      <p class="author">Aziel Eliab</p>
+    </div>
+    <p class="loopback">127.0.0.1:8861</p>
   </header>
-  <div class="banner" role="note">
-    Same lens family as Corpus OCR. Overlay a photograph, then choose Ink (writing) or Page (parchment).
-  </div>
 
-  <div class="toggles">
-    <div class="toggle" role="group" aria-label="Simple or advanced labels">
-      <span class="kicker">Labels</span>
-      <button type="button" id="level-simple" class="toggle-btn active">Simple</button>
-      <button type="button" id="level-advanced" class="toggle-btn">Advanced</button>
-    </div>
-    <div class="toggle" role="group" aria-label="Ink or page target">
-      <span class="kicker">Target</span>
-      <button type="button" id="target-ink" class="toggle-btn active">Ink</button>
-      <button type="button" id="target-page" class="toggle-btn">Page</button>
-    </div>
-    <div class="toggle" role="group" aria-label="Color inject">
-      <span class="kicker">Inject</span>
-      <button type="button" id="inject-on" class="toggle-btn active">ON (paint)</button>
-      <button type="button" id="inject-off" class="toggle-btn">OFF (gray)</button>
-    </div>
-    <div class="toggle" role="group" aria-label="View">
-      <span class="kicker">View</span>
-      <button type="button" id="view-side" class="toggle-btn active">Side by side</button>
-      <button type="button" id="view-overlay" class="toggle-btn">Overlay only</button>
-    </div>
-  </div>
+  <main>
+    <h1>Look at a page</h1>
+    <p class="lede">SpectralLock applies a Rosetta spectral analysis lens so faint marks on a photograph are easier to see.</p>
 
-  <section class="drop" id="drop">
-    <span class="kicker">Photograph</span>
-    <p class="drop-hint">Drop a PNG or JPEG of a manuscript page, or tap Add file. Sample page draws a fake parchment so you can try without a photo.</p>
-    <input id="file" class="file-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" aria-label="Photograph file">
-    <p id="fname" class="muted">No file yet.</p>
+    <section class="card" id="drop">
+      <p class="drop-hint">Choose a PNG or JPEG. Drop it here, or use the button.</p>
+      <p id="fname" class="status">No file yet.</p>
+      <input id="file" class="file-input-hidden" type="file" accept="image/png,image/jpeg,image/jpg" aria-label="Photograph file">
+      <div class="actions">
+        <button type="button" id="add-file" class="primary">Add file</button>
+        <button type="button" id="sample" class="ghost">Sample page</button>
+      </div>
+    </section>
+
+    <section class="card" id="lenses">
+      <h2>SpectralLock lenses</h2>
+      <p class="hint">Ink keeps the writing. Page keeps the parchment. One lens is enough. Several mix equally.</p>
+      <div class="segment" role="group" aria-label="Ink or page target">
+        <button type="button" id="target-ink" class="toggle-btn active">Ink</button>
+        <button type="button" id="target-page" class="toggle-btn">Page</button>
+      </div>
+      <div class="lens-grid btns" id="btns"></div>
+    </section>
+
+    <section class="compare is-empty" id="compare">
+      <figure id="fig-before">
+        <figcaption>Before</figcaption>
+        <img id="before" alt="Original photograph">
+      </figure>
+      <figure id="fig-after">
+        <figcaption>After <span id="after-label"></span></figcaption>
+        <img id="after" alt="Spectral overlay">
+      </figure>
+    </section>
+    <p id="meta" class="status" role="status">Add a PNG or JPEG, or use Sample page.</p>
     <div class="actions">
-      <button type="button" id="add-file" class="action giant">Add file</button>
-      <button type="button" id="sample" class="action">Sample page</button>
-      <button type="button" id="pigment" class="action" disabled title="Restore lost pigment where the pixels still carry a signal">Restore pigment</button>
-      <button type="button" id="export" class="action giant" disabled title="overlay PNG plus JSON sidecar">Export</button>
-      <button type="button" id="verify" class="action" disabled title="receipt: lenses, target, paper, sha256 in/out, size">Verify</button>
+      <button type="button" id="export" class="ghost" disabled>Export</button>
     </div>
-  </section>
 
-  <section class="modes" id="modes">
-    <span class="kicker">SpectralLock lenses</span>
-    <p class="drop-hint">Same checkbox family as Corpus OCR. One lens or several — several are mixed equally, then the ink/page target is applied.</p>
-    <div class="lens-grid btns" id="btns"></div>
-  </section>
+    <details class="fold" id="advanced">
+      <summary>Advanced</summary>
+      <div class="fold-body">
+        <p class="hint">Wheel paint colors the inject tint. In-band readings stay on the spectral triad. Restore pigment uses pixel evidence of its own and writes nothing new when that signal is gone.</p>
 
-  <section class="compare" id="compare">
-    <figure id="fig-before">
-      <figcaption>Before</figcaption>
-      <img id="before" alt="original photograph">
-    </figure>
-    <figure id="fig-after">
-      <figcaption>After <span id="after-label"></span></figcaption>
-      <img id="after" alt="Rosetta spectral overlay">
-    </figure>
-  </section>
-  <p id="meta" class="muted"></p>
-  <aside id="receipt" class="receipt" hidden>
-    <span class="kicker">Receipt</span>
-    <pre id="receipt-body"></pre>
-  </aside>
+        <div class="toggle" role="group" aria-label="Simple or paper names">
+          <span class="kicker">Labels</span>
+          <button type="button" id="level-simple" class="toggle-btn active">Simple</button>
+          <button type="button" id="level-advanced" class="toggle-btn">Paper names</button>
+        </div>
 
-  
-<section class="card" id="aziel-json-io">
-  <h2>Import / Export JSON</h2>
-  <p class="help">Tap Import JSON file to pick a .json. Export JSON saves the current session locally. Nothing is uploaded.</p>
-  <input id="aziel-import-json" type="file" accept="application/json,.json">
-  <p>
-    <button type="button" id="aziel-import-json-btn">Import JSON file</button>
-    <button type="button" id="aziel-export-json-btn">Export JSON</button>
-  </p>
-  <p class="help" id="aziel-json-status"></p>
-</section>
+        <div class="toggle" role="group" aria-label="Color inject">
+          <span class="kicker">Inject</span>
+          <button type="button" id="inject-on" class="toggle-btn active">ON (paint)</button>
+          <button type="button" id="inject-off" class="toggle-btn">OFF (gray)</button>
+        </div>
 
-<footer>
-    <p><strong>The human still reads the page.</strong></p>
-    <p>Apache-2.0 · Aziel Eliab · 2026 · Bound to 127.0.0.1:8861 · Forks welcome and always allowed. No telemetry.</p>
-    <p class="muted">Aligned with <a href="https://www.azielcorpuslibrary.net/ocr">azielcorpuslibrary.net/ocr</a> SpectralLock lenses.</p>
-  </footer>
+        <div class="toggle" role="group" aria-label="View">
+          <span class="kicker">View</span>
+          <button type="button" id="view-side" class="toggle-btn active">Side by side</button>
+          <button type="button" id="view-overlay" class="toggle-btn">Overlay only</button>
+        </div>
+
+        <div class="actions">
+          <button type="button" id="pigment" class="ghost" disabled>Restore pigment</button>
+          <button type="button" id="verify" class="ghost" disabled>Verify</button>
+          <button type="button" id="check-setup" class="ghost">Check setup</button>
+        </div>
+        <p id="check-setup-status" class="status" role="status"></p>
+
+        <aside id="receipt" class="receipt" hidden>
+          <span class="kicker">Receipt</span>
+          <pre id="receipt-body"></pre>
+        </aside>
+
+        <section class="json-io" id="aziel-json-io">
+          <h2>Import / Export JSON</h2>
+          <p class="hint">Import JSON file reads a session on this computer. Export JSON saves one. Nothing is uploaded.</p>
+          <input id="aziel-import-json" type="file" accept="application/json,.json">
+          <div class="actions">
+            <button type="button" id="aziel-import-json-btn" class="ghost">Import JSON file</button>
+            <button type="button" id="aziel-export-json-btn" class="ghost">Export JSON</button>
+          </div>
+          <p class="status" id="aziel-json-status" role="status"></p>
+        </section>
+      </div>
+    </details>
+
+    <details class="fold" id="about">
+      <summary>About</summary>
+      <div class="fold-body">
+        <p>SpectralLock is Rosetta spectral analysis. It reweights a photograph you already have so faint marks are easier to look at. The same SpectralLock lenses are used with Aziel Corpus Library OCR: overlays, plus Ink for writing and Page for parchment. Balance never invents marks.</p>
+        <p>Restore pigment estimates faded color where the pixels still differ from the page. The human still reads the page.</p>
+        <p>This page stays on your computer at 127.0.0.1:8861. Light and dark follow your system. No telemetry. Lamb Lens: Service, then Clarity, then Peace. Author Aziel Eliab.</p>
+      </div>
+    </details>
+  </main>
+
   <script src="/app.js"></script>
-
-<script>
-(function(){
-  var file = document.getElementById("aziel-import-json");
-  var imp = document.getElementById("aziel-import-json-btn");
-  var exp = document.getElementById("aziel-export-json-btn");
-  var status = document.getElementById("aziel-json-status");
-  if (!file || !imp || !exp) return;
-  function say(m){ if (status) status.textContent = m; }
-  function collect(){
-    var data = { product: document.title || "", exported_at: new Date().toISOString(), author: "Aziel Eliab" };
-    document.querySelectorAll("input, select, textarea").forEach(function(el){
-      if (!el.id || el.type === "file" || el.type === "password") return;
-      data[el.id] = el.type === "checkbox" ? el.checked : el.value;
-    });
-    if (window.__azielLastJson && typeof window.__azielLastJson === "object") {
-      data.last = window.__azielLastJson;
+  <script>
+  (function(){
+    var file = document.getElementById("aziel-import-json");
+    var imp = document.getElementById("aziel-import-json-btn");
+    var exp = document.getElementById("aziel-export-json-btn");
+    var status = document.getElementById("aziel-json-status");
+    if (!file || !imp || !exp) return;
+    function say(m){ if (status) status.textContent = m; }
+    function collect(){
+      var data = { product: document.title || "", exported_at: new Date().toISOString(), author: "Aziel Eliab" };
+      document.querySelectorAll("input, select, textarea").forEach(function(el){
+        if (!el.id || el.type === "file" || el.type === "password") return;
+        data[el.id] = el.type === "checkbox" ? el.checked : el.value;
+      });
+      if (window.__azielLastJson && typeof window.__azielLastJson === "object") {
+        data.last = window.__azielLastJson;
+      }
+      return data;
     }
-    return data;
-  }
-  function apply(obj){
-    if (!obj || typeof obj !== "object") return;
-    window.__azielLastJson = obj;
-    Object.keys(obj).forEach(function(k){
-      if (k === "last" || k === "product" || k === "exported_at" || k === "author") return;
-      var el = document.getElementById(k);
-      if (!el || el.type === "file" || el.type === "password") return;
-      if (el.type === "checkbox") el.checked = !!obj[k];
-      else if ("value" in el) el.value = obj[k];
-    });
-    var ta = document.querySelector("textarea");
-    if (ta && obj && !obj[ta.id] && typeof obj === "object") {
-      try { if (!ta.value) ta.value = JSON.stringify(obj, null, 2); } catch (e) {}
+    function apply(obj){
+      if (!obj || typeof obj !== "object") return;
+      window.__azielLastJson = obj;
+      Object.keys(obj).forEach(function(k){
+        if (k === "last" || k === "product" || k === "exported_at" || k === "author") return;
+        var el = document.getElementById(k);
+        if (!el || el.type === "file" || el.type === "password") return;
+        if (el.type === "checkbox") el.checked = !!obj[k];
+        else if ("value" in el) el.value = obj[k];
+      });
+      var ta = document.querySelector("textarea");
+      if (ta && obj && !obj[ta.id] && typeof obj === "object") {
+        try { if (!ta.value) ta.value = JSON.stringify(obj, null, 2); } catch (e) {}
+      }
     }
-  }
-  imp.addEventListener("click", function(){ file.click(); });
-  file.addEventListener("change", function(){
-    var f = file.files && file.files[0];
-    if (!f) return;
-    var r = new FileReader();
-    r.onload = function(){
-      try { apply(JSON.parse(String(r.result || "{}"))); say("Imported " + f.name); }
-      catch (e) { say("Invalid JSON"); }
-    };
-    r.readAsText(f);
-  });
-  exp.addEventListener("click", function(){
-    var blob = new Blob([JSON.stringify(collect(), null, 2)], {type: "application/json"});
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "session.json";
-    a.click();
-    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 800);
-    say("Exported JSON");
-  });
-})();
-</script>
-
+    imp.addEventListener("click", function(){ file.click(); });
+    file.addEventListener("change", function(){
+      var f = file.files && file.files[0];
+      if (!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        try { apply(JSON.parse(String(r.result || "{}"))); say("Imported " + f.name); }
+        catch (e) { say("That file is not JSON. Choose a .json session file."); }
+      };
+      r.readAsText(f);
+    });
+    exp.addEventListener("click", function(){
+      var blob = new Blob([JSON.stringify(collect(), null, 2)], {type: "application/json"});
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "session.json";
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); }, 800);
+      say("Exported JSON");
+    });
+  })();
+  </script>
 </body>
 </html>

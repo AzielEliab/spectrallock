@@ -1,26 +1,32 @@
 # SpectralLock
 
-**Rosetta spectral analysis** software (RSA-2.0 family).
+SpectralLock applies a spectral lens to a photograph so faint marks are easier to see.
 
-Same **SpectralLock lenses** as [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr):
-overlays plus ink/page targets.
-
-**Author:** Aziel Eliab
-**Date:** 2026
-**License:** [Apache-2.0](LICENSE)
+**Author:** Aziel Eliab  
+**License:** [Apache-2.0](LICENSE)  
 **Version:** 0.3.1
 
-> The human still reads the page.
+## Start
 
-RSA-2.0 is the decoding composite `0.40·Z′ + 0.35·T′ + 0.25·V′`. Ink isolates
-writing; page isolates parchment. Balance never invents marks — it only
-reweights existing readings. Synthetic UV is a 365–400 nm look from an
-ordinary photograph. Candlelight, indent, and lemon are synthetic looks
-from ordinary photos. Hosted `/v1/overlay` is a 256 px preview; the full
-pipeline is this Python package.
+1. Install (Python 3.10+):
 
-**Forks are welcome and always allowed.**
+   ```bash
+   python -m venv .venv && source .venv/bin/activate && pip install -e .
+   ```
 
+2. Open the local app:
+
+   ```bash
+   spectrallock ui
+   ```
+
+3. Open http://127.0.0.1:8861 and choose **Add file** (or **Sample page**).
+
+`spectrallock doctor` checks the install. `spectrallock --help` lists commands. Add `--json` when a program should read the result.
+
+Rosetta spectral analysis — the same **SpectralLock lenses** as [Aziel Corpus Library OCR](https://www.azielcorpuslibrary.net/ocr): overlays, ink and page. Balance never invents marks. The human still reads the page. Forks are welcome and always allowed.
+
+Papers: [docs/source/](docs/source/) · spec: [docs/whitepaper.md](docs/whitepaper.md) · runtime sync: [docs/runtime-sync.md](docs/runtime-sync.md)
 
 ## One-click install
 
@@ -59,32 +65,6 @@ Direct tarball (also counted):
 
 Isolated counter: Worker `spectrallock-download-tracker`, KV `SPECTRALLOCK_DOWNLOADS`. SpectralLock only. `/v1` does not increment downloads.
 
-
-## Quick start
-
-1. Install (Python 3.10+):
-
-   ```bash
-   python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"
-   ```
-
-2. Open the local app:
-
-   ```bash
-   spectrallock ui
-   ```
-
-3. In the browser at http://127.0.0.1:8861 (loopback only): tap **Add file**
-   (or **Sample page**), pick SpectralLock lenses, choose **Ink** or **Page**,
-   then **Export**. Optional: **Verify** shows a receipt (lenses, target,
-   paper, SHA-256 in/out, size). No CDN, no telemetry. Dark gold.
-
-Counted download: [https://spectrallock-download-tracker.vibelock.workers.dev/](https://spectrallock-download-tracker.vibelock.workers.dev/)
-
-Direct tarball: [spectrallock-0.3.1.tar.gz](https://spectrallock-download-tracker.vibelock.workers.dev/download?asset=spectrallock-0.3.1.tar.gz)
-
-Papers: [docs/source/](docs/source/) · spec: [docs/whitepaper.md](docs/whitepaper.md) ·
-runtime sync: [docs/runtime-sync.md](docs/runtime-sync.md)
 
 How to contribute: [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -244,6 +224,9 @@ python -m pytest -q
 ## CLI
 
 ```bash
+spectrallock
+spectrallock --help
+spectrallock ui
 spectrallock version
 spectrallock doctor
 spectrallock modes

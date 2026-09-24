@@ -27,6 +27,6 @@ python -m pip install -e .
 
 echo
 echo "Installed SpectralLock."
-echo "Run:  spectrallock ui"
-echo "Then open http://127.0.0.1:8861  (loopback only)"
+echo "Next: spectrallock ui"
+echo "Open http://127.0.0.1:8861/"
 echo "Author: Aziel Eliab."

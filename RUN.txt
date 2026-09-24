@@ -1,0 +1,9 @@
+SpectralLock
+Author: Aziel Eliab
+
+1. python -m venv .venv && source .venv/bin/activate && pip install -e .
+2. spectrallock ui
+3. Open http://127.0.0.1:8861/ and choose Add file.
+
+spectrallock doctor
+spectrallock --help

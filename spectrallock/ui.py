@@ -373,7 +373,9 @@ def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes, str, li
 
 def make_server(host: str = "127.0.0.1", port: int = 8861) -> ThreadingHTTPServer:
     if host not in LOOPBACK:
-        raise ValueError("SpectralLock UI binds loopback only (127.0.0.1)")
+        raise ValueError(
+            "SpectralLock UI binds loopback only (127.0.0.1). Try: spectrallock ui"
+        )
     debug(f"make_server host={host} port={port}")
     return ThreadingHTTPServer((host, port), Handler)
 
@@ -381,8 +383,7 @@ def make_server(host: str = "127.0.0.1", port: int = 8861) -> ThreadingHTTPServe
 def serve(host: str = "127.0.0.1", port: int = 8861) -> None:
     httpd = make_server(host, port)
     bound_host, bound_port = httpd.server_address[:2]
-    print(f"SpectralLock UI http://{bound_host}:{bound_port} (loopback only)")
-    print(LIMITATION)
+    print(f"Open http://{bound_host}:{bound_port}/")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
