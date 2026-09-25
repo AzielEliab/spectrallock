@@ -8,13 +8,15 @@ import 'package:path_provider/path_provider.dart';
 
 import 'theme.dart';
 
-const limitation =
+const about =
     'Rosetta spectral analysis. Same SpectralLock lenses as Aziel Corpus '
-    'Library OCR (overlays, ink/page). Synthetic UV / candle / indent / '
-    'lemon are looks, not lamps or lab tests. Balance never invents marks. '
-    'The human still reads the page. Author Aziel Eliab.';
+    'Library OCR (overlays, ink and page). Synthetic UV, candle, indent, '
+    'and lemon are looks made from the photograph. Balance never invents '
+    'marks. This phone view is a color-matrix approximation. The full '
+    'overlay is the Python app. The human still reads the page. '
+    'Author Aziel Eliab.';
 
-/// Color-matrix approximations of the published hues. Not the Python pipeline.
+/// Color-matrix approximations of the published hues. The full pipeline is the Python package.
 const matrices = <String, List<double>>{
   'zero': [
     0.2126, 0.7152, 0.0722, 0, 0,
@@ -96,7 +98,9 @@ class SpectralLockApp extends StatelessWidget {
     return MaterialApp(
       title: 'SpectralLock',
       debugShowCheckedModeBanner: false,
-      theme: buildAppTheme(),
+      theme: buildLightTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: ThemeMode.system,
       home: const OverlayPage(),
     );
   }
@@ -139,10 +143,7 @@ class _OverlayPageState extends State<OverlayPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Wrote ${file.path}. Color-matrix approximation — not the Python '
-            'pipeline, not forensic proof.',
-          ),
+          content: Text('Wrote ${file.path}.'),
         ),
       );
     } finally {
@@ -158,23 +159,16 @@ class _OverlayPageState extends State<OverlayPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(limitation, style: TextStyle(color: kGold, height: 1.4)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              FilledButton(onPressed: _pick, child: const Text('Add file')),
-              const SizedBox(width: 8),
-              FilledButton(
-                onPressed: (_photo == null || _exporting) ? null : _export,
-                child: const Text('Export'),
-              ),
-            ],
+          Text(
+            'Apply a spectral lens so faint marks on a photograph are easier to see.',
+            style: Theme.of(context).textTheme.bodyLarge,
           ),
+          const SizedBox(height: 16),
+          FilledButton(onPressed: _pick, child: const Text('Add file')),
           const SizedBox(height: 8),
-          const Text(
-            'Export writes a PNG of the on-screen color-matrix approximation. '
-            'Full overlay export is the Python UI.',
-            style: TextStyle(color: kGoldDim, fontSize: 12, height: 1.35),
+          OutlinedButton(
+            onPressed: (_photo == null || _exporting) ? null : _export,
+            child: const Text('Export'),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -190,6 +184,16 @@ class _OverlayPageState extends State<OverlayPage> {
             }).toList(),
           ),
           const SizedBox(height: 16),
+          const SizedBox(height: 8),
+          const ExpansionTile(
+            title: Text('About'),
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+                child: Text(about),
+              ),
+            ],
+          ),
           if (_photo != null) ...[
             const Text('Before', style: TextStyle(color: kGoldDim)),
             const SizedBox(height: 6),

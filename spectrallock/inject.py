@@ -36,13 +36,26 @@ from spectrallock.engine import (
 )
 
 
+class _InjectParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        msg = " ".join(str(message).split())
+        if "required" in msg or "specify" in msg:
+            text = (
+                "Inject needs a photograph, a lens, and an output path. "
+                "Try: spectrallock inject page.png --mode rosetta -o out.png"
+            )
+        else:
+            text = f"{msg}. Try: spectrallock inject --help"
+        self.exit(2, text + "\n")
+
+
 def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="spectrallock_inject.py",
+    parser = _InjectParser(
+        prog="spectrallock inject",
         description=(
-            "SpectralLock color inject switch. ON paints membership "
-            "(false color, not recovered pigment). OFF is luminance of the "
-            "same gate. Zero ignores the switch. Author Aziel Eliab."
+            "SpectralLock color inject. ON paints wheel membership. "
+            "OFF is gray of the same gate. Zero stays gray. "
+            "Author Aziel Eliab."
         ),
     )
     parser.add_argument("src", metavar="PAGE", help="Input photograph (PNG or JPEG).")
@@ -186,20 +199,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         src_bytes = src.read_bytes()
     except FileNotFoundError:
-        print(f"input not found: {args.src}", file=sys.stderr)
+        print(f'No file at "{args.src}".', file=sys.stderr)
+        print("Try: spectrallock inject page.png --mode rosetta -o out.png", file=sys.stderr)
         return 2
     except Exception as exc:  # noqa: BLE001
         debug(f"inject read type={type(exc).__name__}")
         print(PLAIN_NOT_IMAGE, file=sys.stderr)
+        print("Try: spectrallock inject photo.png --mode rosetta -o out.png", file=sys.stderr)
         return 2
     try:
         rgb = load_rgb(args.src)
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
+        print("Try: spectrallock inject photo.png --mode rosetta -o out.png", file=sys.stderr)
         return 2
     except Exception as exc:  # noqa: BLE001
         debug(f"inject decode type={type(exc).__name__}")
         print(PLAIN_NOT_IMAGE, file=sys.stderr)
+        print("Try: spectrallock inject photo.png --mode rosetta -o out.png", file=sys.stderr)
         return 2
 
     inject = bool(args.inject)
@@ -252,10 +269,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 f"inject_applied={str(row['inject_applied']).lower()}"
             )
         print(INJECT_NOTE)
-        print(LIMITATION)
-    elif not args.as_json:
-        print(INJECT_NOTE)
-        print(LIMITATION)
     return 0
 
 

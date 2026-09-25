@@ -69,6 +69,10 @@ function setExportEnabled(on) {
   exportBtn.disabled = !on;
   verifyBtn.disabled = !on;
   if (pigmentBtn) pigmentBtn.disabled = !sourceFile;
+  exportBtn.classList.toggle("primary", !!on);
+  exportBtn.classList.toggle("ghost", !on);
+  addFileBtn.classList.toggle("primary", !on);
+  addFileBtn.classList.toggle("ghost", !!on);
 }
 
 function activeLenses() {
@@ -132,6 +136,7 @@ function setFile(file) {
   receiptEl.hidden = true;
   setExportEnabled(false);
   fname.textContent = file.name + " · " + Math.round(file.size / 1024) + " KiB";
+  compare.classList.remove("is-empty");
   forgetUrls();
   const u = URL.createObjectURL(file);
   objectUrls.push(u);
@@ -171,11 +176,11 @@ if (pigmentBtn) {
       });
       const payload = await res.json();
       if (!payload.pigment_recovery) {
-        meta.textContent = "error: pigment path did not run";
+        meta.textContent = "Restore pigment did not run. Try the photograph again, or choose a lens above.";
         return;
       }
       if (!payload.recovered || !payload.png_b64) {
-        meta.textContent = "pigment refused " + (payload.refuse_code || "SL-PIGMENT-GONE") + " — no supported faded signal, no new marks";
+        meta.textContent = "No faded pigment left to restore (" + (payload.refuse_code || "SL-PIGMENT-GONE") + "). Nothing new was written.";
         return;
       }
       const raw = atob(payload.png_b64);
@@ -335,7 +340,7 @@ async function run() {
         const err = JSON.parse(msg);
         msg = err.error || msg;
       } catch (_) {}
-      meta.textContent = "error: " + msg;
+      meta.textContent = msg + " Try a PNG or JPEG, or use Sample page.";
       overlayBlob = null;
       lastReceipt = null;
       return;
@@ -366,8 +371,7 @@ async function run() {
     const label = lenses.map(modeLabel).join(" + ") + " · " + target;
     afterLabel.textContent = "· " + label;
     const paper = lastReceipt.paper;
-    meta.textContent = lenses.join("+") + " / " + target + (paper ? " (" + paper + ")" : "") +
-      " — Rosetta spectral analysis, Corpus OCR lens family.";
+    meta.textContent = "Ready. " + lenses.join(" + ") + " · " + target + (paper ? " · " + paper : "") + ". Export saves the picture.";
     setExportEnabled(true);
   } catch (err) {
     meta.textContent = String(err);
@@ -380,3 +384,25 @@ async function run() {
     if (!overlayBlob) setExportEnabled(false);
   }
 }
+
+const checkBtn = document.getElementById("check-setup");
+const checkStatus = document.getElementById("check-setup-status");
+if (checkBtn && checkStatus) {
+  checkBtn.addEventListener("click", async () => {
+    checkStatus.textContent = "Checking…";
+    try {
+      const res = await fetch("/api/doctor");
+      if (!res.ok) {
+        checkStatus.textContent = "Setup check failed. Try: spectrallock doctor";
+        return;
+      }
+      const data = await res.json();
+      const lenses = (data.lenses || data.modes || []).length;
+      checkStatus.textContent = "Ready. " + lenses + " lenses. This page stays on 127.0.0.1. No telemetry. Version " + (data.version || "") + ".";
+    } catch (err) {
+      checkStatus.textContent = "Could not reach the local app. Try: spectrallock ui";
+    }
+  });
+}
+
+setExportEnabled(false);

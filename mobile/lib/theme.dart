@@ -1,41 +1,68 @@
 import 'package:flutter/material.dart';
 
-/// Matte black + gold Material 3 dark theme. No analytics.
-const Color kMatteBlack = Color(0xFF0B0B0B);
-const Color kSurface = Color(0xFF141414);
+/// SpectralLock phone theme. Light and dark follow the system. Gold focus.
+const Color kPaper = Color(0xFFF4F1EA);
+const Color kPaperSurface = Color(0xFFFFFCF7);
+const Color kInk = Color(0xFF1C1915);
+const Color kMatteBlack = Color(0xFF12110E);
+const Color kSurface = Color(0xFF1C1B17);
 const Color kGold = Color(0xFFC9A227);
-const Color kGoldDim = Color(0xFF8A7219);
-const Color kIvory = Color(0xFFE8E0D0);
+const Color kGoldDim = Color(0xFF6D5208);
+const Color kIvory = Color(0xFFF4EFE6);
+const Color kOnGold = Color(0xFF1A1404);
 
-ThemeData buildAppTheme() {
-  const scheme = ColorScheme.dark(
-    brightness: Brightness.dark,
+ThemeData buildLightTheme() {
+  const scheme = ColorScheme.light(
     primary: kGold,
-    onPrimary: kMatteBlack,
+    onPrimary: kOnGold,
     secondary: kGoldDim,
-    onSecondary: kIvory,
+    onSecondary: kPaperSurface,
+    surface: kPaperSurface,
+    onSurface: kInk,
+  );
+  return _base(scheme, kPaper, kInk);
+}
+
+ThemeData buildAppTheme() => buildDarkTheme();
+
+ThemeData buildDarkTheme() {
+  const scheme = ColorScheme.dark(
+    primary: kGold,
+    onPrimary: kOnGold,
+    secondary: kGold,
+    onSecondary: kOnGold,
     surface: kSurface,
     onSurface: kIvory,
-    error: Color(0xFFB54A4A),
-    onError: kIvory,
   );
+  return _base(scheme, kMatteBlack, kIvory);
+}
+
+ThemeData _base(ColorScheme scheme, Color scaffold, Color foreground) {
   return ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: scheme.brightness,
     colorScheme: scheme,
-    scaffoldBackgroundColor: kMatteBlack,
-    appBarTheme: const AppBarTheme(
-      backgroundColor: kMatteBlack,
-      foregroundColor: kGold,
+    scaffoldBackgroundColor: scaffold,
+    focusColor: kGold,
+    hoverColor: const Color(0x33C9A227),
+    splashColor: const Color(0x44C9A227),
+    appBarTheme: AppBarTheme(
+      backgroundColor: scaffold,
+      foregroundColor: foreground,
       elevation: 0,
       centerTitle: false,
     ),
-    cardTheme: CardThemeData(
-      color: kSurface,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Color(0x33C9A227)),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: kGold,
+        foregroundColor: kOnGold,
+        minimumSize: const Size(64, 48),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: foreground,
+        minimumSize: const Size(64, 48),
       ),
     ),
   );

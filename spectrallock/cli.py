@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -50,31 +51,150 @@ from spectrallock.engine import (
     write_sidecar,
 )
 
+ROOT_HELP = """\
+spectrallock — look at a photograph with spectral lenses
+
+usage:
+  spectrallock
+  spectrallock <command> [options]
+  spectrallock --help
+
+Start
+  ui, serve          Open the local app at http://127.0.0.1:8861
+  doctor             Check Python, lenses, and loopback
+  version            Print the version
+
+Look at a page
+  overlay            Apply a lens to a PNG or JPEG
+  modes              List the lenses
+  lenses             Same list as modes
+
+Advanced
+  pigment            Restore faded pigment still in the pixels
+  restore-pigment    Same as pigment restore
+  unredact           Locate leftover bytes, or lift a non-opaque cover
+  lift               Same as unredact lift
+  redact-locate      Same as unredact locate
+  recover            Read bytes that are still in the file
+  handwriting        Scan heuristics for ink on paper
+  handwrite          Same as handwriting
+  ink-hand           Same as handwriting
+  forgery-scan       Handwriting indicators
+  inject             Paint membership color on or off
+
+Examples
+  spectrallock ui
+  spectrallock overlay --mode rosetta --target ink page.png out.png
+  spectrallock doctor
+  spectrallock modes --json
+
+Add --json when a program should read the result.
+Author: Aziel Eliab
+"""
+
+_TRY = {
+    "overlay": "spectrallock overlay --mode rosetta page.png out.png",
+    "pigment": "spectrallock pigment restore page.png",
+    "restore-pigment": "spectrallock restore-pigment page.png",
+    "unredact": "spectrallock unredact locate page.pdf",
+    "lift": "spectrallock lift cover.png",
+    "redact-locate": "spectrallock redact-locate page.pdf",
+    "recover": "spectrallock recover locate page.pdf",
+    "handwriting": "spectrallock handwriting analyze scan.png",
+    "handwrite": "spectrallock handwriting analyze scan.png",
+    "ink-hand": "spectrallock handwriting analyze scan.png",
+    "forgery-scan": "spectrallock forgery-scan scan.png",
+    "inject": "spectrallock inject page.png --mode rosetta -o out.png",
+    "doctor": "spectrallock doctor",
+    "ui": "spectrallock ui",
+    "serve": "spectrallock ui",
+    "modes": "spectrallock modes",
+    "lenses": "spectrallock lenses",
+    "version": "spectrallock version",
+}
+
+
+def _plain_misuse(prog: str, message: str) -> str:
+    msg = " ".join(str(message).split())
+    choice = re.search(r"invalid choice: '([^']+)'", msg)
+    if choice and ("argument cmd" in msg or prog.strip() == "spectrallock"):
+        bad = choice.group(1)
+        return f'Unknown command "{bad}". Try: spectrallock ui   or   spectrallock --help'
+    unknown = re.search(r"unknown (?:mode|lens) '([^']+)'", msg, flags=re.I)
+    if unknown:
+        return f'Unknown lens "{unknown.group(1)}". Try: spectrallock modes'
+    leaf = (prog or "spectrallock").split()[-1]
+    hint = _TRY.get(leaf, "spectrallock --help")
+    if "required" in msg:
+        if leaf == "overlay":
+            reason = "Overlay needs a lens, an input picture, and an output path."
+        elif leaf in {"pigment", "restore-pigment"}:
+            reason = "Restore pigment needs a photograph."
+        elif leaf == "spectrallock":
+            return "Choose a command. Try: spectrallock ui   or   spectrallock --help"
+        else:
+            reason = f"{leaf} needs more information."
+        return f"{reason} Try: {hint}"
+    if msg.startswith("unrecognized arguments"):
+        return f"Unknown option. {msg}. Try: {prog} --help"
+    if "argument --mode" in msg or "argument --lens" in msg:
+        detail = msg.split(":", 1)[-1].strip()
+        return f"{detail} Try: spectrallock modes"
+    return f"{msg}. Try: {hint}"
+
+
+def _fail(reason: str, try_line: str) -> int:
+    print(reason, file=sys.stderr)
+    print(f"Try: {try_line}", file=sys.stderr)
+    return 2
+
+
+def _print_welcome() -> None:
+    print(
+        "SpectralLock makes faint marks on a photograph easier to see.\n"
+        "\n"
+        "Open the local app, then choose Add file or Sample page:\n"
+        "  spectrallock ui\n"
+        "  Open http://127.0.0.1:8861/\n"
+        "\n"
+        "Or from the terminal:\n"
+        "  spectrallock overlay --mode rosetta page.png out.png\n"
+        "  spectrallock doctor\n"
+        "\n"
+        "Author: Aziel Eliab"
+    )
+
+
+class PlainParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        self.exit(2, _plain_misuse(self.prog, message) + "\n")
+
+
+class RootParser(PlainParser):
+    def format_help(self) -> str:
+        return ROOT_HELP
+
 
 def _overlay_mode(name: str) -> str:
     key = str(name or "").strip().lower().replace("_", "-")
     if key in {"pigment", "restore-pigment", "lost-pigment", "restore-lost-pigment"}:
         return "pigment"
-    return resolve_mode(name)
+    try:
+        return resolve_mode(name)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(str(exc)) from exc
 
 
-def _build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="spectrallock",
-        description=(
-            "SpectralLock — Rosetta spectral analysis (Aziel Eliab, 2026). "
-            "Same SpectralLock lenses as Aziel Corpus Library OCR: overlays "
-            "plus ink/page targets. "
-            f"Local UI: `spectrallock ui` at http://127.0.0.1:8861. {LIMITATION}"
-        ),
-    )
-    sub = parser.add_subparsers(dest="cmd", required=True)
+def _build_parser() -> RootParser:
+    parser = RootParser(prog="spectrallock")
+    sub = parser.add_subparsers(dest="cmd", required=False, parser_class=PlainParser)
 
-    sub.add_parser("version", help="Print package version.")
-    sub.add_parser(
+    sub.add_parser("version", help="Print the version.")
+    p_doc = sub.add_parser(
         "doctor",
-        help="Check Python, Pillow, numpy, live lenses × ink/page, no NaN, loopback, no telemetry.",
+        help="Check Python, lenses, and loopback.",
     )
+    p_doc.add_argument("--json", action="store_true", dest="as_json", help="Print the same checks as JSON.")
 
     p_modes = sub.add_parser("modes", help="List SpectralLock lenses (live papers + ids).")
     p_modes.add_argument("--json", action="store_true", dest="as_json", help="JSON list.")
@@ -318,7 +438,7 @@ def _build_parser() -> argparse.ArgumentParser:
         p.add_argument("--json", action="store_true", dest="as_json", help="Print handwriting JSON.")
 
     for alias, help_txt in (
-        ("handwriting", "Handwriting / ink-on-paper scan heuristics. Not a lab. Not a court finding."),
+        ("handwriting", "Ink-on-paper scan heuristics. A person still checks the indicators."),
         ("handwrite", "Alias for handwriting."),
         ("ink-hand", "Alias for handwriting."),
         ("forgery-scan", "Alias for handwriting forgery-indicators."),
@@ -349,7 +469,7 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _run_doctor() -> int:
+def _run_doctor(as_json: bool = False) -> int:
     import numpy as np
 
     lines: list[str] = []
@@ -530,7 +650,16 @@ def _run_doctor() -> int:
 
     lines.append("telemetry: none")
     lines.append("ok" if ok else "fail")
-    print("\n".join(lines))
+    if as_json:
+        print(json.dumps({
+            "product": "spectrallock",
+            "version": __version__,
+            "author": "Aziel Eliab",
+            "ok": ok,
+            "checks": lines,
+        }, indent=2))
+    else:
+        print("\n".join(lines))
     debug(f"doctor ok={ok} modes={len(LIVE_MODES)}")
     return 0 if ok else 1
 
@@ -555,12 +684,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
 
+    if not args.cmd:
+        _print_welcome()
+        return 0
+
     if args.cmd == "version":
         print(f"spectrallock {__version__}")
         return 0
 
     if args.cmd == "doctor":
-        return _run_doctor()
+        return _run_doctor(as_json=bool(getattr(args, "as_json", False)))
 
     if args.cmd in {"modes", "lenses"}:
         rows = list_lenses() if args.cmd == "lenses" else list_modes()
@@ -585,7 +718,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "live_modes": [row["id"] for row in mode_rows],
             }, indent=2))
         else:
-            print(LIMITATION)
+            print("SpectralLock lenses")
             print(f"{'id':10} {'paper':10} {'status':8} summary")
             for row in mode_rows:
                 print(f"{row['id']:10} {row['paper']:10} {row['status']:8} {row['summary']}")
@@ -601,21 +734,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         try:
             src_bytes = src.read_bytes()
         except FileNotFoundError:
-            print(f"input not found: {args.src}", file=sys.stderr)
-            return 2
+            return _fail(
+                f'No file at "{args.src}".',
+                "spectrallock overlay --mode rosetta page.png out.png",
+            )
         except Exception as exc:  # noqa: BLE001
             debug(f"overlay read type={type(exc).__name__}")
-            print(PLAIN_NOT_IMAGE, file=sys.stderr)
-            return 2
+            return _fail(PLAIN_NOT_IMAGE, "spectrallock overlay --mode rosetta photo.png out.png")
         try:
             rgb = load_rgb(args.src)
         except ValueError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+            return _fail(str(exc), "spectrallock overlay --mode rosetta photo.png out.png")
         except Exception as exc:  # noqa: BLE001
             debug(f"overlay decode type={type(exc).__name__}")
-            print(PLAIN_NOT_IMAGE, file=sys.stderr)
-            return 2
+            return _fail(PLAIN_NOT_IMAGE, "spectrallock overlay --mode rosetta photo.png out.png")
         inject = False if args.no_tint else (True if args.inject is None else bool(args.inject))
         if args.mode == "pigment":
             from spectrallock.pigment import REFUSE_GONE, analyze_pigment
@@ -640,8 +772,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         try:
             result = analyze(rgb, args.mode, target=args.target, inject=inject)
         except ValueError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+            return _fail(str(exc), "spectrallock modes")
         out_bytes = png_bytes(result.rgb)
         Path(args.dst).write_bytes(out_bytes)
         rec = make_receipt(
@@ -678,11 +809,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif args.verify:
             _print_receipt(rec)
         else:
+            print(f"Wrote {args.dst}")
             print(
-                f"{result.mode} {result.target} {result.paper} {result.width}x{result.height} "
-                f"com=({result.com[0]:.1f},{result.com[1]:.1f}) -> {args.dst}"
+                f"{result.mode} · {result.target} · {result.paper} · "
+                f"{result.width}×{result.height}"
             )
-            print(LIMITATION)
         return 0
 
     if args.cmd == "inject":
@@ -719,8 +850,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 op = token
                 src = args.src_opt
                 if not src:
-                    print("unredact: missing input file", file=sys.stderr)
-                    return 2
+                    return _fail("Unredact needs a file.", "spectrallock unredact locate page.pdf")
             else:
                 op = "locate"
                 src = token
@@ -741,11 +871,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 inject=False,
             )
         except FileNotFoundError:
-            print(f"input not found: {src}", file=sys.stderr)
-            return 2
+            return _fail(f'No file at "{src}".', "spectrallock unredact locate page.pdf")
         except ValueError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+            return _fail(str(exc), "spectrallock unredact locate page.pdf")
         residual_b64 = finding.get("residual_png_b64")
         if args.output and residual_b64:
             import base64
@@ -786,8 +914,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         if token.lower() in known:
             op = token
             if not src:
-                print("recover: missing input file", file=sys.stderr)
-                return 2
+                return _fail("Recover needs a file.", "spectrallock recover locate page.pdf")
             if args.src_opt2 and op in {"compare", "cross-compare"}:
                 twin = twin or args.src_opt2
         else:
@@ -818,11 +945,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 deep=args.deep or op in {"deep", "deep-recover", "redactions"},
             )
         except FileNotFoundError:
-            print(f"input not found: {src}", file=sys.stderr)
-            return 2
+            return _fail(f'No file at "{src}".', "spectrallock recover locate page.pdf")
         except ValueError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+            return _fail(str(exc), "spectrallock recover locate page.pdf")
         if args.as_json:
             print(json.dumps(finding, indent=2, ensure_ascii=False))
         else:
@@ -859,8 +984,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         if key in known:
             op = token
             if not src:
-                print("handwriting: missing input scan", file=sys.stderr)
-                return 2
+                return _fail(
+                    "Handwriting needs a scan or photo of ink on paper.",
+                    "spectrallock handwriting analyze scan.png",
+                )
             if args.src_opt2 and parse_handwriting_op(op) in {"compare", "side-by-side"}:
                 twin = twin or args.src_opt2
         else:
@@ -873,11 +1000,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             parse_handwriting_op(op)
             finding = analyze_handwriting_path(src, op=op, twin=twin)
         except FileNotFoundError:
-            print(f"input not found: {src}", file=sys.stderr)
-            return 2
+            return _fail(f'No file at "{src}".', "spectrallock handwriting analyze scan.png")
         except ValueError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+            return _fail(str(exc), "spectrallock handwriting analyze scan.png")
         if args.as_json:
             print(json.dumps(finding, indent=2, ensure_ascii=False))
         else:
@@ -909,8 +1034,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         if key in known:
             op = token
             if not src:
-                print("pigment: missing input photograph", file=sys.stderr)
-                return 2
+                return _fail(
+                    "Restore pigment needs a photograph.",
+                    "spectrallock restore-pigment page.png",
+                )
         else:
             op = "restore"
             src = token
@@ -918,11 +1045,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             parse_pigment_op(op)
             finding = analyze_pigment_path(src, op=op, inject=bool(args.inject))
         except FileNotFoundError:
-            print(f"input not found: {src}", file=sys.stderr)
-            return 2
+            return _fail(f'No file at "{src}".', "spectrallock restore-pigment page.png")
         except ValueError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+            return _fail(str(exc), "spectrallock restore-pigment page.png")
         if args.output and finding.get("png_b64"):
             import base64
 
